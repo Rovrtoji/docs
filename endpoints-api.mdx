@@ -1,0 +1,532 @@
+---
+title: "Catálogo de endpoints"
+description: "Referencia rápida de los 237 endpoints REST del backend FastAPI, agrupados por dominio y módulo."
+sidebarTitle: "Endpoints API"
+icon: "code-2"
+keywords: ["API", "REST", "endpoints", "FastAPI", "backend"]
+---
+
+<Note>
+  Documentación generada del backend (`finananzaspython`). Cubre **todos** los endpoints REST expuestos bajo `/api/v1`. Las rutas mostradas son completas (con prefijo). Cada fila identifica método HTTP, ruta, función Python y descripción tomada del docstring o `summary=` del decorador.
+
+  **Totales:** 237 endpoints · 29 módulos · 9 dominios.
+</Note>
+
+<Info>
+  **API Reference con playground:** esta página es un catálogo de referencia. Cuando esté disponible el archivo `openapi.json` del backend FastAPI, generaremos páginas individuales por endpoint con playground interactivo (Mintlify lo soporta nativo desde el spec).
+</Info>
+
+## Cómo consumir esta API
+
+- **Base URL:** `https://api.<dominio>` o local `http://localhost:8090` / `:8091`
+- **Prefijo:** todos los endpoints viven bajo `/api/v1`
+- **Autenticación:** cookie httpOnly + CSRF double-submit (`X-CSRF-Token` en POST/PUT/PATCH/DELETE)
+- **OpenAPI live:** `GET /docs` (Swagger UI) y `GET /openapi.json` (spec completo con schemas)
+
+## Resumen por dominio
+
+| # | Dominio | Módulos | Endpoints |
+|---|---|---|---|
+| 1 | Autenticación y RBAC | 7 | 64 |
+| 2 | Catálogos y maestros | 4 | 35 |
+| 3 | Clientes | 1 | 18 |
+| 4 | Finanzas e ingresos | 2 | 10 |
+| 5 | Dashboards | 4 | 27 |
+| 6 | Operaciones de campo | 4 | 41 |
+| 7 | Attendance y almacenamiento | 2 | 18 |
+| 8 | Soporte | 1 | 13 |
+| 9 | Sistema y monitoreo | 4 | 11 |
+
+---
+
+## Autenticación y RBAC
+
+Login, sesión, gestión de usuarios, roles, permisos y aplicaciones.
+
+### `/auth` · auth
+
+Tag OpenAPI: `auth` · **11 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/auth/login` | `login` | — |
+| **POST** | `/api/v1/auth/login/form` | `login_form` | OAuth2 password flow fallback for Swagger UI. |
+| **POST** | `/api/v1/auth/logout` | `logout` | — |
+| **POST** | `/api/v1/auth/refresh` | `refresh` | — |
+| **POST** | `/api/v1/auth/forgot-password` | `forgot_password` | — |
+| **POST** | `/api/v1/auth/reset-password` | `reset_password` | — |
+| **GET** | `/api/v1/auth/me` | `me` | — |
+| **GET** | `/api/v1/auth/sessions` | `list_sessions` | — |
+| **DELETE** | `/api/v1/auth/sessions/{session_id}` | `delete_session` | — |
+| **POST** | `/api/v1/auth/handoff` | `handoff_initiate` | — |
+| **POST** | `/api/v1/auth/handoff/exchange` | `handoff_exchange` | — |
+
+### `/usuarios` · usuarios
+
+Tag OpenAPI: `usuarios` · **3 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/usuarios` | `create_user` | Crear nuevo usuario |
+| **GET** | `/api/v1/usuarios` | `list_users` | Listar usuarios |
+| **GET** | `/api/v1/usuarios/me` | `get_me` | Obtener usuario actual |
+
+### `/users` · users_contract
+
+Tag OpenAPI: `users_contract` · **18 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/users/exists` | `check_user_exists` | — |
+| **GET** | `/api/v1/users` | `list_users` | — |
+| **GET** | `/api/v1/users/areas` | `list_user_areas` | — |
+| **POST** | `/api/v1/users` | `create_user` | — |
+| **GET** | `/api/v1/users/{id}` | `get_user_by_id` | — |
+| **GET** | `/api/v1/users/{id}/roles` | `get_user_roles_by_id` | — |
+| **PATCH** | `/api/v1/users/{id}` | `update_user` | — |
+| **DELETE** | `/api/v1/users/{id}` | `delete_user` | — |
+| **POST** | `/api/v1/users/{id}/roles` | `assign_user_roles` | — |
+| **POST** | `/api/v1/users/{id}/roles/add` | `add_user_roles` | — |
+| **DELETE** | `/api/v1/users/{id}/roles/{role_name}` | `remove_user_role` | — |
+| **GET** | `/api/v1/users/{id}/permissions` | `get_user_direct_permissions` | — |
+| **POST** | `/api/v1/users/{id}/permissions` | `upsert_user_permission` | — |
+| **PUT** | `/api/v1/users/{id}/permissions/{permission_name}` | `update_user_permission` | — |
+| **DELETE** | `/api/v1/users/{id}/permissions/{permission_name}` | `delete_user_permission` | — |
+| **POST** | `/api/v1/users/{id}/toggle-status` | `toggle_user_status` | — |
+| **GET** | `/api/v1/users/{id}/access-history` | `get_user_access_history` | — |
+| **GET** | `/api/v1/users/{id}/access` | `get_user_access` | — |
+
+### `/roles` · roles
+
+Tag OpenAPI: `roles` · **9 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/roles` | `list_roles` | — |
+| **GET** | `/api/v1/roles/{role_id}` | `get_role` | — |
+| **POST** | `/api/v1/roles` | `create_role` | — |
+| **PUT** | `/api/v1/roles/{role_id}` | `update_role` | — |
+| **DELETE** | `/api/v1/roles/{role_id}` | `delete_role` | — |
+| **GET** | `/api/v1/roles/{role_id}/permisos` | `get_role_permissions` | — |
+| **POST** | `/api/v1/roles/{role_id}/permisos` | `assign_role_permissions` | — |
+| **GET** | `/api/v1/roles/{role_id}/applications` | `get_role_applications` | — |
+| **POST** | `/api/v1/roles/{role_id}/applications` | `assign_role_applications` | — |
+
+### `/roles` · roles_v2
+
+Tag OpenAPI: `roles-v2` · **8 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/roles` | `list_roles` | — |
+| **POST** | `/api/v1/roles` | `create_role` | — |
+| **PATCH** | `/api/v1/roles/{role_id}` | `update_role` | — |
+| **DELETE** | `/api/v1/roles/{role_id}` | `delete_role` | — |
+| **GET** | `/api/v1/roles/{role_id}/permissions` | `get_role_permissions` | — |
+| **PUT** | `/api/v1/roles/{role_id}/permissions` | `assign_role_permissions` | — |
+| **GET** | `/api/v1/roles/{role_id}/applications` | `get_role_applications` | — |
+| **PUT** | `/api/v1/roles/{role_id}/applications` | `assign_role_applications` | — |
+
+### `/permisos` · permisos
+
+Tag OpenAPI: `permisos` · **5 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/permisos` | `list_permisos` | — |
+| **GET** | `/api/v1/permisos/{permiso_id}` | `get_permiso` | — |
+| **POST** | `/api/v1/permisos` | `create_permiso` | — |
+| **PUT** | `/api/v1/permisos/{permiso_id}` | `update_permiso` | — |
+| **DELETE** | `/api/v1/permisos/{permiso_id}` | `delete_permiso` | — |
+
+### `/applications` · applications
+
+Tag OpenAPI: `applications` · **10 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/applications` | `list_applications` | — |
+| **GET** | `/api/v1/applications/{app_id}` | `get_application` | — |
+| **POST** | `/api/v1/applications` | `create_application` | — |
+| **PUT** | `/api/v1/applications/{app_id}` | `update_application` | — |
+| **DELETE** | `/api/v1/applications/{app_id}` | `delete_application` | — |
+| **GET** | `/api/v1/applications/{app_id}/menu` | `get_app_menu` | — |
+| **POST** | `/api/v1/applications/{app_id}/menu` | `create_menu_view` | — |
+| **PUT** | `/api/v1/applications/{app_id}/menu/{view_id}` | `update_menu_view` | — |
+| **DELETE** | `/api/v1/applications/{app_id}/menu/{view_id}` | `delete_menu_view` | — |
+| **GET** | `/api/v1/applications/{app_code}/menu/user` | `get_user_menu` | — |
+
+---
+
+## Catálogos y maestros
+
+Catálogos de soporte, entidades legales, cuentas de facturación, filtros compartidos.
+
+### `/catalogs` · catalogs
+
+Tag OpenAPI: `catalogs` · **11 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/catalogs/departments` | `list_departments` | — |
+| **POST** | `/api/v1/catalogs/departments` | `create_department` | — |
+| **PATCH** | `/api/v1/catalogs/departments/{dept_id}` | `update_department` | — |
+| **DELETE** | `/api/v1/catalogs/departments/{dept_id}` | `soft_delete_department` | — |
+| **GET** | `/api/v1/catalogs/positions` | `list_positions` | — |
+| **POST** | `/api/v1/catalogs/positions` | `create_position` | — |
+| **PATCH** | `/api/v1/catalogs/positions/{pos_id}` | `update_position` | — |
+| **DELETE** | `/api/v1/catalogs/positions/{pos_id}` | `soft_delete_position` | — |
+| **GET** | `/api/v1/catalogs/area-managers` | `list_area_managers` | — |
+| **POST** | `/api/v1/catalogs/area-managers` | `create_area_manager` | — |
+| **DELETE** | `/api/v1/catalogs/area-managers/{mgr_id}` | `delete_area_manager` | — |
+
+### `/billing-accounts` · billing_accounts
+
+Tag OpenAPI: `billing_accounts` · **5 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/billing-accounts` | `list_billing_accounts` | — |
+| **GET** | `/api/v1/billing-accounts/{account_id}` | `get_billing_account` | — |
+| **POST** | `/api/v1/billing-accounts` | `create_billing_account` | — |
+| **PUT** | `/api/v1/billing-accounts/{account_id}` | `update_billing_account` | — |
+| **DELETE** | `/api/v1/billing-accounts/{account_id}` | `delete_billing_account` | — |
+
+### `/legal-entities` · legal_entities
+
+Tag OpenAPI: `legal_entities` · **5 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/legal-entities` | `list_legal_entities` | — |
+| **GET** | `/api/v1/legal-entities/{entity_id}` | `get_legal_entity` | — |
+| **POST** | `/api/v1/legal-entities` | `create_legal_entity` | — |
+| **PATCH** | `/api/v1/legal-entities/{entity_id}` | `update_legal_entity` | — |
+| **DELETE** | `/api/v1/legal-entities/{entity_id}` | `soft_delete_legal_entity` | — |
+
+### `/filters` · filters
+
+Tag OpenAPI: `filters` · **14 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/filters/base` | `get_filters_base` | — |
+| **GET** | `/api/v1/filters/clientes` | `filters_clientes` | — |
+| **GET** | `/api/v1/filters/usuarios` | `filters_usuarios` | — |
+| **GET** | `/api/v1/filters/tecnicos` | `filters_tecnicos` | — |
+| **GET** | `/api/v1/filters/inventory-items` | `filters_inventory_items` | — |
+| **GET** | `/api/v1/filters/cms-hardware` | `filters_cms_hardware` | — |
+| **GET** | `/api/v1/filters/sim-plans` | `filters_sim_plans` | — |
+| **GET** | `/api/v1/filters/expenses` | `filters_expenses` | — |
+| **GET** | `/api/v1/filters/billing-accounts` | `filters_billing_accounts` | — |
+| **GET** | `/api/v1/filters/cms-unidades` | `filters_cms_unidades` | — |
+| **GET** | `/api/v1/filters/work-orders` | `filters_work_orders` | — |
+| **GET** | `/api/v1/filters/work-orders/finished-by-technician` | `filters_work_orders_finished_by_technician` | — |
+| **GET** | `/api/v1/filters/ingresos` | `filters_ingresos` | — |
+| **GET** | `/api/v1/filters/alegra-invoices` | `filters_alegra_invoices` | — |
+
+---
+
+## Clientes
+
+Padrón de clientes y panel 360.
+
+### `/clientes` · clientes
+
+Tag OpenAPI: `clientes` · **18 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/clientes` | `list_clientes` | — |
+| **GET** | `/api/v1/clientes/contactos` | `list_contactos` | — |
+| **POST** | `/api/v1/clientes/contactos` | `create_contacto` | — |
+| **GET** | `/api/v1/clientes/{cliente_id}` | `get_cliente` | — |
+| **POST** | `/api/v1/clientes` | `create_cliente` | — |
+| **PUT** | `/api/v1/clientes/{cliente_id}` | `update_cliente` | — |
+| **DELETE** | `/api/v1/clientes/{cliente_id}` | `delete_cliente` | — |
+| **PUT** | `/api/v1/clientes/contactos/{contacto_id}` | `update_contacto` | — |
+| **DELETE** | `/api/v1/clientes/contactos/{contacto_id}` | `delete_contacto` | — |
+| **GET** | `/api/v1/clientes/{cliente_id}/billing-accounts` | `list_cliente_billing_accounts` | — |
+| **POST** | `/api/v1/clientes/{cliente_id}/billing-accounts` | `assign_cliente_billing_accounts` | — |
+| **DELETE** | `/api/v1/clientes/{cliente_id}/billing-accounts/{billing_account_id}` | `delete_cliente_billing_account` | — |
+| **GET** | `/api/v1/clientes/{cliente_id}/client-identifications` | `list_cliente_client_identifications` | — |
+| **POST** | `/api/v1/clientes/{cliente_id}/client-identifications` | `create_cliente_client_identifications` | — |
+| **DELETE** | `/api/v1/clientes/{cliente_id}/client-identifications/{client_identification}` | `delete_cliente_client_identification` | — |
+| **GET** | `/api/v1/clientes/{cliente_id}/b2b-accounts` | `list_cliente_b2b_accounts` | — |
+| **POST** | `/api/v1/clientes/{cliente_id}/b2b-accounts` | `assign_cliente_b2b_accounts` | — |
+| **DELETE** | `/api/v1/clientes/{cliente_id}/b2b-accounts/{b2b_account_id}` | `delete_cliente_b2b_account` | — |
+
+---
+
+## Finanzas e ingresos
+
+Captura y carga de ingresos; sincronización con Alegra.
+
+### `/ingresos` · ingresos
+
+Tag OpenAPI: `ingresos` · **8 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/ingresos` | `list_ingresos` | — |
+| **GET** | `/api/v1/ingresos/facturas` | `list_facturas_for_ingresos` | — |
+| **GET** | `/api/v1/ingresos/{ingreso_id}` | `get_ingreso` | — |
+| **POST** | `/api/v1/ingresos` | `create_ingreso` | — |
+| **PUT** | `/api/v1/ingresos/{ingreso_id}` | `update_ingreso` | — |
+| **PATCH** | `/api/v1/ingresos/{ingreso_id}` | `patch_ingreso_cliente` | — |
+| **DELETE** | `/api/v1/ingresos/{ingreso_id}` | `delete_ingreso` | — |
+| **POST** | `/api/v1/ingresos/upload-excel` | `upload_ingresos_excel` | — |
+
+### `/invoices` · alegra_invoices
+
+Tag OpenAPI: `alegra_invoices` · **2 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/invoices` | `list_invoices` | — |
+| **PATCH** | `/api/v1/invoices/{invoice_id}` | `patch_invoice_cliente` | — |
+
+---
+
+## Dashboards
+
+Dashboards generales, financieros, operativos y de compras de equipo.
+
+### `/dashboard` · dashboard
+
+Tag OpenAPI: `dashboard` · **19 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/dashboard/clientes/resumen` | `dashboard_clientes_resumen` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/resumen` | `dashboard_cliente_resumen` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/facturacion` | `dashboard_cliente_facturacion` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/depositos` | `dashboard_cliente_depositos` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/facturas` | `dashboard_cliente_facturas` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/pagos` | `dashboard_cliente_pagos` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/comparativo` | `dashboard_cliente_comparativo` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/comportamiento-pagos` | `dashboard_cliente_comportamiento_pagos` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/cms` | `dashboard_cliente_cms` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/cms/unidades` | `dashboard_cliente_cms_unidades` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/contactos` | `dashboard_cliente_contactos` | — |
+| **GET** | `/api/v1/dashboard/clientes/{cliente_id}/notas` | `dashboard_cliente_notas` | — |
+| **POST** | `/api/v1/dashboard/clientes/{cliente_id}/notas` | `create_dashboard_cliente_nota` | — |
+| **GET** | `/api/v1/dashboard/metadata/filtros` | `dashboard_filters` | — |
+| **GET** | `/api/v1/dashboard/metadata/client-identifications` | `dashboard_client_identifications` | — |
+| **GET** | `/api/v1/dashboard/metadata/client-identifications/simple` | `dashboard_client_identifications_simple` | — |
+| **GET** | `/api/v1/dashboard/metadata/client-identifications/pending` | `dashboard_client_identifications_pending` | — |
+| **GET** | `/api/v1/dashboard/metadata/b2b-accounts/pending` | `dashboard_b2b_accounts_pending` | — |
+| **GET** | `/api/v1/dashboard/metadata/orphan-invoices` | `dashboard_orphan_invoices` | — |
+
+### `/dashboard/financial` · financial_dashboard
+
+Tag OpenAPI: `dashboard-financial` · **4 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/dashboard/financial/estado-resultado` | `estado_resultado` | Resumen financiero consolidado por cliente: inventario, técnicos, facturación, CMS. |
+| **GET** | `/api/v1/dashboard/financial/inventario-unidades` | `inventario_unidades` | Detalle de inventario por unidad CMS de un cliente, paginado. |
+| **GET** | `/api/v1/dashboard/financial/gps-historial` | `gps_historial` | Historial de cambios GPS de un vehículo específico. |
+| **GET** | `/api/v1/dashboard/financial/resumen-global` | `resumen_global` | Resumen financiero de todos los clientes, paginado con búsqueda. |
+
+### `/dashboard/operations` · operations_dashboard
+
+Tag OpenAPI: `dashboard-operations` · **3 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/dashboard/operations/resumen-flota` | `resumen_flota` | Resumen de flota por cliente con clasificación de estado de unidades. |
+| **GET** | `/api/v1/dashboard/operations/cliente/{cliente_id}` | `cliente_detalle` | Detalle de unidades de un cliente con clasificación y paginación. |
+| **GET** | `/api/v1/dashboard/operations/criticos` | `criticos` | Cola de trabajo: unidades críticas con >30 días sin reportar. |
+
+### `/equipmentpurchases_dashboard` · equipmentpurchases_dashboard
+
+Tag OpenAPI: `equipmentpurchases_dashboard` · **1 endpoint**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/equipmentpurchases_dashboard/resumen` | `equipment_purchases_dashboard` | — |
+
+---
+
+## Operaciones de campo
+
+Inventario, órdenes de trabajo/instalación, evidencias y pagos a técnicos.
+
+### `/inventory` · inventory
+
+Tag OpenAPI: `inventory` · **26 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/inventory/devices` | `list_devices` | — |
+| **GET** | `/api/v1/inventory/devices/{device_id}` | `get_device` | — |
+| **POST** | `/api/v1/inventory/devices` | `create_device` | — |
+| **PUT** | `/api/v1/inventory/devices/{device_id}` | `update_device` | — |
+| **DELETE** | `/api/v1/inventory/devices/{device_id}` | `delete_device` | — |
+| **GET** | `/api/v1/inventory/sim-plans` | `list_sim_plans` | — |
+| **GET** | `/api/v1/inventory/sim-plans/{sim_plan_id}` | `get_sim_plan` | — |
+| **POST** | `/api/v1/inventory/sim-plans` | `create_sim_plan` | — |
+| **PUT** | `/api/v1/inventory/sim-plans/{sim_plan_id}` | `update_sim_plan` | — |
+| **DELETE** | `/api/v1/inventory/sim-plans/{sim_plan_id}` | `delete_sim_plan` | — |
+| **GET** | `/api/v1/inventory/expenses` | `list_expenses` | — |
+| **GET** | `/api/v1/inventory/expenses/{expense_id}` | `get_expense` | — |
+| **POST** | `/api/v1/inventory/expenses` | `create_expense` | — |
+| **PUT** | `/api/v1/inventory/expenses/{expense_id}` | `update_expense` | — |
+| **DELETE** | `/api/v1/inventory/expenses/{expense_id}` | `delete_expense` | — |
+| **GET** | `/api/v1/inventory/technicians` | `list_technicians` | — |
+| **GET** | `/api/v1/inventory/technicians/{technician_id}` | `get_technician` | — |
+| **POST** | `/api/v1/inventory/technicians` | `create_technician` | — |
+| **PUT** | `/api/v1/inventory/technicians/{technician_id}` | `update_technician` | — |
+| **DELETE** | `/api/v1/inventory/technicians/{technician_id}` | `delete_technician` | — |
+| **GET** | `/api/v1/inventory/items` | `list_inventory_items` | — |
+| **GET** | `/api/v1/inventory/items/{item_id}` | `get_inventory_item` | — |
+| **POST** | `/api/v1/inventory/items` | `create_inventory_item` | — |
+| **PUT** | `/api/v1/inventory/items/{item_id}` | `update_inventory_item` | — |
+| **DELETE** | `/api/v1/inventory/items/{item_id}` | `delete_inventory_item` | — |
+| **GET** | `/api/v1/inventory/items/{item_id}/history` | `list_inventory_item_history` | — |
+
+### `/installation-consolidations` · work_orders
+
+Tag OpenAPI: `installation_consolidations` · **5 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/installation-consolidations` | `list_work_orders` | — |
+| **GET** | `/api/v1/installation-consolidations/{work_order_id}` | `get_work_order` | — |
+| **POST** | `/api/v1/installation-consolidations` | `create_work_order` | — |
+| **PUT** | `/api/v1/installation-consolidations/{work_order_id}` | `update_work_order` | — |
+| **DELETE** | `/api/v1/installation-consolidations/{work_order_id}` | `delete_work_order` | — |
+
+### `/work-orders` · work_order_evidence
+
+Tag OpenAPI: `work_order_evidence` · **3 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/work-orders/{wo_id}/evidence` | `upload_work_order_evidence` | — |
+| **GET** | `/api/v1/work-orders/{wo_id}/evidence` | `list_work_order_evidence` | — |
+| **DELETE** | `/api/v1/work-orders/{wo_id}/evidence/{evidence_id}` | `delete_work_order_evidence` | — |
+
+### `/installation-payments` · installation_payments
+
+Tag OpenAPI: `installation_payments` · **7 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/installation-payments` | `list_installation_payment_batches` | — |
+| **GET** | `/api/v1/installation-payments/{batch_id}` | `get_installation_payment_batch` | — |
+| **POST** | `/api/v1/installation-payments` | `create_installation_payment_batch` | — |
+| **PUT** | `/api/v1/installation-payments/{batch_id}` | `update_installation_payment_batch` | — |
+| **DELETE** | `/api/v1/installation-payments/{batch_id}` | `delete_installation_payment_batch` | — |
+| **POST** | `/api/v1/installation-payments/refresh` | `refresh_installation_costs` | — |
+| **POST** | `/api/v1/installation-payments/refresh/reconcile-cms` | `refresh_installation_cms_reconcile` | — |
+
+---
+
+## Attendance y almacenamiento
+
+Registro de asistencia y subida/descarga de fotos en S3.
+
+### `attendance` · attendance
+
+Tag OpenAPI: `attendance` · **16 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/attendance/check` | `check_attendance` | — |
+| **GET** | `/api/v1/attendance/today` | `get_today_attendance` | — |
+| **GET** | `/api/v1/attendance/history` | `get_attendance_history` | — |
+| **GET** | `/api/v1/attendance/dashboard` | `get_attendance_dashboard` | — |
+| **GET** | `/api/v1/attendance/dashboard/export` | `export_attendance_dashboard` | — |
+| **GET** | `/api/v1/attendance/work-schedules` | `list_attendance_work_schedules` | — |
+| **GET** | `/api/v1/attendance/work-schedules/{userId}` | `get_attendance_work_schedule` | — |
+| **PUT** | `/api/v1/attendance/work-schedules/{userId}` | `upsert_attendance_work_schedule` | — |
+| **DELETE** | `/api/v1/attendance/work-schedules/{userId}` | `delete_attendance_work_schedule` | — |
+| **GET** | `/api/v1/attendance/{id}` | `get_attendance_by_id` | — |
+| **PATCH** | `/api/v1/attendance/{id}` | `update_attendance_by_id` | — |
+| **DELETE** | `/api/v1/attendance/{id}` | `delete_attendance_by_id` | — |
+| **POST** | `/api/v1/attendance/sync` | `sync_attendance_events` | — |
+| **POST** | `/api/v1/checkin/webhook` | `post_checkin_webhook` | — |
+| **GET** | `/api/v1/catalogs/attendance-event-types` | `get_attendance_event_types` | — |
+| **GET** | `/api/v1/attendance/health` | `health` | — |
+
+### `/storage` · storage
+
+Tag OpenAPI: `storage` · **2 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/storage/presign-upload` | `presign_upload` | — |
+| **POST** | `/api/v1/storage/presign-download` | `presign_download` | — |
+
+---
+
+## Soporte
+
+Tickets de soporte (portal cliente).
+
+### `/support` · support
+
+Tag OpenAPI: `support` · **13 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/support/service-requests` | `list_service_requests` | — |
+| **GET** | `/api/v1/support/service-requests/{sr_id}` | `get_service_request_detail` | — |
+| **PATCH** | `/api/v1/support/service-requests/{sr_id}/stage` | `update_service_request_stage` | — |
+| **POST** | `/api/v1/support/service-requests/{sr_id}/comments` | `add_service_request_comment` | — |
+| **POST** | `/api/v1/support/service-requests/{sr_id}/evidence` | `upload_service_request_evidence` | — |
+| **PATCH** | `/api/v1/support/service-requests/{sr_id}/work-order` | `link_work_order_to_request` | — |
+| **GET** | `/api/v1/support/service-requests/{sr_id}/audit-log` | `get_service_request_audit_log` | — |
+| **GET** | `/api/v1/support/installation-batches` | `list_installation_batches` | — |
+| **GET** | `/api/v1/support/installation-batches/{batch_id}` | `get_installation_batch_detail` | — |
+| **PATCH** | `/api/v1/support/installation-batch-items/{item_id}/stage` | `update_batch_item_stage` | — |
+| **PATCH** | `/api/v1/support/installation-batch-items/{item_id}/work-order` | `link_work_order_to_batch_item` | — |
+| **PATCH** | `/api/v1/support/installation-batch-items/{item_id}/unit` | `link_cms_unit_to_batch_item` | — |
+| **PATCH** | `/api/v1/support/installation-batch-items/{item_id}/notes` | `update_batch_item_notes` | — |
+
+---
+
+## Sistema y monitoreo
+
+Health, notificaciones, audit log e integración CMS.
+
+### `/notifications` · notifications
+
+Tag OpenAPI: `notifications` · **4 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/notifications` | `list_notifications` | — |
+| **GET** | `/api/v1/notifications/unread-count` | `get_unread_count` | — |
+| **PATCH** | `/api/v1/notifications/{notif_id}/read` | `mark_notification_read` | — |
+| **POST** | `/api/v1/notifications/mark-all-read` | `mark_all_notifications_read` | — |
+
+### `/audit-log` · audit
+
+Tag OpenAPI: `audit` · **2 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/audit-log` | `list_audit_logs` | — |
+| **GET** | `/api/v1/audit-log/export` | `export_audit_logs` | — |
+
+### `/health` · health
+
+Tag OpenAPI: `health` · **2 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/health/live` | `live` | Liveness probe |
+| **GET** | `/api/v1/health/ready` | `ready` | Readiness probe |
+
+### `/cms-unidades` · cms_unificado
+
+Tag OpenAPI: `cms_unificado` · **3 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/cms-unidades` | `list_cms_unidades` | — |
+| **POST** | `/api/v1/cms-unidades/{unit_id}/billing-account` | `set_billing_account` | — |
+| **POST** | `/api/v1/cms-unidades/refresh-cache` | `refresh_cache` | — |

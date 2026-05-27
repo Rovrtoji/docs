@@ -1,0 +1,1082 @@
+---
+title: "Arquitectura de la base de datos"
+description: "Catálogo de tablas del ERP/CRM organizadas por dominio, sin tecnicismos."
+sidebarTitle: "Arquitectura de BD"
+icon: "database"
+keywords: ["base de datos", "tablas", "SQLAlchemy", "PostgreSQL", "esquema", "arquitectura"]
+---
+
+<Note>
+  Documento simple, sin tecnicismos. Cada tabla explica para qué sirve, qué guarda y con quién se relaciona.
+
+  **Última actualización:** 2026-05-12 &nbsp;·&nbsp; **Fuente:** modelos de SQLAlchemy en `app/domain/` (revisión Alembic `j2b3c4d5e6f7`).
+</Note>
+
+## Resumen por dominio
+
+| # | Dominio | Tablas |
+|---|---|---|
+| 1 | Autenticación y usuarios | 17 |
+| 2 | Clientes (CRM) | 7 |
+| 3 | Finanzas | 7 |
+| 4 | Inventario | 4 |
+| 5 | Operaciones (órdenes de trabajo) | 3 |
+| 6 | Sistema externo CMS (flota GPS) | 4 |
+| 7 | Soporte GPS (portal cliente) | 9 |
+| 8 | Asistencias (checador) | 3 |
+
+---
+
+## Dominio: Autenticación y usuarios
+
+Tablas que sostienen el login, la sesión, el modelo RBAC (roles, permisos, aplicaciones), la estructura organizacional y la auditoría.
+
+<AccordionGroup>
+  <Accordion title="usuarios" icon="user">
+    **Para qué sirve:** guarda a las personas que entran al sistema (empleados, ejecutivos, administradores).
+
+    **Campos:**
+    - `id` — número único del usuario
+    - `username` — nombre de inicio de sesión (único)
+    - `email` — correo electrónico (único)
+    - `password_hash` — contraseña cifrada
+    - `aplicacion` — código de la aplicación a la que pertenece
+    - `nickname` — apodo opcional
+    - `full_name` — nombre completo
+    - `employee_code` — código interno de empleado (único)
+    - `job_title` — puesto en texto libre
+    - `area` — área o departamento en texto libre
+    - `salary` — sueldo (número con decimales, opcional)
+    - `activo` — sí/no, si la cuenta está habilitada
+    - `ultimo_acceso` — fecha y hora del último inicio de sesión
+    - `intentos_fallidos` — número de intentos fallidos consecutivos
+    - `bloqueado_hasta` — fecha y hora hasta la que la cuenta queda bloqueada
+    - `token_api_key` — clave para acceso por API (único)
+    - `descripcion` — texto libre con notas
+    - `position_id` — referencia al puesto formal
+    - `manager_user_id` — referencia al jefe directo (también un usuario)
+    - `created_at`, `updated_at` — fechas de alta y modificación
+
+    **Se relaciona con:**
+    - Tabla `positions` (por el puesto)
+    - Otra fila de `usuarios` (su jefe directo)
+    - Tabla `usuarios_roles` (los roles asignados)
+    - Tabla `usuarios_permisos_directos` (permisos otorgados o denegados directamente)
+    - Casi todas las tablas que registran quién creó, asignó o cargó un dato
+  </Accordion>
+
+  <Accordion title="roles" icon="users-round">
+    **Para qué sirve:** guarda los grupos de permisos (por ejemplo, `super_admin`, `manager`, `usuario`).
+
+    **Campos:**
+    - `id` — número único del rol
+    - `nombre` — nombre del rol (único)
+    - `descripcion` — para qué sirve el rol
+    - `activo` — sí/no
+    - `created_at`, `updated_at` — fechas de alta y modificación
+
+    **Se relaciona con:**
+    - Tabla `roles_permisos` (qué permisos tiene el rol)
+    - Tabla `usuarios_roles` (qué usuarios tienen este rol)
+    - Tabla `roles_applications` (a qué aplicaciones da acceso)
+  </Accordion>
+
+  <Accordion title="permisos" icon="key">
+    **Para qué sirve:** lista las acciones que se pueden permitir o negar (leer, crear, editar, exportar, etc.).
+
+    **Campos:**
+    - `id` — número único del permiso
+    - `nombre` — clave corta (única, por ejemplo `usuarios_read`)
+    - `recurso` — sobre qué actúa (por ejemplo `usuarios`)
+    - `accion` — qué se permite (`read`, `write`, `delete`)
+    - `descripcion` — explicación legible
+    - `activo` — sí/no
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `roles_permisos` (qué roles incluyen este permiso)
+    - Tabla `usuarios_permisos_directos` (qué usuarios lo tienen otorgado o denegado directamente)
+    - La combinación `recurso + accion` debe ser única
+  </Accordion>
+
+  <Accordion title="roles_permisos" icon="link">
+    **Para qué sirve:** une roles con permisos. Una fila por cada permiso que tiene un rol.
+
+    **Campos:**
+    - `id` — número único de la asignación
+    - `role_id` — referencia al rol
+    - `permiso_id` — referencia al permiso
+    - `created_at` — fecha y hora en que se otorgó
+
+    **Se relaciona con:**
+    - Tabla `roles`
+    - Tabla `permisos`
+    - Un mismo permiso no puede asignarse dos veces al mismo rol
+  </Accordion>
+
+  <Accordion title="usuarios_roles" icon="link">
+    **Para qué sirve:** une usuarios con roles. Un usuario puede tener varios roles.
+
+    **Campos:**
+    - `id` — número único de la asignación
+    - `usuario_id` — referencia al usuario
+    - `role_id` — referencia al rol
+    - `asignado_por` — qué usuario hizo la asignación (opcional)
+    - `asignado_en` — fecha y hora en que se asignó
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+    - Tabla `roles`
+    - Un mismo rol no se asigna dos veces al mismo usuario
+  </Accordion>
+
+  <Accordion title="usuarios_permisos_directos" icon="shield-check">
+    **Para qué sirve:** permisos que se otorgan o se niegan directamente a un usuario, sin pasar por un rol.
+
+    **Campos:**
+    - `id` — número único
+    - `usuario_id` — referencia al usuario
+    - `permiso_id` — referencia al permiso
+    - `tipo` — `grant` (otorgado) o `deny` (denegado)
+    - `asignado_por` — qué usuario hizo la asignación (opcional)
+    - `asignado_en` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+    - Tabla `permisos`
+  </Accordion>
+
+  <Accordion title="applications" icon="app-window">
+    **Para qué sirve:** catálogo de las aplicaciones del ecosistema (Finanzas, Operaciones, CRM, RH).
+
+    **Campos:**
+    - `id` — número único
+    - `code` — código corto (único, por ejemplo `finanzas`)
+    - `name` — nombre visible
+    - `description` — descripción larga
+    - `short_description` — descripción corta para tarjetas
+    - `base_url` — URL pública de la aplicación
+    - `icon` — icono de la interfaz
+    - `color` — color principal
+    - `active` — sí/no
+    - `display_order` — orden de aparición
+    - `created_at`, `updated_at` — fechas de alta y modificación
+
+    **Se relaciona con:**
+    - Tabla `application_menu_views` (los menús de cada app)
+    - Tabla `roles_applications` (qué roles tienen acceso a esta app)
+  </Accordion>
+
+  <Accordion title="roles_applications" icon="link">
+    **Para qué sirve:** define qué roles pueden ver qué aplicaciones.
+
+    **Campos:**
+    - `id` — número único
+    - `role_id` — referencia al rol
+    - `application_id` — referencia a la aplicación
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `roles`
+    - Tabla `applications`
+  </Accordion>
+
+  <Accordion title="application_menu_views" icon="menu">
+    **Para qué sirve:** lista de elementos de menú de cada aplicación (puede ser jerárquica, hay submenús).
+
+    **Campos:**
+    - `id` — número único
+    - `application_id` — referencia a la aplicación dueña del menú
+    - `parent_id` — referencia al elemento padre (si es un submenú)
+    - `code` — código jerárquico (por ejemplo `inventario.items`)
+    - `label` — texto a mostrar
+    - `icon` — icono
+    - `route` — ruta de la aplicación
+    - `permission_required` — clave del permiso que el usuario debe tener
+    - `display_order` — orden de aparición
+    - `active` — sí/no
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `applications`
+    - Sí misma (jerarquía padre/hijo)
+  </Accordion>
+
+  <Accordion title="active_sessions" icon="circle-user">
+    **Para qué sirve:** sesiones abiertas del usuario (tokens activos).
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — referencia al usuario
+    - `token_hash` — huella criptográfica del token (única)
+    - `ip_address` — dirección IP desde donde se inició
+    - `user_agent` — texto que identifica el navegador o app
+    - `created_at` — cuándo se creó
+    - `expires_at` — cuándo expira
+    - `is_active` — sí/no
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+  </Accordion>
+
+  <Accordion title="password_reset_tokens" icon="lock-keyhole">
+    **Para qué sirve:** tokens temporales para que un usuario reestablezca su contraseña.
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — referencia al usuario
+    - `token_hash` — huella criptográfica del token (única)
+    - `expires_at` — fecha y hora de expiración
+    - `used` — sí/no, si ya fue utilizado
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+  </Accordion>
+
+  <Accordion title="auth_handoff_tokens" icon="arrow-up-right-from-square">
+    **Para qué sirve:** tokens cortos para pasar la sesión de una app a otra sin volver a iniciar sesión.
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — referencia al usuario
+    - `code_hash` — huella del código entregado (único)
+    - `target_app_code` — código de la aplicación destino
+    - `expires_at` — fecha y hora de expiración
+    - `used_at` — fecha y hora en que se canjeó
+    - `ip_address` — dirección IP
+    - `user_agent` — identificación del navegador o app
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+  </Accordion>
+
+  <Accordion title="departments" icon="building">
+    **Para qué sirve:** catálogo de departamentos de la empresa.
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre del departamento (único)
+    - `is_active` — sí/no
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `positions` (los puestos pertenecen a un departamento)
+    - Tabla `area_managers` (quiénes son responsables del departamento)
+  </Accordion>
+
+  <Accordion title="positions" icon="briefcase">
+    **Para qué sirve:** catálogo de puestos por departamento.
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre del puesto
+    - `department_id` — referencia al departamento
+    - `is_active` — sí/no
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `departments`
+    - Tabla `usuarios` (el puesto formal del usuario)
+    - El mismo nombre de puesto no se repite dentro del mismo departamento
+  </Accordion>
+
+  <Accordion title="area_managers" icon="user-cog">
+    **Para qué sirve:** registro de qué usuarios son jefes de un departamento.
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — referencia al usuario que ejerce de jefe
+    - `department_id` — referencia al departamento
+    - `is_active` — sí/no
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+    - Tabla `departments`
+    - Un usuario no puede aparecer dos veces como jefe del mismo departamento
+  </Accordion>
+
+  <Accordion title="user_notifications" icon="bell">
+    **Para qué sirve:** notificaciones internas del sistema dirigidas a un usuario (campanita).
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — usuario destinatario
+    - `type` — tipo de notificación
+    - `title` — título
+    - `body` — texto largo
+    - `link` — enlace opcional
+    - `read` — sí/no, si ya se leyó
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+  </Accordion>
+
+  <Accordion title="audit_log" icon="scroll-text">
+    **Para qué sirve:** bitácora de cambios sensibles realizados en el sistema (quién hizo qué y cuándo).
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — usuario que realizó la acción (opcional, puede ser sistema)
+    - `action` — qué se hizo
+    - `resource` — sobre qué recurso
+    - `resource_id` — identificador del recurso afectado
+    - `details` — datos estructurados con detalles (cambios antes/después)
+    - `ip_address` — dirección IP
+    - `user_agent` — identificación del navegador o app
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Clientes (CRM)
+
+Tabla maestra de clientes (heredada de Odoo) y sus tablas satélite: cuentas de facturación, RFCs, cuentas B2B en GPS, notas internas y contactos.
+
+<AccordionGroup>
+  <Accordion title="iquo_cliente" icon="user-search">
+    **Para qué sirve:** catálogo central de clientes de la empresa. Es la tabla maestra del CRM. Originalmente proviene de Odoo; ahora se gestiona aquí.
+
+    **Campos:**
+    - `id` — número único del cliente
+    - `name` — razón social o nombre comercial (único)
+    - `ejecutivoid` — referencia al ejecutivo en Odoo (sistema externo)
+    - `vendoruserid` — referencia al vendedor en Odoo (sistema externo)
+    - `empresafactura` — empresa que factura (`soluciones` por defecto)
+    - `notas` — texto libre
+    - `tipocliente` — tipo o segmento
+    - `calle`, `numero`, `colonia`, `municipio`, `estado`, `codigopostal` — dirección
+    - `representantelegal` — nombre del representante legal
+    - `telefono`, `email`, `puesto`, `giro` — datos de contacto y actividad
+    - `create_uid`, `write_uid` — usuario de Odoo que creó/modificó (sistema externo)
+    - `create_date`, `write_date` — fechas de creación y modificación en origen
+
+    **Se relaciona con:**
+    - Tabla `cliente_billing_accounts` (cuentas de facturación)
+    - Tabla `cliente_client_identifications` (RFC/identificación fiscal)
+    - Tabla `cliente_b2b_accounts` (cuentas dentro del sistema GPS)
+    - Tabla `cliente_notas` (anotaciones internas)
+    - Tabla `cliente_contacto` (contactos del cliente)
+    - Tabla `work_orders` (órdenes de trabajo)
+    - Tabla `invoices` (facturas)
+    - Tabla `ingresos` (pagos recibidos)
+    - Tablas `installation_cost_ledger` e `installation_payment_batch_items`
+  </Accordion>
+
+  <Accordion title="billing_accounts" icon="receipt">
+    **Para qué sirve:** cuentas de facturación abstractas (un mismo cliente puede tener varias).
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre de la cuenta
+    - `ammount` — monto asociado (número con decimales)
+    - `created_at`, `updated_at` — fechas de alta y modificación
+
+    **Se relaciona con:**
+    - Tabla `cliente_billing_accounts` (intermediario con el cliente)
+    - Tabla `cms_unidades` (la cuenta puede estar ligada a unidades GPS)
+  </Accordion>
+
+  <Accordion title="cliente_billing_accounts" icon="link">
+    **Para qué sirve:** une un cliente con sus cuentas de facturación.
+
+    **Campos:**
+    - `id` — número único
+    - `cliente_id` — referencia al cliente
+    - `billing_account_id` — referencia a la cuenta de facturación
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - Tabla `billing_accounts`
+    - Una combinación cliente+cuenta no puede aparecer dos veces
+  </Accordion>
+
+  <Accordion title="cliente_client_identifications" icon="id-card">
+    **Para qué sirve:** RFC o identificaciones fiscales de los clientes (un cliente puede tener varios RFC con distintas razones sociales).
+
+    **Campos:**
+    - `id` — número único
+    - `cliente_id` — referencia al cliente
+    - `client_identification` — RFC u otro identificador (único en toda la tabla)
+    - `legal_entity_code` — código de la razón social (a qué empresa se factura)
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - Tabla `legal_entities` (a través del código)
+  </Accordion>
+
+  <Accordion title="cliente_b2b_accounts" icon="building-2">
+    **Para qué sirve:** une un cliente con cuentas externas del sistema GPS (B2B).
+
+    **Campos:**
+    - `id` — número único
+    - `cliente_id` — referencia al cliente
+    - `b2b_account_id` — identificador en el sistema externo
+    - `b2b_account_name` — nombre legible
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - Una misma cuenta b2b no se duplica para el mismo cliente
+  </Accordion>
+
+  <Accordion title="cliente_notas" icon="sticky-note">
+    **Para qué sirve:** anotaciones manuales que el equipo agrega sobre un cliente (CRM).
+
+    **Campos:**
+    - `id` — número único
+    - `cliente_id` — referencia al cliente
+    - `nota` — texto de la nota
+    - `created_by` — usuario que la creó
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - Tabla `usuarios`
+  </Accordion>
+
+  <Accordion title="cliente_contacto" icon="contact">
+    **Para qué sirve:** contactos (personas) ligados a un cliente.
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre
+    - `telefonomovil`, `telefonofijo` — teléfonos
+    - `correo` — correo electrónico (único en toda la tabla)
+    - `referencia`, `ciudad`, `direccion`, `codigopostal` — datos de dirección
+    - `notas` — texto libre
+    - `clienteid` — referencia al cliente
+    - `tipocontacto` — tipo de contacto
+    - `userodoo` — referencia al usuario de Odoo (sistema externo)
+    - `create_uid`, `write_uid` — usuario que creó/modificó en Odoo
+    - `create_date`, `write_date` — fechas de origen
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - El nombre y el correo deben ser únicos a nivel global
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Finanzas
+
+Razones sociales, facturas sincronizadas desde Alegra, ingresos recibidos, gastos, costos de instalación y pagos a técnicos.
+
+<AccordionGroup>
+  <Accordion title="legal_entities" icon="building">
+    **Para qué sirve:** catálogo de razones sociales de la empresa. Cada factura se emite desde una de estas razones sociales.
+
+    **Campos:**
+    - `id` — identificador único (formato UUID, generado automáticamente)
+    - `code` — código corto (único, por ejemplo `soluciones`)
+    - `business_name` — razón social completa
+    - `tax_id` — RFC (con valor inicial `PENDING` si está en proceso)
+    - `tax_regime` — régimen fiscal
+    - `address_street`, `address_city`, `address_state`, `address_zip` — dirección
+    - `country` — país de dos letras (por defecto `MX`)
+    - `is_active` — sí/no
+    - `display_order` — orden de aparición
+    - `created_at`, `updated_at` — fechas de alta y modificación
+
+    **Se relaciona con:**
+    - Tabla `invoices` (las facturas se asocian a una razón social)
+    - Tabla `cliente_client_identifications` (los RFC del cliente pueden ligarse a la razón social que les factura)
+  </Accordion>
+
+  <Accordion title="invoices" icon="file-text">
+    **Para qué sirve:** facturas sincronizadas desde Alegra (sistema externo de facturación).
+
+    **Campos:**
+    - `id` — número único interno
+    - `alegra_id` — identificador en Alegra (único)
+    - `company_code` — código de la razón social emisora
+    - `client_name` — nombre del cliente en Alegra
+    - `client_identification` — RFC del cliente
+    - `cliente_id` — referencia al cliente en el CRM
+    - `invoice_number` — folio de la factura
+    - `invoice_date` — fecha de la factura
+    - `price_unit`, `quantity` — precio unitario y cantidad
+    - `payment_date`, `payment_status`, `status` — fechas y estados
+    - `anotation` — anotaciones
+    - `subtotal`, `tax_amount`, `total` — montos
+    - `mongo_id` — referencia al documento original en MongoDB
+    - `sync_timestamp` — última sincronización
+    - `raw_json` — copia íntegra del documento original
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `legal_entities` (por la razón social)
+    - Tabla `iquo_cliente` (por el cliente)
+    - Tabla `ingresos` (los pagos recibidos pueden ligarse a una factura)
+  </Accordion>
+
+  <Accordion title="ingresos" icon="circle-dollar-sign">
+    **Para qué sirve:** pagos recibidos de los clientes (depósitos bancarios).
+
+    **Campos:**
+    - `id` — número único
+    - `fecha` — fecha del depósito
+    - `monto` — monto recibido
+    - `banco` — banco origen
+    - `cuenta` — cuenta de destino
+    - `cliente_id` — referencia al cliente (opcional)
+    - `factura_id` — referencia a la factura (opcional, único: una factura solo se paga una vez)
+    - `uploaded_by` — usuario que cargó el ingreso
+    - `updated_by` — último usuario que lo modificó
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - Tabla `invoices`
+    - Tabla `usuarios` (quién cargó y quién modificó)
+  </Accordion>
+
+  <Accordion title="expenses" icon="file-minus">
+    **Para qué sirve:** registro mínimo de facturas de gasto. Sirve para ligar inventario comprado a una factura.
+
+    **Campos:**
+    - `id` — número único
+    - `invoice_number` — folio de la factura de compra (único)
+
+    **Se relaciona con:**
+    - Tabla `inventory_items` (los items pueden venir de un gasto)
+    - Tabla `inventory_item_history`
+  </Accordion>
+
+  <Accordion title="installation_payment_batches" icon="hand-coins">
+    **Para qué sirve:** lotes de pagos a técnicos por instalaciones. Cada lote agrupa varias órdenes pagadas a un técnico.
+
+    **Campos:**
+    - `id` — número único
+    - `folio` — folio del lote (único)
+    - `payment_date` — fecha del pago
+    - `technician_id` — referencia al técnico
+    - `payment_amount` — monto total del pago
+    - `voucher_url` — URL del comprobante
+    - `note` — texto libre
+    - `status` — estado (`paid` por defecto)
+    - `created_by` — usuario que creó el lote
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `technicians`
+    - Tabla `usuarios`
+    - Tabla `installation_payment_batch_items` (las órdenes incluidas)
+  </Accordion>
+
+  <Accordion title="installation_payment_batch_items" icon="list">
+    **Para qué sirve:** detalle de qué órdenes de trabajo se pagaron en cada lote, con copias del costo del momento.
+
+    **Campos:**
+    - `id` — número único
+    - `batch_id` — referencia al lote
+    - `work_order_id` — referencia a la orden de trabajo
+    - `installation_cost_snapshot`, `equipment_cost_snapshot` — costos en el momento del pago
+    - `client_id_snapshot`, `cms_unit_id_snapshot`, `cms_uid_snapshot` — copias del cliente y unidad
+    - `service_type_snapshot`, `worked_at_snapshot` — copias del servicio y fecha
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `installation_payment_batches`
+    - Tabla `work_orders`
+    - Tabla `iquo_cliente`
+    - Tabla `cms_unidades`
+    - Una orden de trabajo solo se paga en un lote (única en toda la tabla)
+    - Dentro de un mismo lote, una orden no se duplica
+  </Accordion>
+
+  <Accordion title="installation_cost_ledger" icon="book-open">
+    **Para qué sirve:** libro mayor de costos de instalación. Sirve para calcular cuánto se debe a un técnico antes de pagarlo.
+
+    **Campos:**
+    - `id` — número único
+    - `work_order_id` — referencia a la orden de trabajo (única, una orden tiene un solo asiento)
+    - `client_id` — referencia al cliente
+    - `cms_unit_id`, `cms_uid` — referencias a la unidad GPS
+    - `inventory_item_id`, `inventory_identifier` — referencias al artículo instalado
+    - `service_type`, `service_date` — tipo y fecha del servicio
+    - `installation_cost`, `equipment_cost` — costos
+    - `source` — de dónde proviene el dato (`daily_job` por defecto)
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `work_orders`
+    - Tabla `iquo_cliente`
+    - Tabla `cms_unidades`
+    - Tabla `inventory_items`
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Inventario
+
+Catálogo de SIMs, técnicos, equipos GPS físicos y su historial de cambios.
+
+<AccordionGroup>
+  <Accordion title="sim_plans" icon="signal">
+    **Para qué sirve:** planes y SIMs disponibles para los equipos GPS.
+
+    **Campos:**
+    - `id` — número único
+    - `iccid` — identificador físico de la SIM (único)
+    - `carrier_id` — operador
+    - `monthly_cost` — costo mensual
+    - `status` — estado (`almacen` por defecto)
+    - `additional_cost` — costo adicional
+
+    **Se relaciona con:**
+    - Tabla `inventory_items` (qué dispositivo usa esta SIM)
+  </Accordion>
+
+  <Accordion title="technicians" icon="hard-hat">
+    **Para qué sirve:** catálogo de técnicos de instalación.
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre del técnico (único)
+    - `tax_id` — RFC
+    - `address` — dirección
+    - `phone` — teléfono
+    - `state` — estado o región
+    - `cost` — costo por instalación
+    - `account` — cuenta bancaria
+    - `location_url` — enlace a su ubicación habitual
+
+    **Se relaciona con:**
+    - Tabla `work_orders` (las órdenes asignadas)
+    - Tabla `installation_payment_batches` (lotes de pago al técnico)
+    - Tabla `inventory_items` (artículos asignados al técnico)
+  </Accordion>
+
+  <Accordion title="inventory_items" icon="package">
+    **Para qué sirve:** cada equipo GPS físico en posesión de la empresa (con su número de serie, IMEI, etc.).
+
+    **Campos:**
+    - `id` — número único
+    - `assigned` — sí/no, si está asignado a alguien
+    - `created_at`, `updated_at` — fechas
+    - `assignment_date`, `purchase_date` — fechas de asignación y compra
+    - `identifier` — número de serie o etiqueta (único)
+    - `imei` — IMEI del dispositivo (único)
+    - `refurbished` — sí/no, si es reacondicionado
+    - `status` — estado actual (`stock` por defecto)
+    - `price_without_tax` — precio sin impuestos
+    - `device_id` — referencia al tipo de hardware
+    - `sim_plan_id` — referencia a la SIM instalada
+    - `expense_id` — referencia al gasto (factura de compra)
+    - `technician_id` — referencia al técnico que lo tiene
+
+    **Se relaciona con:**
+    - Tabla `cms_hardware` (modelo del equipo)
+    - Tabla `sim_plans`
+    - Tabla `expenses`
+    - Tabla `technicians`
+    - Tabla `inventory_item_history` (historial de cambios)
+    - Tabla `work_orders` (en qué orden se instaló)
+    - Tabla `installation_cost_ledger`
+  </Accordion>
+
+  <Accordion title="inventory_item_history" icon="history">
+    **Para qué sirve:** foto histórica de cómo estaba un item de inventario cada vez que cambió de mano o estado.
+
+    **Campos:**
+    - `id` — número único
+    - `inventory_item_id` — referencia al item original
+    - Todos los campos del item en ese momento: `assigned`, `assignment_date`, `purchase_date`, `identifier`, `imei`, `refurbished`, `status`, `price_without_tax`, `device_id`, `sim_plan_id`, `expense_id`, `technician_id`
+    - `created_by` — usuario que registró el cambio
+    - `created_at` — fecha y hora del registro
+
+    **Se relaciona con:**
+    - Tabla `inventory_items` (referencia al item original; si se borra el item, también se borra la historia)
+    - Tablas `cms_hardware`, `sim_plans`, `expenses`, `technicians`, `usuarios`
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Operaciones (órdenes de trabajo)
+
+Órdenes de instalación/desinstalación, evidencias fotográficas y registros de check-in vía webhook.
+
+<AccordionGroup>
+  <Accordion title="work_orders" icon="clipboard-list">
+    **Para qué sirve:** órdenes de trabajo de instalación, desinstalación o servicio a unidades GPS.
+
+    **Campos:**
+    - `id` — número único
+    - `client_id` — referencia al cliente
+    - `service_type` — tipo de servicio (texto)
+    - `platform` — plataforma o sistema GPS
+    - `date_working` — fecha y hora del trabajo
+    - `project_name` — nombre del proyecto
+    - `gps_uid_id` — referencia al item de inventario instalado
+    - `gps_model_id` — referencia al modelo de hardware
+    - `cms_unit_id` — referencia a la unidad GPS resultante
+    - `vin`, `license_plate`, `odometer`, `eco` — datos del vehículo
+    - `technician_id` — técnico asignado
+    - `user_id` — usuario que registró la orden
+    - `sequence` — número de orden (único, formato secuencial)
+    - `status` — estado de la orden
+    - `test` — sí/no, si es una orden de prueba
+    - `note` — notas
+    - `location` — ubicación de la instalación
+    - `cost` — costo total (campo de acceso restringido)
+    - `costo_instalacion`, `viaticos`, `otros_gastos` — desglose de costos
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tablas `iquo_cliente`, `inventory_items`, `cms_hardware`, `cms_unidades`, `technicians`, `usuarios`
+    - Tabla `work_order_evidence` (fotos y archivos)
+    - Tabla `installation_payment_batch_items`
+    - Tabla `installation_cost_ledger`
+  </Accordion>
+
+  <Accordion title="work_order_evidence" icon="image">
+    **Para qué sirve:** fotos y archivos que evidencian la instalación de cada orden.
+
+    **Campos:**
+    - `id` — número único
+    - `work_order_id` — referencia a la orden
+    - `file_name` — nombre del archivo
+    - `s3_key` — ruta del archivo en almacenamiento S3
+    - `content_type` — tipo de archivo (jpg, pdf, etc.)
+    - `file_size` — tamaño en bytes
+    - `evidence_type` — categoría (`general` por defecto)
+    - `uploaded_by` — usuario que subió el archivo
+    - `created_at` — fecha y hora de carga
+
+    **Se relaciona con:**
+    - Tabla `work_orders` (si se borra la orden, se borran sus evidencias)
+    - Tabla `usuarios`
+  </Accordion>
+
+  <Accordion title="checkin_webhook_entries" icon="webhook">
+    **Para qué sirve:** registros recibidos vía webhook del sistema de check-in de conductores (odómetro, observaciones, fotos).
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre identificador
+    - `odometro_numero` — lectura del odómetro
+    - `observaciones` — texto libre
+    - `ingreso_e1`, `ingreso_e2`, `ingreso_e3`, `ingreso_e4` — URLs o textos de evidencias
+    - `vehiculo` — identificador del vehículo
+    - `conductor_id` — identificador del conductor
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla externa Odoo (los IDs `vehiculo` y `conductor_id` no tienen referencia obligatoria interna)
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Sistema externo CMS (flota GPS)
+
+Tablas que reflejan datos del CMS externo (la plataforma GPS): catálogo de hardware, unidades vehiculares y sus cuentas de facturación, perfil del vehículo.
+
+<AccordionGroup>
+  <Accordion title="cms_hardware" icon="cpu">
+    **Para qué sirve:** catálogo de modelos de equipos GPS (Queclink, Calamp, etc.).
+
+    **Campos:**
+    - `id` — número único
+    - `hw_id` — identificador del hardware en el CMS externo (único)
+    - `hw_name` — nombre del modelo
+    - `fabricante` — fabricante
+    - `modelo` — modelo
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `cms_unidades` (qué unidades usan este modelo)
+    - Tabla `inventory_items` (qué items son de este modelo)
+    - Tabla `work_orders` (modelo instalado)
+  </Accordion>
+
+  <Accordion title="cms_unidades" icon="car">
+    **Para qué sirve:** unidades (vehículos) registradas en el sistema GPS externo (CMS). Sincronizadas desde su API.
+
+    **Campos:**
+    - `unit_id` — identificador único, viene del CMS
+    - `unit_name` — nombre o número económico
+    - `created_timestamp` — fecha y hora de alta en el CMS
+    - `uid` — identificador único (texto)
+    - `vin` — número VIN del vehículo
+    - `active` — sí/no, si está activa en el CMS
+    - `deactivation_date` — fecha y hora de desactivación
+    - `account_id`, `account_name` — cuenta a la que pertenece en el CMS
+    - `last_pos_timestamp`, `last_pos_lat`, `last_pos_lon` — última posición reportada
+    - `last_update` — última actualización en el CMS
+    - `hardware_id` — referencia al modelo de equipo
+    - `billing_account_id` — referencia a la cuenta de facturación principal
+    - `sync_timestamp` — última sincronización local
+
+    **Se relaciona con:**
+    - Tabla `cms_hardware`
+    - Tabla `billing_accounts`
+    - Tabla `cms_unidades_billing_accounts` (cuentas adicionales)
+    - Tabla `perfilunidad` (datos del vehículo)
+    - Tabla `work_orders`
+    - Tabla `installation_payment_batch_items`
+    - Tabla `installation_cost_ledger`
+  </Accordion>
+
+  <Accordion title="cms_unidades_billing_accounts" icon="link">
+    **Para qué sirve:** una unidad puede facturarse contra varias cuentas. Esta tabla las une.
+
+    **Campos:**
+    - `id` — número único
+    - `unit_id` — referencia a la unidad
+    - `billing_account_id` — referencia a la cuenta de facturación
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `cms_unidades`
+    - Tabla `billing_accounts`
+    - Una combinación unidad+cuenta no se repite
+  </Accordion>
+
+  <Accordion title="perfilunidad" icon="car-front">
+    **Para qué sirve:** perfil del vehículo asociado a una unidad GPS (marca, modelo, año, tipo, etc.).
+
+    **Campos:**
+    - `unit_id` — referencia a la unidad GPS (también clave primaria, una sola fila por unidad)
+    - `unit_name` — nombre de la unidad
+    - `vehicle_type` — tipo de vehículo
+    - `vin`, `registration_plate` — VIN y placa
+    - `vehicle_class` — clase
+    - `brand`, `model`, `year` — marca, modelo y año
+    - `engine_displacement` — cilindrada del motor
+    - `primary_fuel_type` — combustible principal
+    - `sync_timestamp` — fecha de sincronización
+
+    **Se relaciona con:**
+    - Tabla `cms_unidades` (si se borra la unidad, se borra su perfil)
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Soporte GPS (portal cliente)
+
+<Warning>
+  Este dominio (IOS-F1) usa IDs sin clave foránea formal hacia las tablas de clientes y usuarios, ya que los datos pueden venir del portal externo del cliente.
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="support_stages" icon="list-ordered">
+    **Para qué sirve:** catálogo de etapas en las que puede estar una solicitud de soporte.
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre de la etapa (único)
+    - `display_order` — orden de aparición
+    - `created_at` — fecha y hora de alta
+  </Accordion>
+
+  <Accordion title="support_request_types" icon="tag">
+    **Para qué sirve:** catálogo de tipos de solicitud de soporte.
+
+    **Campos:**
+    - `id` — número único
+    - `name` — nombre del tipo (único)
+    - `description` — descripción
+    - `created_at` — fecha y hora de alta
+  </Accordion>
+
+  <Accordion title="service_requests" icon="ticket">
+    **Para qué sirve:** solicitudes de soporte GPS levantadas por los clientes desde el portal.
+
+    **Campos:**
+    - `id` — número único
+    - `folio` — folio visible al cliente (único)
+    - `cliente_id`, `portal_user_id`, `unit_id` — identificadores sin referencia formal
+    - `request_type_id`, `stage_id` — tipo y etapa (sin referencia formal)
+    - `priority` — prioridad (`medium` por defecto)
+    - `service_type` — tipo de servicio (`normal` por defecto)
+    - `contact_name`, `contact_phone` — contacto
+    - `description`, `information` — descripción e información adicional
+    - `vin`, `plate_number`, `economico` — datos del vehículo
+    - `gps_status`, `last_position_date` — estado y última posición del GPS
+    - `metadata_json` — datos estructurados adicionales
+    - `work_order_id` — orden de trabajo asociada (sin referencia formal)
+    - `cancellation_reason` — motivo de cancelación
+    - `created_at`, `updated_at`, `resolved_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `support_comments`
+    - Tabla `support_evidence`
+  </Accordion>
+
+  <Accordion title="installation_batches" icon="package-2">
+    **Para qué sirve:** lotes de instalaciones masivas solicitadas desde el portal cliente.
+
+    **Campos:**
+    - `id` — número único
+    - `folio` — folio del lote (único)
+    - `cliente_id`, `portal_user_id` — cliente y usuario del portal
+    - `file_name` — nombre del archivo origen
+    - `total_items` — total de unidades del lote
+    - `contact_name`, `contact_phone`, `address` — datos de contacto
+    - `notes` — notas
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `installation_batch_items`
+  </Accordion>
+
+  <Accordion title="installation_batch_items" icon="boxes">
+    **Para qué sirve:** detalle de unidades dentro de un lote de instalación masiva.
+
+    **Campos:**
+    - `id` — número único
+    - `batch_id` — referencia al lote
+    - `vin`, `plate_number`, `economico`, `brand`, `model_year` — datos del vehículo
+    - `address`, `contact_name`, `contact_phone` — datos de instalación
+    - `stage_id` — etapa
+    - `cancellation_reason` — motivo de cancelación
+    - `work_order_id` — orden de trabajo
+    - `unit_id` — unidad GPS resultante
+    - `notes` — notas
+    - `created_at`, `updated_at`, `resolved_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `installation_batches` (si se borra el lote, se borran sus items)
+  </Accordion>
+
+  <Accordion title="support_comments" icon="message-square">
+    **Para qué sirve:** comentarios cruzados entre cliente y operador sobre una solicitud de soporte.
+
+    **Campos:**
+    - `id` — número único
+    - `service_request_id` — referencia a la solicitud
+    - `author_name` — nombre del autor
+    - `author_type` — tipo de autor (`client` por defecto, también `operator`)
+    - `body` — texto del comentario
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `service_requests` (si se borra la solicitud, se borran los comentarios)
+  </Accordion>
+
+  <Accordion title="support_evidence" icon="paperclip">
+    **Para qué sirve:** archivos y fotos adjuntos a una solicitud de soporte.
+
+    **Campos:**
+    - `id` — número único
+    - `service_request_id` — referencia a la solicitud
+    - `file_name` — nombre del archivo
+    - `s3_key` — ruta en S3
+    - `content_type` — tipo de archivo
+    - `file_size` — tamaño en bytes
+    - `uploaded_by` — quién lo subió (sin referencia formal)
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `service_requests` (si se borra la solicitud, se borran las evidencias)
+  </Accordion>
+
+  <Accordion title="notifications" icon="bell-ring">
+    **Para qué sirve:** notificaciones del portal cliente.
+
+    **Campos:**
+    - `id` — número único
+    - `portal_user_id` — usuario destinatario en el portal cliente
+    - `title` — título
+    - `body` — texto
+    - `read` — sí/no
+    - `entity_type`, `entity_id` — referencia a entidad relacionada
+    - `created_at` — fecha y hora
+  </Accordion>
+
+  <Accordion title="support_audit_log" icon="scroll-text">
+    **Para qué sirve:** bitácora de cambios en el módulo de soporte GPS.
+
+    **Campos:**
+    - `id` — número único
+    - `portal_user_id` — usuario que cambió
+    - `entity_type`, `entity_id` — entidad afectada
+    - `action` — qué hizo
+    - `old_values`, `new_values` — datos antes y después
+    - `ip_address` — dirección IP
+    - `created_at` — fecha y hora
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dominio: Asistencias (checador)
+
+Horario semanal, registros consolidados por empleado/día y bitácora detallada de eventos del dispositivo móvil.
+
+<AccordionGroup>
+  <Accordion title="attendance_work_schedules" icon="calendar-clock">
+    **Para qué sirve:** horario semanal de cada empleado (a qué hora debe entrar y salir cada día de la semana).
+
+    **Campos:**
+    - `id` — número único
+    - `user_id` — referencia al usuario (único, un horario por usuario)
+    - `timezone` — zona horaria (`America/Mexico_City` por defecto)
+    - `weekly_schedule` — datos estructurados con el horario semanal
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `usuarios` (si se borra el usuario, se borra su horario)
+  </Accordion>
+
+  <Accordion title="attendance_records" icon="user-check">
+    **Para qué sirve:** asistencias consolidadas por empleado y día (una sola fila por empleado y por fecha).
+
+    **Campos:**
+    - `id` — número único
+    - `employee_id` — referencia al empleado
+    - `work_date` — fecha de la jornada
+    - `counter` — contador de eventos del día
+    - `hora_ingreso`, `hora_salida` — fechas y horas de entrada y salida
+    - `hora_he_ingreso`, `hora_he_salida` — fechas y horas de horas extra
+    - `foto_ingreso_url`, `foto_salida_url` — URLs de fotos
+    - `foto_he_ingreso_url`, `foto_he_salida_url` — URLs de fotos en horas extra
+    - `geo_ingreso`, `geo_salida` — coordenadas
+    - `geo_he_ingreso`, `geo_he_salida` — coordenadas de horas extra
+    - `attendance_state` — estado (asistencia, falta, etc.)
+    - `punctuality` — puntualidad
+    - `status` — estado general (`pendiente` por defecto)
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+    - Tabla `attendance_event_logs` (eventos detallados que generaron este consolidado)
+    - Una combinación empleado+fecha no se duplica
+  </Accordion>
+
+  <Accordion title="attendance_event_logs" icon="activity">
+    **Para qué sirve:** bitácora detallada de cada evento de checada (entrada, salida, hora extra), tal como llega del dispositivo móvil.
+
+    **Campos:**
+    - `id` — número único
+    - `attendance_id` — referencia al consolidado del día
+    - `employee_id` — referencia al empleado
+    - `event_type` — tipo de evento
+    - `occurred_at` — fecha y hora en que ocurrió
+    - `idempotency_key` — clave única para evitar duplicados (única)
+    - `device_record_id` — identificador del registro en el dispositivo
+    - `source` — origen del evento (`api` por defecto)
+    - `payload` — datos estructurados con el contenido completo del evento
+    - `created_at` — fecha y hora de alta
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+    - Tabla `attendance_records`
+    - La clave `idempotency_key` no puede repetirse, así se evita procesar dos veces el mismo evento
+  </Accordion>
+</AccordionGroup>

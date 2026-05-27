@@ -1,8 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "ERP/CRM · Roadmap",
-  "description": "Catálogo jerárquico de Milestones, Epics e Historias de Usuario del ERP/CRM.",
+  "name": "ERP/CRM · Documentación",
+  "description": "Documentación del ERP/CRM: roadmap, arquitectura de base de datos y catálogo de endpoints.",
   "colors": {
     "primary": "#0F766E",
     "light": "#14B8A6",
@@ -16,9 +16,16 @@
   "navigation": {
     "groups": [
       {
-        "group": "Documentación",
+        "group": "Producto",
         "pages": [
           "index"
+        ]
+      },
+      {
+        "group": "Referencia técnica",
+        "pages": [
+          "arquitectura-bd",
+          "endpoints-api"
         ]
       }
     ]
