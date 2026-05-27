@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 5 Milestones · 9 Epics · 24 HDU · 3 perfiles de usuario.
+  **Totales:** 7 Milestones · 14 Epics · 38 HDU · 3 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -425,7 +425,7 @@ Canal centralizado de avisos para que el usuario se entere de cambios relevantes
 
 ---
 
-## M5 · Operaciones
+## M5 · Operaciones y DevOps
 
 <Info>
   **1 epic · 2 HDU.** Capacidades de despliegue y mantenimiento orientadas al equipo de DevOps/operaciones, no a usuarios finales.
@@ -468,6 +468,239 @@ Mover el módulo de attendance (DB + S3) entre instancias con un solo comando, i
 
 ---
 
+## M6 · Operaciones de campo
+
+<Info>
+  **3 epics · 8 HDU.** App `operations-web` (puerto 5176). Gestión operativa de inventario (SIMs, GPS, dispositivos), instalaciones físicas y los técnicos que las ejecutan, más reportes de actividad de las unidades.
+</Info>
+
+### EP-10 · Inventario
+
+Mantenimiento del catálogo de equipos y consumibles bajo tres ventanas operativas: ítems generales, dispositivos físicos y planes SIM.
+
+<AccordionGroup>
+  <Accordion title="HU-25 · Mantener inventario de ítems" icon="package">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de operaciones, quiero dar de alta, consultar y actualizar el inventario de ítems (consumibles, accesorios, etc.), para conocer en todo momento qué hay disponible para instalar.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `inventory_items_read`, cuando abro la sección Inventario → Ítems, entonces veo el listado con stock actual.
+    - Dado que tengo permiso `inventory_items_write`, cuando creo o edito un ítem, entonces los cambios se reflejan al instante.
+    - Dado que un ítem llega a stock mínimo, cuando lo veo en la lista, entonces se distingue visualmente del resto.
+
+    <Tip>**Notas técnicas:** App `operations-web`, sección `inventory/items`. Permisos `inventory_items_read`/`inventory_items_write`/`inventory_items_edit`/`inventory_items_delete`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-26 · Gestionar dispositivos" icon="cpu">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de operaciones, quiero mantener el catálogo de dispositivos (GPS, cámaras, sensores) con su identificador y estado, para poder rastrear cada unidad física que se instala.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `devices_read`, cuando abro Inventario → Dispositivos, entonces veo el listado.
+    - Dado que tengo permiso `devices_write`, cuando registro un nuevo dispositivo con su IMEI/serie, entonces queda disponible para asignar.
+    - Dado que un dispositivo ya está asignado a una instalación, cuando lo consulto, entonces veo a qué cliente/unidad pertenece.
+
+    <Tip>**Notas técnicas:** Sección `inventory/devices`. Permisos `devices_read/write/edit/delete`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-27 · Administrar planes SIM" icon="signal">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de operaciones, quiero administrar el catálogo de planes SIM (proveedor, costo, vigencia), para asociar el plan correcto a cada dispositivo conectado.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `sim_plans_read`, cuando abro Inventario → Planes SIM, entonces veo todos los planes disponibles.
+    - Dado que tengo permiso `sim_plans_write`, cuando creo o edito un plan, entonces queda activo en el catálogo.
+
+    <Tip>**Notas técnicas:** Sección `inventory/simPlans`. Permisos `sim_plans_read/write/edit/delete`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-11 · Instalaciones y técnicos
+
+Gestión del ciclo de instalación: catálogo de técnicos (locales y foráneos), asignación de trabajos, pagos y calendario.
+
+<AccordionGroup>
+  <Accordion title="HU-28 · Asignar instalaciones a técnicos" icon="clipboard-list">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como coordinador de operaciones, quiero asignar instalaciones a los técnicos disponibles, para organizar el trabajo del día y ver qué tiene cada uno.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para ver asignaciones, cuando abro Instalaciones → Asignaciones, entonces veo el tablero con instalaciones pendientes y asignadas.
+    - Dado que hay una instalación sin asignar, cuando la asigno a un técnico, entonces queda registrada para él.
+    - Dado que quiero reasignar, cuando muevo la instalación a otro técnico, entonces se actualiza la asignación.
+
+    <Tip>**Notas técnicas:** Sección `installations/asignaciones`. Servicio `installationConsolidationsService`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-29 · Mantener catálogo de técnicos" icon="hard-hat">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como coordinador de operaciones, quiero mantener el catálogo de técnicos diferenciando locales de foráneos, para saber quién está disponible y dónde.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `technicians_read`, cuando abro Instalaciones → Técnicos, entonces veo el listado.
+    - Dado que tengo permiso `technicians_write`, cuando registro un técnico nuevo (local/foráneo), entonces queda disponible para asignarle instalaciones.
+
+    <Tip>**Notas técnicas:** Sección `installations/tecnicos`. Permisos `technicians_read/write/edit/delete`. El diagrama distingue locales vs foráneos.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-30 · Registrar pagos a técnicos" icon="hand-coins">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administración de operaciones, quiero registrar y consultar los pagos efectuados a cada técnico por sus instalaciones, para llevar control de lo que se les debe y se les ha cubierto.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso de pagos, cuando abro Instalaciones → Pagos, entonces veo los pagos por técnico y periodo.
+    - Dado que registro un pago a un técnico, cuando guardo, entonces queda asociado a las instalaciones que cubre.
+
+    <Tip>**Notas técnicas:** Sección `installations/pagos`. Servicio `installationPaymentsService`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-31 · Consultar el calendario de instalaciones" icon="calendar-days">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como coordinador, quiero ver un calendario con las instalaciones agendadas, para planear la carga semanal/mensual.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para ver instalaciones, cuando abro Instalaciones → Calendario, entonces veo la vista mensual con las instalaciones programadas.
+    - Dado que selecciono una instalación, cuando hago clic, entonces veo su detalle (cliente, técnico, equipo).
+
+    <Tip>**Notas técnicas:** Sección `installations/calendario`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-12 · Reportes operativos
+
+Tableros operativos para entender el comportamiento de las unidades instaladas.
+
+<AccordionGroup>
+  <Accordion title="HU-32 · Consultar la actividad de vehículos" icon="car">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como supervisor de operaciones, quiero ver el dashboard de actividad de vehículos, para identificar unidades activas/inactivas y detectar anomalías a tiempo.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso de reportes, cuando abro Reportes → Actividad de vehículos, entonces veo las métricas y gráficos de actividad.
+    - Dado que aplico filtros de fecha o cliente, cuando ejecuto, entonces el dashboard se actualiza.
+
+    <Tip>**Notas técnicas:** Componente `ActividadVehiculosDashboard`. Servicio `operationsDashboardService`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## M7 · Recursos Humanos
+
+<Info>
+  **2 epics · 6 HDU.** App `rh-web` (puerto 5178). RH centraliza la administración del personal (faltas, dashboard) y la **consola de configuración** que mantiene roles, permisos y aplicaciones del sistema RBAC.
+</Info>
+
+### EP-13 · Dashboard y novedades de empleados
+
+Vista global del personal y captura de novedades que no son entrada/salida (faltas, permisos, etc.).
+
+<AccordionGroup>
+  <Accordion title="HU-33 · Ver el dashboard de empleados" icon="users">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador de RH, quiero ver un dashboard con el estado general del personal (presentes, ausentes, retardos, horas trabajadas), para tomar decisiones operativas del día.
+
+    **Criterios de aceptación:**
+    - Dado que abro la app de RH, cuando entra al dashboard de empleados, entonces veo el resumen del día con totales y métricas.
+    - Dado que cambio el rango de fechas, cuando aplico, entonces el dashboard se actualiza.
+
+    <Tip>**Notas técnicas:** App `rh-web`, sección `employees/dashboard`. Reusa `AttendanceDashboardScreen`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-34 · Registrar faltas de empleados" icon="user-x">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administrador de RH, quiero registrar las faltas justificadas e injustificadas de un empleado, para que el cálculo de asistencia refleje correctamente los días no trabajados.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso de RH, cuando abro Empleados → Faltas, entonces veo el listado por empleado y fecha.
+    - Dado que registro una falta, cuando indico tipo (justificada / injustificada) y motivo, entonces queda asociada al empleado y al día.
+    - Dado que un empleado tiene falta marcada, cuando reviso su dashboard de asistencia, entonces ese día aparece como falta y no como ausente.
+
+    <Tip>**Notas técnicas:** Sección `employees/faltas`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-14 · Consola administrativa (RBAC)
+
+Mantenimiento del modelo de control de acceso: roles, permisos y el mapeo de aplicaciones por rol. Complementa lo que ya cubre EP-02 (gestión de usuarios y asignación de roles a usuarios).
+
+<AccordionGroup>
+  <Accordion title="HU-35 · Mantener el catálogo de roles" icon="users-round">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero crear, editar y desactivar roles, para reflejar la estructura organizacional sin tener que tocar la base de datos.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `usuarios_write`, cuando abro Configuración → Roles, entonces veo el catálogo de roles activos.
+    - Dado que creo un rol nuevo con nombre y descripción, cuando guardo, entonces queda disponible para asignarse a usuarios.
+    - Dado que un rol está protegido (`super_admin`, `admin`, `manager`, `usuario`, `auditor`), cuando intento eliminarlo, entonces el sistema lo impide.
+
+    <Tip>**Notas técnicas:** App `rh-web`, sección `employees/roles`. Roles protegidos definidos en `PROTECTED_ROLES`. Servicio `rbacService`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-36 · Mantener el catálogo de permisos" icon="lock-keyhole">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administrador, quiero ver y mantener el catálogo de permisos del sistema, para entender qué acciones son controlables vía RBAC.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso, cuando abro Configuración → Permisos, entonces veo todos los permisos con su recurso y acción (read/write/execute/delete).
+    - Dado que creo un permiso nuevo, cuando guardo, entonces queda disponible para asignarse a roles.
+
+    <Tip>**Notas técnicas:** Sección `employees/permisos`. Servicio `rbacService`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-37 · Asignar permisos a un rol" icon="shield-plus">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero asignar o quitar permisos a un rol, para definir exactamente qué puede hacer cada perfil dentro del sistema.
+
+    **Criterios de aceptación:**
+    - Dado que abro un rol, cuando agrego un permiso y guardo, entonces todos los usuarios con ese rol ganan ese permiso de inmediato.
+    - Dado que quito un permiso a un rol, cuando guardo, entonces los usuarios pierden ese permiso (salvo que lo tengan otorgado de forma directa).
+
+    <Tip>**Notas técnicas:** Tabla `roles_permisos`. Cambios en `audit_log`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-38 · Configurar aplicaciones disponibles por rol" icon="app-window">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero indicar qué aplicaciones (hub, finanzas, operaciones, RH, etc.) puede abrir cada rol, para que en el launcher solo aparezcan las apps que le corresponden.
+
+    **Criterios de aceptación:**
+    - Dado que abro Configuración → Aplicaciones, cuando reviso un rol, entonces veo qué apps tiene asignadas.
+    - Dado que activo una aplicación para un rol, cuando un usuario con ese rol vuelve al launcher, entonces esa app ya aparece en su grid.
+
+    <Tip>**Notas técnicas:** Tabla `roles_applications`. Esta es la fuente de verdad que alimenta HU-02 (Ver mis aplicaciones).</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
 ## Apéndice · Matriz general
 
 | Milestone | Epic | HDU | Rol | Prioridad |
@@ -494,5 +727,19 @@ Mover el módulo de attendance (DB + S3) entre instancias con un solo comando, i
 |  | EP-07 Dashboards | HU-20 Compras de equipo | ADM | Media |
 |  |  | HU-21 Estado de resultado | ADM | Media |
 | **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
-| **M5** Operaciones | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
+| **M5** Operaciones y DevOps | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
 |  |  | HU-24 Verificar migración | OPS | Alta |
+| **M6** Operaciones de campo | EP-10 Inventario | HU-25 Inventario de ítems | ADM | Alta |
+|  |  | HU-26 Dispositivos | ADM | Alta |
+|  |  | HU-27 Planes SIM | ADM | Media |
+|  | EP-11 Instalaciones y técnicos | HU-28 Asignar instalaciones | ADM | Alta |
+|  |  | HU-29 Catálogo de técnicos | ADM | Alta |
+|  |  | HU-30 Pagos a técnicos | ADM | Media |
+|  |  | HU-31 Calendario | ADM | Media |
+|  | EP-12 Reportes operativos | HU-32 Actividad de vehículos | ADM | Media |
+| **M7** Recursos Humanos | EP-13 Dashboard y novedades | HU-33 Dashboard de empleados | ADM | Alta |
+|  |  | HU-34 Registrar faltas | ADM | Media |
+|  | EP-14 Consola administrativa (RBAC) | HU-35 Catálogo de roles | ADM | Alta |
+|  |  | HU-36 Catálogo de permisos | ADM | Media |
+|  |  | HU-37 Asignar permisos a un rol | ADM | Alta |
+|  |  | HU-38 Aplicaciones por rol | ADM | Alta |
