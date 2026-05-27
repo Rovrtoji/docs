@@ -1,133 +1,498 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "Roadmap · Milestones → Epics → HDU"
+description: "Catálogo jerárquico del ERP/CRM en tres niveles: Milestone, Epic e Historia de Usuario."
+sidebarTitle: "Historias de usuario"
+icon: "list-tree"
+keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM"]
 ---
 
-## Setting up
+<Note>
+  Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-Get your documentation site up and running in minutes.
+  **Totales:** 5 Milestones · 9 Epics · 24 HDU · 3 perfiles de usuario.
+</Note>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+## Perfiles de usuario
 
-## Make it yours
+| Pill | Perfil | Descripción |
+|---|---|---|
+| **EMP** | Empleado | Usuario final del checador móvil. |
+| **ADM** | Administrador | RRHH, finanzas, manager. Gestión, dashboards y configuración. |
+| **OPS** | Operador / DevOps | Operación del sistema: despliegues, migración, monitoreo. |
 
-Design a docs site that looks great and empowers your users.
+## Cómo leer una historia
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+<Tabs>
+  <Tab title="Formato de historia">
+    ```
+    Como [tipo de usuario],
+    quiero [funcionalidad],
+    para [beneficio].
+    ```
 
-## Create beautiful pages
+    Describe **qué** hace alguien y **por qué**. Nunca describe cómo se implementa — eso va en notas técnicas.
+  </Tab>
+  <Tab title="Criterios de aceptación">
+    ```
+    Dado que [contexto],
+    cuando [acción],
+    entonces [resultado esperado].
+    ```
 
-Everything you need to create world-class documentation.
+    Reglas verificables que dicen cuándo la historia está **terminada**.
+  </Tab>
+</Tabs>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+---
 
-## Make your content agent ready
+## M1 · Plataforma y acceso
 
-Make your docs work for humans and AI agents alike.
+<Info>
+  **2 epics · 7 HDU.** La base sobre la que se sostiene todo lo demás: cómo entra el usuario al sistema y qué puede ver/hacer. Sin esto, ningún otro milestone funciona.
+</Info>
 
-<Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
-  </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
-  </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
-  </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
-  </Card>
-</Columns>
+### EP-01 · Autenticación y navegación entre apps
 
-## Need inspiration?
+Login al hub, descubrimiento de aplicaciones disponibles según permisos, paso seguro de sesión entre apps (handoff) y cierre de sesión.
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<AccordionGroup>
+  <Accordion title="HU-01 · Iniciar sesión en el hub" icon="log-in">
+    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario del sistema, quiero iniciar sesión con mi usuario y contraseña, para acceder al hub y a las aplicaciones a las que tengo permiso.
+
+    **Criterios de aceptación:**
+    - Dado que estoy en `/login`, cuando ingreso credenciales válidas, entonces soy redirigido al launcher con mis aplicaciones.
+    - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro.
+    - Dado que mi sesión está activa, cuando vuelvo más tarde, entonces entro directo al launcher.
+    - Dado que olvido mi contraseña, cuando uso "¿Olvidaste tu contraseña?", entonces recibo un correo para reestablecerla.
+
+    <Tip>**Notas técnicas:** Cookie httpOnly + CSRF double-submit (F3-02b). JWT 24h (8h para super_admin). Sin localStorage.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-02 · Ver mis aplicaciones disponibles" icon="layout-grid">
+    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario autenticado, quiero ver en el launcher solo las apps a las que tengo acceso, para entrar rápido a lo que uso sin ver opciones que no me corresponden.
+
+    **Criterios de aceptación:**
+    - Dado que abro el hub, cuando el launcher carga, entonces veo un saludo personalizado y la cuadrícula de mis apps.
+    - Dado que mi rol no tiene acceso a una app, cuando veo el launcher, entonces esa app no aparece.
+    - Dado que no tengo apps asignadas, cuando entro, entonces veo un mensaje pidiendo asignación.
+
+    <Tip>**Notas técnicas:** `GET /api/v1/apps/available`. Apps calculadas por `roles_applications`. Responsive 5/3/2 cols.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-03 · Abrir una aplicación desde el hub" icon="arrow-up-right-from-square">
+    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario en el launcher, quiero hacer clic en una app y entrar sin volver a loguear, para moverme rápido entre módulos.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso, cuando hago clic en su tile, entonces se abre la app con sesión iniciada.
+    - Dado que el handoff falla, cuando intento abrir, entonces recibo un mensaje claro y me quedo en el hub.
+    - Dado que el token expiró, cuando llega a la app destino, entonces esa app me regresa al hub.
+
+    <Tip>**Notas técnicas:** Token handoff con hash SHA256, TTL 60s, single-use, IP/UA binding. Audit log de `handoff_initiate`/`handoff_consumed`. Requiere `X-CSRF-Token`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-04 · Cerrar sesión" icon="log-out">
+    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario autenticado, quiero cerrar mi sesión cuando termine de usar el sistema, para que nadie más pueda usar la cuenta desde ese dispositivo.
+
+    **Criterios de aceptación:**
+    - Dado que hago clic en "Cerrar sesión", cuando confirmo, entonces mi sesión queda invalidada y soy redirigido al login.
+    - Dado que cerré sesión, cuando intento volver a una app, entonces me redirige al hub a iniciar sesión otra vez.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/auth/logout` invalida cookie httpOnly. Limpieza defensiva de storage en cliente.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-02 · Administración de usuarios y RBAC
+
+Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales mediante permisos directos.
+
+<AccordionGroup>
+  <Accordion title="HU-05 · Crear un usuario nuevo" icon="user-plus">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero dar de alta a un colaborador nuevo, para que pueda acceder al sistema con sus credenciales.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `usuarios_write`, cuando creo un usuario con datos válidos, entonces queda activo y recibe correo de bienvenida.
+    - Dado que el username o email ya existen, cuando intento crearlo, entonces veo un error claro.
+
+    <Tip>**Notas técnicas:** Password con hash bcrypt. Email y username únicos a nivel DB.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-06 · Asignar roles a un usuario" icon="shield-check">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero asignar o quitar roles a un usuario, para controlar qué módulos y acciones puede usar.
+
+    **Criterios de aceptación:**
+    - Dado que edito un usuario, cuando agrego un rol y guardo, entonces gana los permisos derivados de inmediato.
+    - Dado que quito un rol, cuando guardo, entonces el usuario pierde esos permisos en su próxima petición.
+    - Dado que un usuario es `super_admin`, cuando intento quitarle ese rol, entonces el sistema me advierte.
+
+    <Tip>**Notas técnicas:** Tablas `usuarios_roles` y `roles_permisos`. Cambios en `audit_log` (`role_assigned`/`role_revoked`).</Tip>
+  </Accordion>
+
+  <Accordion title="HU-07 · Otorgar o revocar permisos directos" icon="key">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administrador, quiero dar o quitar permisos puntuales a un usuario sin cambiar su rol, para resolver casos especiales sin alterar la estructura general.
+
+    **Criterios de aceptación:**
+    - Dado que un usuario necesita un permiso fuera de su rol, cuando uso "permisos directos" para concederlo, entonces el usuario lo tiene.
+    - Dado que quiero revocar un permiso que viene del rol, cuando creo una negación directa, entonces el usuario pierde ese permiso.
+
+    <Tip>**Notas técnicas:** Tabla `usuarios_permisos_directos` con `tipo=grant|deny`. Cálculo efectivo: `(roles ∪ grants) − denies`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## M2 · Attendance
+
+<Info>
+  **2 epics · 8 HDU.** Módulo de registro de asistencia: el empleado marca entrada y salida con foto y ubicación desde su móvil; RRHH supervisa, exporta y configura horarios.
+</Info>
+
+### EP-03 · Registro de asistencia (móvil)
+
+Flujo de captura del empleado: entrada, salida, validación de la foto, horas extra e instalación de la app como PWA.
+
+<AccordionGroup>
+  <Accordion title="HU-08 · Registrar entrada con foto y ubicación" icon="camera">
+    **Rol:** EMP &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como empleado, quiero registrar mi entrada con una foto y mi ubicación, para que quede constancia de cuándo y dónde inicié mi jornada.
+
+    **Criterios de aceptación:**
+    - Dado que es mi primera marca del día, cuando presiono "ENTRADA", entonces se abre el formulario que pide foto y captura ubicación automáticamente.
+    - Dado que confirmo el envío, cuando termina, entonces el registro se guarda y veo que la entrada está marcada.
+    - Dado que ya marqué entrada hoy, cuando abro la app, entonces solo veo el botón SALIDA.
+    - Dado que no doy permiso de cámara/ubicación, cuando intento marcar, entonces veo por qué son necesarios.
+
+    <Tip>**Notas técnicas:** Foto sube a S3 con URL prefirmada. `attendance_records`: `hora_ingreso`, `foto_ingreso_url`, `geo_ingreso`. UNIQUE en `(employee_id, work_date)`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-09 · Registrar salida" icon="log-out">
+    **Rol:** EMP &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como empleado que ya marcó entrada, quiero registrar mi salida con foto y ubicación, para cerrar mi jornada del día.
+
+    **Criterios de aceptación:**
+    - Dado que ya marqué entrada, cuando presiono "SALIDA", entonces se abre el formulario igual que en la entrada.
+    - Dado que confirmo, cuando termina, entonces el día queda completo y veo el resumen.
+    - Dado que no marqué entrada aún, cuando abro la app, entonces SALIDA no está disponible.
+
+    <Tip>**Notas técnicas:** Actualiza `hora_salida`, `foto_salida_url`, `geo_salida`. Cada evento queda en `attendance_event_logs` con `idempotency_key`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-10 · Validar que la foto contiene una cara" icon="scan-face">
+    **Rol:** EMP &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como empleado tomando la foto del registro, quiero que la app verifique que hay una cara visible antes de enviar, para no enviar fotos en blanco o de objetos por error.
+
+    **Criterios de aceptación:**
+    - Dado que la foto tiene una cara detectable, cuando presiono "Enviar", entonces el envío procede.
+    - Dado que la foto no muestra una cara clara, cuando intento enviarla, entonces veo un mensaje pidiéndome retomar.
+
+    <Tip>**Notas técnicas:** `@vladmandic/face-api` (TinyFaceDetector) corre en el navegador. Modelos en `public/models/`. No se envía imagen a IA externa.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-11 · Registrar horas extra" icon="clock-plus">
+    **Rol:** EMP &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como empleado que ya cerró su jornada regular, quiero marcar entrada y salida de horas extra, para que mis horas adicionales queden contabilizadas por separado.
+
+    **Criterios de aceptación:**
+    - Dado que ya tengo salida marcada, cuando abro la app, entonces aparece la opción HORA EXTRA.
+    - Dado que marco entrada de HE, cuando termino, entonces puedo marcar la salida correspondiente.
+    - Dado que veo el resumen del día con HE, cuando reviso, entonces se muestran aparte de la jornada regular.
+
+    <Tip>**Notas técnicas:** Campos `hora_he_ingreso`/`hora_he_salida` + `foto_he_*`. Backend valida que solo se marquen después de la salida regular.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-12 · Instalar la app como PWA" icon="smartphone">
+    **Rol:** EMP &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Baja
+
+    **Historia:**
+    > Como empleado que usa el checador todos los días, quiero instalar la app en mi celular, para abrirla rápido desde la pantalla de inicio.
+
+    **Criterios de aceptación:**
+    - Dado que abro en Chrome (Android), cuando uso el menú del navegador, entonces aparece "Instalar app".
+    - Dado que abro en Safari (iOS), cuando uso el botón compartir, entonces puedo elegir "Agregar a pantalla de inicio".
+    - Dado que abro la app instalada, cuando arranca, entonces se ve a pantalla completa sin barra de URL.
+
+    <Tip>**Notas técnicas:** `@vite-pwa/nuxt`, manifest, iconos 192/512 maskable, SW NetworkFirst para el API. Requiere HTTPS.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-04 · Administración de asistencia
+
+RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el horario semanal de cada empleado.
+
+<AccordionGroup>
+  <Accordion title="HU-13 · Ver el dashboard de asistencia" icon="layout-dashboard">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero ver el resumen de asistencias por rango de fechas, para supervisar la operación y detectar ausencias o retardos a tiempo.
+
+    **Criterios de aceptación:**
+    - Dado que abro el dashboard, cuando selecciono un rango, entonces veo cada empleado con estado (a tiempo, retardo, ausente) y horas.
+    - Dado que hay un retardo, cuando veo la fila, entonces se distingue visualmente.
+    - Dado que quiero el detalle, cuando hago clic en una fila, entonces veo fotos de entrada/salida y la ubicación.
+
+    <Tip>**Notas técnicas:** `GET /api/v1/attendance/dashboard`. Fotos servidas con URL prefirmada (TTL 15 min).</Tip>
+  </Accordion>
+
+  <Accordion title="HU-14 · Exportar el dashboard a Excel" icon="file-spreadsheet">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administrador, quiero exportar el dashboard a Excel, para reportes externos o compartirlo con nómina.
+
+    **Criterios de aceptación:**
+    - Dado que tengo un rango filtrado, cuando hago clic en "Exportar", entonces se descarga un `.xlsx` con los datos visibles.
+    - Dado que abro el Excel, cuando reviso, entonces incluye nombre, fecha, entrada/salida, estado y horas trabajadas.
+
+    <Tip>**Notas técnicas:** `GET /api/v1/attendance/dashboard/export` → `attendance_dashboard_<desde>_<hasta>.xlsx`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-15 · Configurar el horario semanal de un empleado" icon="calendar-clock">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administrador, quiero definir el horario semanal de cada empleado, para que el sistema sepa cuándo se considera retardo.
+
+    **Criterios de aceptación:**
+    - Dado que abro el perfil de horario, cuando defino días y horas y guardo, entonces queda almacenado en zona `America/Mexico_City`.
+    - Dado que un empleado marca tarde, cuando reviso el dashboard, entonces aparece como retardo.
+
+    <Tip>**Notas técnicas:** `attendance_work_schedules` con `weekly_schedule` en JSONB. UNIQUE en `user_id`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## M3 · Finanzas
+
+<Info>
+  **3 epics · 6 HDU.** Gestión financiera del negocio: padrón de clientes con su panorama 360, captura/carga de ingresos y dashboards analíticos.
+</Info>
+
+### EP-05 · Gestión de clientes
+
+Consulta consolidada del estado de un cliente y mantenimiento del padrón.
+
+<AccordionGroup>
+  <Accordion title="HU-16 · Consultar el panel 360 de un cliente" icon="user-search">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero ver toda la información relevante de un cliente en una sola pantalla, para entender rápido su situación antes de tomar decisiones.
+
+    **Criterios de aceptación:**
+    - Dado que abro un cliente, cuando carga el detalle, entonces veo métricas clave (saldo, vencido, último pago, facturado).
+    - Dado que cambio a Métricas, cuando selecciono, entonces veo la gráfica facturado vs pagado de los últimos 6 meses.
+    - Dado que agrego una nota interna, cuando guardo, entonces queda visible para todo el equipo.
+
+    <Tip>**Notas técnicas:** `/api/v1/dashboard/cliente-360/{id}`. Gráfica con Recharts.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-17 · Crear o editar un cliente" icon="user-pen">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas con permiso de escritura, quiero crear clientes nuevos y editar los existentes, para mantener el padrón al día.
+
+    **Criterios de aceptación:**
+    - Dado que abro "Nuevo cliente", cuando completo el formulario multi-pestaña y guardo, entonces el cliente queda creado.
+    - Dado que edito un cliente existente, cuando guardo, entonces solo se aplican los cambios (diff de contactos/identificaciones/cuentas).
+    - Dado que estoy en la lista, cuando hago clic en "Editar" de una fila, entonces entro directo a editar sin pasar por el detalle.
+
+    <Tip>**Notas técnicas:** Formulario multi-tab con UUI. Edit hace diff contra snapshot inicial.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-06 · Ingresos
+
+Registro de pagos recibidos: captura manual y carga masiva desde Excel del banco.
+
+<AccordionGroup>
+  <Accordion title="HU-18 · Registrar un ingreso manualmente" icon="circle-dollar-sign">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero capturar un ingreso con su fecha, monto, banco y cliente, para tener el registro de pagos recibidos.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `finanzas_manage`, cuando creo un ingreso, entonces aparece en la lista.
+    - Dado que selecciono un cliente, cuando abro la sección de facturas, entonces puedo ligar el ingreso a una factura abierta.
+
+    <Tip>**Notas técnicas:** Tabla `ingresos`. `finanzas_manage` para crear/editar; `finanzas_view` para listar.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-19 · Cargar ingresos desde un Excel" icon="file-up">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de finanzas con muchos pagos del banco, quiero subir un Excel para crear varios ingresos a la vez, para no capturar uno por uno.
+
+    **Criterios de aceptación:**
+    - Dado que tengo el Excel con el formato esperado, cuando uso "Cargar Excel", entonces importa todas las filas y reporta cuántas se cargaron.
+    - Dado que una fila tiene datos inválidos, cuando proceso, entonces esa fila no se carga y se reporta el error con la fila exacta.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/ingresos/upload-excel` con validación por fila y reporte de errores.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-07 · Dashboards financieros
+
+Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio.
+
+<AccordionGroup>
+  <Accordion title="HU-20 · Analizar las compras de equipo" icon="chart-bar">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de finanzas, quiero ver el dashboard de compras de equipo con filtros, para entender en qué se está invirtiendo y cuánto.
+
+    **Criterios de aceptación:**
+    - Dado que abro el dashboard, cuando carga, entonces veo KPIs (total compras, inversión, dispositivos únicos, precio promedio).
+    - Dado que cambio el filtro de fecha, cuando aplico, entonces KPIs y tablas se actualizan.
+    - Dado que reviso el detalle, cuando bajo en la página, entonces veo desglose por dispositivo y por factura.
+
+    <Tip>**Notas técnicas:** `/api/v1/dashboard/equipment-purchases/summary`. Gráfica de barras mensual con Recharts.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-21 · Consultar el estado de resultado" icon="chart-line">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de finanzas, quiero ver el estado de resultado por periodo, para evaluar la rentabilidad del negocio.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono un periodo, cuando carga, entonces veo ingresos, costos, utilidad y márgenes.
+
+    <Tip>**Notas técnicas:** Requiere `finanzas_view` o `finanzas_manage`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## M4 · Experiencia transversal
+
+<Info>
+  **1 epic · 1 HDU.** Funcionalidades que atraviesan todos los módulos y mejoran la experiencia del usuario en general.
+</Info>
+
+### EP-08 · Notificaciones del sistema
+
+Canal centralizado de avisos para que el usuario se entere de cambios relevantes sin salir del sistema.
+
+<AccordionGroup>
+  <Accordion title="HU-22 · Recibir notificaciones del sistema" icon="bell">
+    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario del sistema, quiero ver una campanita con avisos importantes (seguridad, roles, sistema, info), para enterarme rápido de cambios que me afecten.
+
+    **Criterios de aceptación:**
+    - Dado que tengo notificaciones sin leer, cuando miro la campanita del header, entonces veo un badge rojo con la cantidad.
+    - Dado que abro el dropdown, cuando hago clic en una notificación, entonces queda marcada como leída y, si tiene enlace, me lleva al lugar relacionado.
+    - Dado que tengo varias notificaciones sin leer, cuando uso "Marcar todas como leídas", entonces el badge desaparece.
+
+    <Tip>**Notas técnicas:** Componente `NotificationBell` en `@finanzas/app-shell`. Polling cada 60s a `/api/v1/notifications`. Tipos: `security`, `role`, `system`, `info`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## M5 · Operaciones
+
+<Info>
+  **1 epic · 2 HDU.** Capacidades de despliegue y mantenimiento orientadas al equipo de DevOps/operaciones, no a usuarios finales.
+</Info>
+
+### EP-09 · Migración entre entornos
+
+Mover el módulo de attendance (DB + S3) entre instancias con un solo comando, idempotente, atómico y verificable.
+
+<AccordionGroup>
+  <Accordion title="HU-23 · Migrar el módulo de attendance entre entornos" icon="database">
+    **Rol:** OPS &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como operador de infraestructura, quiero mover los datos y las fotos de attendance de un entorno a otro con un solo comando, para levantar un entorno nuevo sin escribir queries a mano.
+
+    **Criterios de aceptación:**
+    - Dado que tengo el `.env` configurado y la base destino vacía, cuando ejecuto el script, entonces las 11 tablas (RBAC + attendance) se cargan preservando IDs y secuencias.
+    - Dado que ejecuto el script, cuando termina la fase de S3, entonces todas las fotos del prefijo `attendance/` están en el bucket destino.
+    - Dado que terminó la migración, cuando reviso la base destino, entonces ninguna `foto_*_url` apunta al host viejo.
+    - Dado que la migración falla a la mitad, cuando re-ejecuto el script, entonces queda íntegra (idempotente, `TRUNCATE…RESTART IDENTITY` al inicio).
+
+    <Tip>**Notas técnicas:** Script `scripts/migrate_attendance/migrate_attendance.sh`. 5 fases (preflight → DB → S3 → URLs → verificación). Requiere `pg_dump`, `psql`, `aws` CLI.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-24 · Verificar y validar una migración antes de promover" icon="circle-check">
+    **Rol:** OPS &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como operador, quiero validar la migración antes de aceptarla, para no promover datos incompletos o corruptos al entorno destino.
+
+    **Criterios de aceptación:**
+    - Dado que quiero validar sin tocar el destino, cuando ejecuto `./migrate_attendance.sh --dry-run`, entonces se simulan las 4 fases sin escribir nada.
+    - Dado que terminó la migración real, cuando corre la fase de verificación, entonces compara `count(*)` origen vs destino de las 11 tablas y verifica 3 fotos de muestra en S3.
+    - Dado que algo no cuadra, cuando termina la verificación, entonces el script sale con código distinto de 0 e indica qué tabla falló.
+
+    <Tip>**Notas técnicas:** Runbook en `docs/superpowers/plans/2026-05-13-attendance-migration-runbook.md` con 5 tareas y checkpoints obligatorios.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Apéndice · Matriz general
+
+| Milestone | Epic | HDU | Rol | Prioridad |
+|---|---|---|---|---|
+| **M1** Plataforma y acceso | EP-01 Autenticación | HU-01 Iniciar sesión | EMP · ADM | Alta |
+|  |  | HU-02 Ver mis apps | EMP · ADM | Alta |
+|  |  | HU-03 Abrir una app | EMP · ADM | Alta |
+|  |  | HU-04 Cerrar sesión | EMP · ADM | Media |
+|  | EP-02 Usuarios y RBAC | HU-05 Crear usuario | ADM | Alta |
+|  |  | HU-06 Asignar roles | ADM | Alta |
+|  |  | HU-07 Permisos directos | ADM | Media |
+| **M2** Attendance | EP-03 Registro (móvil) | HU-08 Registrar entrada | EMP | Alta |
+|  |  | HU-09 Registrar salida | EMP | Alta |
+|  |  | HU-10 Validación facial | EMP | Media |
+|  |  | HU-11 Horas extra | EMP | Media |
+|  |  | HU-12 Instalar PWA | EMP | Baja |
+|  | EP-04 Admin asistencia | HU-13 Dashboard | ADM | Alta |
+|  |  | HU-14 Exportar Excel | ADM | Media |
+|  |  | HU-15 Configurar horario | ADM | Media |
+| **M3** Finanzas | EP-05 Clientes | HU-16 Cliente 360 | ADM | Alta |
+|  |  | HU-17 Crear/editar cliente | ADM | Alta |
+|  | EP-06 Ingresos | HU-18 Ingreso manual | ADM | Alta |
+|  |  | HU-19 Ingresos por Excel | ADM | Media |
+|  | EP-07 Dashboards | HU-20 Compras de equipo | ADM | Media |
+|  |  | HU-21 Estado de resultado | ADM | Media |
+| **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
+| **M5** Operaciones | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
+|  |  | HU-24 Verificar migración | OPS | Alta |
