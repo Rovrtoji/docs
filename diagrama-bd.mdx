@@ -1,0 +1,219 @@
+---
+title: "Diagrama ER por dominio"
+description: "Diagramas entidad-relación interactivos de cada dominio de la base de datos."
+sidebarTitle: "Diagrama ER"
+icon: "diagram-project"
+keywords: ["diagrama", "ER", "entidad-relación", "base de datos", "mermaid", "esquema"]
+---
+
+<Note>
+  Cada dominio se representa en un diagrama ER independiente para facilitar la lectura. Los diagramas son **interactivos**: puedes hacer zoom y panear. Para el detalle de campos y restricciones de cada tabla, consulta [Arquitectura de BD](/arquitectura-bd).
+</Note>
+
+## Vista general de dominios
+
+Cómo se relacionan los 8 dominios a alto nivel.
+
+```mermaid
+flowchart LR
+    AUTH[Autenticación<br/>y usuarios]
+    CRM[Clientes<br/>CRM]
+    FIN[Finanzas]
+    INV[Inventario]
+    OPS[Operaciones<br/>órdenes de trabajo]
+    CMS[Sistema externo<br/>CMS / GPS]
+    SUP[Soporte GPS<br/>portal cliente]
+    ATT[Asistencias<br/>checador]
+
+    AUTH --> CRM
+    AUTH --> FIN
+    AUTH --> INV
+    AUTH --> OPS
+    AUTH --> ATT
+    CRM --> FIN
+    CRM --> OPS
+    CMS --> OPS
+    CMS --> FIN
+    INV --> OPS
+    INV --> FIN
+    OPS --> FIN
+    CRM -.->|sin FK formal| SUP
+    CMS -.->|sin FK formal| SUP
+```
+
+---
+
+## Dominio 1 · Autenticación y usuarios
+
+Modelo RBAC (usuarios, roles, permisos, aplicaciones), sesiones, tokens y estructura organizacional.
+
+```mermaid
+erDiagram
+    USUARIOS ||--o{ USUARIOS_ROLES : "tiene"
+    ROLES ||--o{ USUARIOS_ROLES : "asignado a"
+    ROLES ||--o{ ROLES_PERMISOS : "incluye"
+    PERMISOS ||--o{ ROLES_PERMISOS : "es parte de"
+    USUARIOS ||--o{ USUARIOS_PERMISOS_DIRECTOS : "tiene grant/deny"
+    PERMISOS ||--o{ USUARIOS_PERMISOS_DIRECTOS : "se otorga/niega"
+    ROLES ||--o{ ROLES_APPLICATIONS : "accede a"
+    APPLICATIONS ||--o{ ROLES_APPLICATIONS : "permitida para"
+    APPLICATIONS ||--o{ APPLICATION_MENU_VIEWS : "tiene menús"
+    APPLICATION_MENU_VIEWS ||--o{ APPLICATION_MENU_VIEWS : "padre/hijo"
+    USUARIOS ||--o{ ACTIVE_SESSIONS : "abre"
+    USUARIOS ||--o{ PASSWORD_RESET_TOKENS : "solicita"
+    USUARIOS ||--o{ AUTH_HANDOFF_TOKENS : "genera"
+    DEPARTMENTS ||--o{ POSITIONS : "contiene"
+    POSITIONS ||--o{ USUARIOS : "ocupa"
+    DEPARTMENTS ||--o{ AREA_MANAGERS : "tiene jefes"
+    USUARIOS ||--o{ AREA_MANAGERS : "es jefe de"
+    USUARIOS ||--o{ USUARIOS : "manager_user_id"
+    USUARIOS ||--o{ USER_NOTIFICATIONS : "recibe"
+    USUARIOS ||--o{ AUDIT_LOG : "ejecuta acciones"
+```
+
+---
+
+## Dominio 2 · Clientes (CRM)
+
+Tabla maestra de clientes (heredada de Odoo) y sus satélites: cuentas de facturación, identificaciones fiscales, cuentas B2B, notas y contactos.
+
+```mermaid
+erDiagram
+    IQUO_CLIENTE ||--o{ CLIENTE_BILLING_ACCOUNTS : "tiene"
+    BILLING_ACCOUNTS ||--o{ CLIENTE_BILLING_ACCOUNTS : "asignada a"
+    IQUO_CLIENTE ||--o{ CLIENTE_CLIENT_IDENTIFICATIONS : "tiene RFC"
+    IQUO_CLIENTE ||--o{ CLIENTE_B2B_ACCOUNTS : "ligado a"
+    IQUO_CLIENTE ||--o{ CLIENTE_NOTAS : "tiene"
+    IQUO_CLIENTE ||--o{ CLIENTE_CONTACTO : "tiene contactos"
+    USUARIOS ||--o{ CLIENTE_NOTAS : "crea"
+```
+
+---
+
+## Dominio 3 · Finanzas
+
+Razones sociales, facturas (Alegra), ingresos, gastos, costos de instalación y pagos a técnicos.
+
+```mermaid
+erDiagram
+    LEGAL_ENTITIES ||--o{ INVOICES : "emite"
+    LEGAL_ENTITIES ||--o{ CLIENTE_CLIENT_IDENTIFICATIONS : "factura RFC"
+    IQUO_CLIENTE ||--o{ INVOICES : "recibe"
+    INVOICES ||--o| INGRESOS : "se paga con"
+    IQUO_CLIENTE ||--o{ INGRESOS : "deposita"
+    USUARIOS ||--o{ INGRESOS : "carga / modifica"
+    EXPENSES ||--o{ INVENTORY_ITEMS : "compra"
+    TECHNICIANS ||--o{ INSTALLATION_PAYMENT_BATCHES : "recibe pago"
+    USUARIOS ||--o{ INSTALLATION_PAYMENT_BATCHES : "crea lote"
+    INSTALLATION_PAYMENT_BATCHES ||--o{ INSTALLATION_PAYMENT_BATCH_ITEMS : "contiene"
+    WORK_ORDERS ||--o| INSTALLATION_PAYMENT_BATCH_ITEMS : "se paga en"
+    IQUO_CLIENTE ||--o{ INSTALLATION_PAYMENT_BATCH_ITEMS : "snapshot"
+    CMS_UNIDADES ||--o{ INSTALLATION_PAYMENT_BATCH_ITEMS : "snapshot"
+    WORK_ORDERS ||--|| INSTALLATION_COST_LEDGER : "tiene costo"
+    IQUO_CLIENTE ||--o{ INSTALLATION_COST_LEDGER : "asociado"
+    CMS_UNIDADES ||--o{ INSTALLATION_COST_LEDGER : "unidad"
+    INVENTORY_ITEMS ||--o{ INSTALLATION_COST_LEDGER : "artículo instalado"
+```
+
+---
+
+## Dominio 4 · Inventario
+
+SIMs, técnicos, equipos GPS físicos y su historial de cambios.
+
+```mermaid
+erDiagram
+    CMS_HARDWARE ||--o{ INVENTORY_ITEMS : "modelo"
+    SIM_PLANS ||--o{ INVENTORY_ITEMS : "instalada en"
+    EXPENSES ||--o{ INVENTORY_ITEMS : "comprado en"
+    TECHNICIANS ||--o{ INVENTORY_ITEMS : "asignado a"
+    INVENTORY_ITEMS ||--o{ INVENTORY_ITEM_HISTORY : "tiene historial"
+    USUARIOS ||--o{ INVENTORY_ITEM_HISTORY : "registra cambio"
+    CMS_HARDWARE ||--o{ INVENTORY_ITEM_HISTORY : "snapshot modelo"
+    SIM_PLANS ||--o{ INVENTORY_ITEM_HISTORY : "snapshot SIM"
+    EXPENSES ||--o{ INVENTORY_ITEM_HISTORY : "snapshot gasto"
+    TECHNICIANS ||--o{ INVENTORY_ITEM_HISTORY : "snapshot técnico"
+```
+
+---
+
+## Dominio 5 · Operaciones (órdenes de trabajo)
+
+Órdenes de instalación/desinstalación, evidencias fotográficas y registros de check-in vía webhook.
+
+```mermaid
+erDiagram
+    IQUO_CLIENTE ||--o{ WORK_ORDERS : "solicita"
+    INVENTORY_ITEMS ||--o{ WORK_ORDERS : "se instala"
+    CMS_HARDWARE ||--o{ WORK_ORDERS : "modelo"
+    CMS_UNIDADES ||--o{ WORK_ORDERS : "unidad resultante"
+    TECHNICIANS ||--o{ WORK_ORDERS : "ejecuta"
+    USUARIOS ||--o{ WORK_ORDERS : "registra"
+    WORK_ORDERS ||--o{ WORK_ORDER_EVIDENCE : "tiene evidencias"
+    USUARIOS ||--o{ WORK_ORDER_EVIDENCE : "sube archivo"
+    CHECKIN_WEBHOOK_ENTRIES }o--|| ODOO_EXTERNO : "FK suelta a Odoo"
+```
+
+---
+
+## Dominio 6 · Sistema externo CMS (flota GPS)
+
+Tablas que reflejan datos del CMS externo: catálogo de hardware, unidades vehiculares y perfil del vehículo.
+
+```mermaid
+erDiagram
+    CMS_HARDWARE ||--o{ CMS_UNIDADES : "monta"
+    BILLING_ACCOUNTS ||--o{ CMS_UNIDADES : "factura principal"
+    CMS_UNIDADES ||--o{ CMS_UNIDADES_BILLING_ACCOUNTS : "facturas adicionales"
+    BILLING_ACCOUNTS ||--o{ CMS_UNIDADES_BILLING_ACCOUNTS : "asignada"
+    CMS_UNIDADES ||--|| PERFILUNIDAD : "tiene perfil"
+```
+
+---
+
+## Dominio 7 · Soporte GPS (portal cliente)
+
+<Warning>
+  Este dominio usa IDs sin clave foránea formal hacia clientes y usuarios, ya que los datos pueden venir del portal externo del cliente. Las relaciones se muestran como punteadas (lógicas, no enforced en DB).
+</Warning>
+
+```mermaid
+erDiagram
+    SUPPORT_STAGES ||..o{ SERVICE_REQUESTS : "etapa lógica"
+    SUPPORT_REQUEST_TYPES ||..o{ SERVICE_REQUESTS : "tipo lógico"
+    SERVICE_REQUESTS ||--o{ SUPPORT_COMMENTS : "tiene comentarios"
+    SERVICE_REQUESTS ||--o{ SUPPORT_EVIDENCE : "tiene archivos"
+    INSTALLATION_BATCHES ||--o{ INSTALLATION_BATCH_ITEMS : "contiene unidades"
+    SUPPORT_STAGES ||..o{ INSTALLATION_BATCH_ITEMS : "etapa lógica"
+    SERVICE_REQUESTS ||..o| WORK_ORDERS : "FK lógica"
+    INSTALLATION_BATCH_ITEMS ||..o| WORK_ORDERS : "FK lógica"
+    INSTALLATION_BATCH_ITEMS ||..o| CMS_UNIDADES : "FK lógica"
+    NOTIFICATIONS }o..|| PORTAL_USUARIO : "destinatario externo"
+    SUPPORT_AUDIT_LOG }o..|| PORTAL_USUARIO : "autor externo"
+```
+
+---
+
+## Dominio 8 · Asistencias (checador)
+
+Horario semanal, registros consolidados por empleado/día y bitácora detallada de eventos del dispositivo móvil.
+
+```mermaid
+erDiagram
+    USUARIOS ||--|| ATTENDANCE_WORK_SCHEDULES : "tiene horario"
+    USUARIOS ||--o{ ATTENDANCE_RECORDS : "registra día"
+    ATTENDANCE_RECORDS ||--o{ ATTENDANCE_EVENT_LOGS : "compuesto por eventos"
+    USUARIOS ||--o{ ATTENDANCE_EVENT_LOGS : "ejecuta evento"
+```
+
+---
+
+## Cómo se usan estos diagramas
+
+- **Para nuevos desarrolladores:** empieza por la vista general de dominios y profundiza en el dominio que vas a tocar.
+- **Para diseñar features:** identifica primero qué tablas/dominios toca tu feature y revisa sus relaciones.
+- **Para hacer queries:** consulta el diagrama del dominio para entender los JOIN posibles. Los campos exactos están en [Arquitectura de BD](/arquitectura-bd).
+
+<Tip>
+  Los diagramas Mermaid son **texto plano** dentro del MDX. Si necesitas actualizar una relación, edita directamente este archivo en el repo. Mintlify re-renderiza automáticamente al hacer push.
+</Tip>
