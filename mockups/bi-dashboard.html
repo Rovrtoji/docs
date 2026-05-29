@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BI Platform — Facturación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root {
+  --brand-25:#faf8ff;--brand-50:#f5f0ff;--brand-100:#ebe0ff;--brand-200:#d4bfff;
+  --brand-300:#b899f7;--brand-400:#9b73ed;--brand-500:#7e56d9;--brand-600:#624ab4;
+  --brand-700:#4e3a91;--brand-800:#3f2f73;--brand-900:#302459;--brand-950:#1c1535;
+  --success-50:#ecfdf3;--success-100:#dcfae6;--success-600:#079455;--success-700:#067647;
+  --warning-50:#fffaeb;--warning-100:#fef0c7;--warning-600:#dc6803;--warning-700:#b54708;
+  --amber-50:#fff7ed;--amber-100:#ffedd5;--amber-600:#c2410c;--amber-700:#9a3412;
+  --error-50:#fef3f2;--error-100:#fee4e2;--error-600:#d92d20;--error-700:#b42318;
+  --bg-primary:#ffffff;--bg-secondary:#f9fafb;--bg-tertiary:#f2f4f7;--bg-quaternary:#e4e7ec;
+  --text-primary:#101828;--text-secondary:#344054;--text-tertiary:#667085;--text-quaternary:#98a2b3;
+  --border-primary:#d0d5dd;--border-secondary:#e4e7ec;--border-tertiary:#f2f4f7;
+  --shadow-xs:0 1px 2px rgba(16,24,40,.05);
+  --shadow-sm:0 1px 3px rgba(16,24,40,.1),0 1px 2px rgba(16,24,40,.06);
+  --shadow-md:0 4px 8px -2px rgba(16,24,40,.1),0 2px 4px -2px rgba(16,24,40,.06);
+}
+[data-theme="dark"] {
+  --bg-primary:#1e1d2e;--bg-secondary:#16151f;--bg-tertiary:#252436;--bg-quaternary:#312f48;
+  --text-primary:#f0eef8;--text-secondary:#bab8cc;--text-tertiary:#7a7890;--text-quaternary:#4e4c65;
+  --border-primary:#3a3850;--border-secondary:#2c2a40;--border-tertiary:#211f32;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg-secondary);color:var(--text-primary);height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg-quaternary);border-radius:3px}
+
+/* APP SHELL */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:242px;flex-shrink:0;background:var(--brand-950);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+[data-theme="dark"] .sidebar{background:#0f0d1d}
+.s-logo{padding:18px 16px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.s-logo-mark{width:32px;height:32px;border-radius:9px;background:var(--brand-600);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-logo-name{font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+.s-logo-sub{font-size:10px;font-weight:400;color:rgba(255,255,255,.38)}
+.s-nav{padding:14px 10px;flex:1}
+.s-section{margin-bottom:6px}
+.s-grp{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:0 8px;margin:10px 0 5px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .14s ease;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;margin-bottom:1px;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85)}
+.nav-item.active{background:var(--brand-600);color:#fff}
+.nav-icon{width:16px;height:16px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:rgba(255,255,255,.14);color:rgba(255,255,255,.7);font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.22);color:#fff}
+.s-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,.08)}
+.s-user{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer}
+.s-user:hover{background:rgba(255,255,255,.06)}
+.s-ava{width:30px;height:30px;border-radius:50%;background:var(--brand-500);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-uname{font-size:12px;font-weight:600;color:rgba(255,255,255,.88)}
+.s-urole{font-size:10px;color:rgba(255,255,255,.35)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:57px;background:var(--bg-primary);border-bottom:1px solid var(--border-secondary);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0}
+.breadcrumb{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-tertiary)}
+.bc-sep{color:var(--text-quaternary)}
+.bc-curr{color:var(--brand-600);font-weight:600}
+.tb-spacer{flex:1}
+.tb-btn{width:33px;height:33px;border-radius:8px;border:1px solid var(--border-secondary);background:var(--bg-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-tertiary);transition:all .14s}
+.tb-btn:hover{background:var(--bg-secondary);color:var(--text-secondary)}
+.tb-div{width:1px;height:22px;background:var(--border-secondary)}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 24px 40px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .14s;font-family:inherit;white-space:nowrap}
+.btn-primary{background:var(--brand-600);color:#fff}
+.btn-primary:hover{background:var(--brand-700)}
+.btn-secondary{background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border-primary)}
+.btn-secondary:hover{background:var(--bg-secondary)}
+
+/* PAGE HEADER */
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.page-title-wrap{}
+.page-title{font-size:18px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.page-sub{font-size:12px;color:var(--text-tertiary);margin-top:3px}
+.page-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* ACTIVE FILTERS */
+.active-filters{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;min-height:26px}
+.af-label{font-size:11px;color:var(--text-tertiary);font-weight:500}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+.chip-clear{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--brand-600);background:var(--brand-50);border:1px solid var(--brand-200);padding:3px 10px;border-radius:99px;cursor:pointer;font-family:inherit;transition:all .13s}
+.chip-clear:hover{background:var(--brand-100)}
+.chip-x{cursor:pointer;opacity:.7;line-height:0}
+.chip-x:hover{opacity:1}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi-card{background:var(--bg-primary);border:2px solid var(--border-secondary);border-radius:12px;padding:16px;cursor:pointer;transition:all .16s ease;position:relative;overflow:hidden}
+.kpi-card:hover{border-color:var(--kc);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi-card.sel{border-color:var(--kc);background:var(--kb)}
+[data-theme="dark"] .kpi-card.sel{background:color-mix(in srgb,var(--kc) 10%,var(--bg-primary))}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.kpi-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--kib);color:var(--kc);flex-shrink:0}
+.kpi-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--kib);color:var(--kc);white-space:nowrap}
+.kpi-amount{font-size:21px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;margin-bottom:2px;line-height:1.2}
+.kpi-card.sel .kpi-amount{color:var(--kc)}
+.kpi-label{font-size:11px;color:var(--text-tertiary);font-weight:500}
+.kpi-foot{display:flex;align-items:center;gap:5px;margin-top:11px;padding-top:11px;border-top:1px solid var(--border-tertiary);font-size:11px;color:var(--text-quaternary)}
+
+/* SECTION HEADER */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.sec-title{font-size:13px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:7px}
+.sec-count{font-size:11px;background:var(--bg-tertiary);color:var(--text-tertiary);padding:1px 8px;border-radius:99px;font-weight:500}
+
+/* CLIENT LIST */
+.clients-list{background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:12px;overflow:hidden;margin-bottom:22px}
+.clients-list-head{display:grid;grid-template-columns:24px 36px 1fr 60px 110px 140px 90px;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border-secondary);background:var(--bg-secondary)}
+.cl-hcell{font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.cl-hcell.r{text-align:right}
+.client-row{display:grid;grid-template-columns:24px 36px 1fr 60px 110px 140px 90px;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border-tertiary);cursor:pointer;transition:background .12s ease;user-select:none}
+.client-row:last-child{border-bottom:none}
+.client-row:hover{background:var(--bg-secondary)}
+.client-row.sel{background:var(--brand-25)}
+[data-theme="dark"] .client-row.sel{background:rgba(98,74,180,.13)}
+.cr-rank{font-size:11px;font-weight:600;color:var(--text-quaternary);text-align:center}
+.cr-ava{width:32px;height:32px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cr-info{min-width:0}
+.cr-name{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-row.sel .cr-name{color:var(--brand-600)}
+.cr-rfc{font-size:10px;color:var(--text-quaternary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr-facts{font-size:12px;font-weight:600;color:var(--text-secondary);text-align:center}
+.cr-facts-sub{font-size:10px;color:var(--text-quaternary);text-align:center}
+.cr-amt{font-size:13px;font-weight:700;color:var(--text-primary);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.client-row.sel .cr-amt{color:var(--brand-600)}
+.cr-bar-wrap{display:flex;align-items:center;gap:7px}
+.cr-bar{flex:1;height:5px;background:var(--border-secondary);border-radius:99px;overflow:hidden}
+.cr-bar-fill{height:100%;border-radius:99px;transition:width .4s ease}
+.cr-pct{font-size:10px;font-weight:600;color:var(--text-tertiary);width:30px;text-align:right;flex-shrink:0}
+.cr-status{display:flex;justify-content:flex-end;align-items:center;gap:4px}
+
+/* TABLE */
+.tbl-wrap{background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:12px;overflow:hidden}
+.tbl-topbar{padding:13px 18px;border-bottom:1px solid var(--border-secondary);display:flex;align-items:center;justify-content:space-between}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--bg-secondary);padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-secondary);white-space:nowrap}
+th.r,td.r{text-align:right}
+tbody tr{border-bottom:1px solid var(--border-tertiary);transition:background .1s}
+tbody tr:last-child:not(.trow-totals){border-bottom:none}
+tbody tr:hover:not(.trow-totals){background:var(--bg-secondary)}
+tbody td{padding:10px 14px;font-size:12px;color:var(--text-secondary);vertical-align:middle}
+.td-id{font-family:ui-monospace,monospace;font-size:10px;color:var(--text-tertiary);white-space:nowrap}
+.td-cliente-name{font-size:12px;font-weight:600;color:var(--text-primary)}
+.td-cliente-rfc{font-size:10px;color:var(--text-quaternary)}
+.td-date{font-size:11px;color:var(--text-tertiary);white-space:nowrap}
+.td-mono{font-variant-numeric:tabular-nums;white-space:nowrap}
+.td-concept{max-width:180px}
+.trow-totals td{background:var(--bg-secondary);font-weight:600;color:var(--text-primary);border-top:2px solid var(--border-secondary)!important}
+.tbl-empty{padding:40px;text-align:center;color:var(--text-quaternary);font-size:13px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.badge-green{background:var(--success-100);color:var(--success-700)}
+.badge-yellow{background:var(--warning-100);color:var(--warning-700)}
+.badge-orange{background:var(--amber-100);color:var(--amber-700)}
+.badge-red{background:var(--error-100);color:var(--error-700)}
+
+/* COMING SOON */
+.cs{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 130px);gap:12px;color:var(--text-tertiary)}
+.cs-ico{width:56px;height:56px;border-radius:14px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center}
+.cs h3{font-size:16px;font-weight:600;color:var(--text-secondary)}
+.cs p{font-size:12px;color:var(--text-quaternary);max-width:240px;text-align:center;line-height:1.7}
+
+/* TWEAKS PANEL */
+.tweaks-panel{position:fixed;bottom:20px;right:20px;z-index:1000;background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:14px;padding:16px;width:228px;box-shadow:var(--shadow-md);display:none}
+.tweaks-panel.open{display:block}
+.tw-title{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.tw-close{cursor:pointer;color:var(--text-quaternary);background:none;border:none;line-height:0;padding:2px;font-family:inherit}
+.tw-close:hover{color:var(--text-secondary)}
+.tw-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tw-label{font-size:12px;color:var(--text-secondary)}
+.tw-toggle{width:38px;height:21px;border-radius:99px;cursor:pointer;background:var(--bg-quaternary);position:relative;transition:background .15s;border:none;flex-shrink:0}
+.tw-toggle.on{background:var(--brand-600)}
+.tw-thumb{position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.tw-toggle.on .tw-thumb{left:19.5px}
+.tw-seg{display:flex;gap:3px}
+.tw-seg-btn{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-tertiary);font-family:inherit;transition:all .13s}
+.tw-seg-btn.on{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+.tw-divider{height:1px;background:var(--border-secondary);margin:10px 0}
+
+/* COMPRAS */
+.compras-kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1.7fr;gap:14px;margin-bottom:18px}
+.ckpi{background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:12px;padding:16px;box-shadow:var(--shadow-xs)}
+.ckpi-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ckpi-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ckpi-val{font-size:20px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;line-height:1.2}
+.ckpi-sub{font-size:10px;color:var(--text-quaternary);margin-top:3px}
+.chart-card{background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:12px;margin-bottom:18px;overflow:hidden}
+.chart-topbar{padding:12px 16px;border-bottom:1px solid var(--border-secondary);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.yr-tab{padding:4px 11px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-tertiary);transition:all .13s}
+.yr-tab.on{background:#624ab4;border-color:#624ab4;color:#fff}
+.cat-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+@media(max-width:1200px){.compras-kpi-grid{grid-template-columns:1fr 1fr;}}
+
+/* ── OPERACIONES ── */
+.op-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.op-svc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.op-svc-card{border:2px solid var(--border-secondary);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;background:var(--bg-primary)}
+.op-svc-card:hover{border-color:var(--oc);box-shadow:var(--shadow-xs);transform:translateY(-1px)}
+.op-svc-card.sel{border-color:var(--oc);background:var(--ob)}
+[data-theme="dark"] .op-svc-card.sel{background:color-mix(in srgb,var(--oc) 10%,var(--bg-primary))}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){.sidebar{width:56px}.s-logo-name,.s-logo-sub,.s-uname,.s-urole,.nav-badge,.nav-item span:last-child{display:none}.nav-item{justify-content:center;padding:8px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useMemo, useEffect } = React;
+
+/* ── DESIGN TOKENS ─────────────────────────────────────────────────────────── */
+const KPI = {
+  corriente: { label: '1 – 30 días', sub: 'Al corriente', kc: '#079455', kb: '#ecfdf3', kib: '#dcfae6', badge: 'green' },
+  moderado: { label: '31 – 60 días', sub: 'Moderado', kc: '#dc6803', kb: '#fffaeb', kib: '#fef0c7', badge: 'yellow' },
+  critico: { label: '61 – 90 días', sub: 'Crítico', kc: '#c2410c', kb: '#fff7ed', kib: '#ffedd5', badge: 'orange' },
+  vencida: { label: '90+ días', sub: 'Cartera Vencida', kc: '#b42318', kb: '#fef3f2', kib: '#fee4e2', badge: 'red' }
+};
+const BUCKETS = ['corriente', 'moderado', 'critico', 'vencida'];
+
+/* ── MOCK DATA ─────────────────────────────────────────────────────────────── */
+const TODAY = new Date('2025-05-13');
+
+const CLIENTES = [
+{ id: 1, nombre: 'ACME Corporativo',     rfc: 'ACM910101ABC', ini: 'AC', empresa: 'Soluciones' },
+{ id: 2, nombre: 'Constructora Herrera', rfc: 'CHE850615XYZ', ini: 'CH', empresa: 'Servicios'  },
+{ id: 3, nombre: 'Distribuidora Norte',  rfc: 'DNO920301DEF', ini: 'DN', empresa: 'Soluciones' },
+{ id: 4, nombre: 'TechSolutions MX',     rfc: 'TSM011215GHI', ini: 'TS', empresa: 'Tecnología' },
+{ id: 5, nombre: 'Grupo Alimentario',    rfc: 'GAV780920JKL', ini: 'GA', empresa: 'Servicios'  },
+{ id: 6, nombre: 'Manufactura Integral', rfc: 'MIN951104MNO', ini: 'MI', empresa: 'Tecnología' },
+{ id: 7, nombre: 'Servicios Globales',   rfc: 'SGS030710PQR', ini: 'SG', empresa: 'Soluciones' }];
+const EMPRESAS = [...new Set(CLIENTES.map(c => c.empresa))].sort();
+
+const CLI = Object.fromEntries(CLIENTES.map((c) => [c.id, c]));
+const CLI_COLORS = ['#624ab4', '#079455', '#0369a1', '#c2410c', '#7e22ce', '#dc6803', '#0f766e'];
+
+function mkF(r) {
+  const sub = r.qty * r.pu;
+  const iva = +(sub * .16).toFixed(2);
+  const tot = sub + iva;
+  const days = Math.floor((TODAY - new Date(r.fv + 'T00:00:00')) / 86400000);
+  const bucket = days >= 1 && days <= 30 ? 'corriente' : days >= 31 && days <= 60 ? 'moderado' : days >= 61 && days <= 90 ? 'critico' : days > 90 ? 'vencida' : 'vigente';
+  return { id: r.id, clienteId: r.cid, fechaCreacion: r.fc, fechaVencimiento: r.fv, concepto: r.con, cantidad: r.qty, precio: r.pu, subtotal: sub, iva, total: tot, days, bucket };
+}
+
+const FACTURAS = [
+/* Al corriente */
+{ id: 'F-2025-001', cid: 1, fc: '2025-04-01', fv: '2025-05-01', con: 'Consultoría de sistemas', qty: 1, pu: 85000 },
+{ id: 'F-2025-002', cid: 4, fc: '2025-04-15', fv: '2025-05-10', con: 'Licencias de software', qty: 5, pu: 12000 },
+{ id: 'F-2025-003', cid: 3, fc: '2025-04-20', fv: '2025-04-25', con: 'Servicio de distribución', qty: 1, pu: 34500 },
+{ id: 'F-2025-010', cid: 7, fc: '2025-04-10', fv: '2025-04-30', con: 'Mantenimiento preventivo', qty: 1, pu: 18500 },
+/* Moderado */
+{ id: 'F-2025-004', cid: 2, fc: '2025-03-01', fv: '2025-04-01', con: 'Materiales de construcción', qty: 1, pu: 145000 },
+{ id: 'F-2025-005', cid: 5, fc: '2025-03-10', fv: '2025-04-05', con: 'Suministro de alimentos', qty: 1, pu: 67800 },
+{ id: 'F-2025-006', cid: 1, fc: '2025-02-28', fv: '2025-03-25', con: 'Soporte técnico mensual', qty: 1, pu: 25000 },
+{ id: 'F-2025-011', cid: 6, fc: '2025-03-05', fv: '2025-04-10', con: 'Refacciones industriales', qty: 3, pu: 22000 },
+/* Crítico */
+{ id: 'F-2025-007', cid: 6, fc: '2025-01-20', fv: '2025-02-28', con: 'Maquinaria industrial', qty: 2, pu: 89000 },
+{ id: 'F-2025-008', cid: 3, fc: '2025-01-15', fv: '2025-02-20', con: 'Logística y transporte', qty: 1, pu: 42300 },
+{ id: 'F-2025-009', cid: 7, fc: '2025-01-25', fv: '2025-03-01', con: 'Consultoría empresarial', qty: 1, pu: 55000 },
+{ id: 'F-2025-012', cid: 4, fc: '2025-01-10', fv: '2025-02-15', con: 'Desarrollo de software', qty: 1, pu: 78000 },
+/* Cartera vencida */
+{ id: 'F-2024-045', cid: 2, fc: '2024-11-01', fv: '2024-12-01', con: 'Proyectos de construcción', qty: 1, pu: 320000 },
+{ id: 'F-2024-046', cid: 5, fc: '2024-10-15', fv: '2024-11-30', con: 'Equipamiento de planta', qty: 1, pu: 185000 },
+{ id: 'F-2024-047', cid: 6, fc: '2024-11-20', fv: '2024-12-20', con: 'Maquinaria pesada', qty: 1, pu: 250000 },
+{ id: 'F-2024-048', cid: 7, fc: '2024-09-01', fv: '2024-10-01', con: 'Servicios de consultoría', qty: 3, pu: 28000 },
+{ id: 'F-2024-049', cid: 2, fc: '2024-08-15', fv: '2024-09-15', con: 'Supervisión de obra', qty: 1, pu: 95000 }].
+map(mkF);
+
+/* ── UTILS ─────────────────────────────────────────────────────────────────── */
+const fmt = (n) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n);
+const fmtD = (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
+/* ── ICONS ─────────────────────────────────────────────────────────────────── */
+function Svg({ children, size = 16, sw = 1.8 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>);
+
+}
+const IcoWave = ({ s = 16 }) => <Svg size={s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></Svg>;
+const IcoTrending = ({ s = 16 }) => <Svg size={s}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></Svg>;
+const IcoShop = ({ s = 16 }) => <Svg size={s}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></Svg>;
+const IcoUsers = ({ s = 16 }) => <Svg size={s}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></Svg>;
+const IcoPeople = ({ s = 16 }) => <Svg size={s}><circle cx="12" cy="8" r="4" /><path d="M2 20c0-4 4-7 10-7s10 3 10 7" /></Svg>;
+const IcoTruck = ({ s = 16 }) => <Svg size={s}><rect x="1" y="3" width="15" height="13" /><path d="M16 8h4l3 5v3h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></Svg>;
+const IcoClose = ({ s = 14 }) => <Svg size={s} sw={2.5}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Svg>;
+const IcoCalendar = ({ s = 14 }) => <Svg size={s}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></Svg>;
+const IcoSearch = ({ s = 14 }) => <Svg size={s}><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></Svg>;
+const IcoDownload = ({ s = 14 }) => <Svg size={s}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Svg>;
+const IcoMoon = ({ s = 15 }) => <Svg size={s}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></Svg>;
+const IcoSun = ({ s = 15 }) => <Svg size={s}><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></Svg>;
+const IcoSettings = ({ s = 14 }) => <Svg size={s}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></Svg>;
+
+/* KPI status icons */
+function KpiIcon({ bucket, size = 20 }) {
+  const c = KPI[bucket].kc;
+  if (bucket === 'corriente') return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
+  if (bucket === 'moderado') return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>;
+  if (bucket === 'critico') return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
+  if (bucket === 'vencida') return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>;
+  return null;
+}
+
+/* Nav icon dispatcher */
+function NavIcon({ name }) {
+  const map = { receipt: <IcoWave s={16} />, ventas: <IcoTrending s={16} />, shopping: <IcoShop s={16} />, crm: <IcoUsers s={16} />, rh: <IcoPeople s={16} />, operaciones: <IcoTruck s={16} /> };
+  return map[name] || null;
+}
+
+/* ── NAV CONFIG ─────────────────────────────────────────────────────────────── */
+const NAV = [
+{ id: 'facturacion', label: 'Facturación', icon: 'receipt', badge: '9' },
+
+{ id: 'compras', label: 'Compra de Equipos', icon: 'shopping' },
+{ id: 'crm', label: 'CRM', icon: 'crm' },
+{ id: 'rh', label: 'Recursos Humanos', icon: 'rh' },
+{ id: 'operaciones', label: 'Operaciones', icon: 'operaciones' }];
+
+
+/* ── BADGE ──────────────────────────────────────────────────────────────────── */
+function BucketBadge({ bucket }) {
+  const map = { corriente: ['badge badge-green', 'Al corriente'], moderado: ['badge badge-yellow', 'Moderado'], critico: ['badge badge-orange', 'Crítico'], vencida: ['badge badge-red', 'Vencida'] };
+  const [cls, lbl] = map[bucket] || ['badge', '—'];
+  return <span className={cls}>{lbl}</span>;
+}
+
+/* ── KPI CARD ───────────────────────────────────────────────────────────────── */
+function KPICard({ bucket, facturas, selected, onClick }) {
+  const cfg = KPI[bucket];
+  const total = facturas.reduce((s, f) => s + f.total, 0);
+  const clientCount = new Set(facturas.map((f) => f.clienteId)).size;
+  return (
+    <div
+      className={`kpi-card${selected ? ' sel' : ''}`}
+      style={{ '--kc': cfg.kc, '--kb': cfg.kb, '--kib': cfg.kib }}
+      onClick={onClick}>
+      
+      <div className="kpi-top">
+        <div className="kpi-ico"><KpiIcon bucket={bucket} size={20} /></div>
+        <span className="kpi-tag">{cfg.sub}</span>
+      </div>
+      <div className="kpi-amount">{fmt(total)}</div>
+      <div className="kpi-label">{cfg.label}</div>
+      <div className="kpi-foot">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+        </svg>
+        {clientCount} cliente{clientCount !== 1 ? 's' : ''}&nbsp;&bull;&nbsp;{facturas.length} factura{facturas.length !== 1 ? 's' : ''}
+      </div>
+    </div>);
+
+}
+
+/* ── CLIENT ROW (lista ranking) ─────────────────────────────────────────────── */
+function ClientsList({ clientes, selClient, onSelect, selBucket }) {
+  const grandTotal = clientes.reduce((s, c) => s + c.total, 0);
+
+  // worst bucket per client for status indicator
+  const bucketOrder = { vencida: 0, critico: 1, moderado: 2, corriente: 3 };
+  function worstBucket(c) {
+    return c.facturas.slice().sort((a, b) => bucketOrder[a.bucket] - bucketOrder[b.bucket])[0]?.bucket;
+  }
+
+  return (
+    <div className="clients-list">
+      {/* header */}
+      <div className="clients-list-head">
+        <span className="cl-hcell" style={{ textAlign: 'center' }}>#</span>
+        <span></span>
+        <span className="cl-hcell">Cliente</span>
+        <span className="cl-hcell" style={{ textAlign: 'center' }}>Facturas</span>
+        <span className="cl-hcell r">Total adeudo</span>
+        <span className="cl-hcell">% del total</span>
+        <span className="cl-hcell r">Estatus</span>
+      </div>
+      {clientes.length === 0 &&
+      <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-quaternary)', fontSize: 12 }}>
+          Sin clientes para el filtro seleccionado.
+        </div>
+      }
+      {clientes.map((c, i) => {
+        const color = CLI_COLORS[(c.id - 1) % CLI_COLORS.length];
+        const pct = grandTotal > 0 ? c.total / grandTotal * 100 : 0;
+        const sel = selClient === c.id;
+        const worst = worstBucket(c);
+        const wCfg = worst ? KPI[worst] : null;
+        return (
+          <div
+            key={c.id}
+            className={`client-row${sel ? ' sel' : ''}`}
+            onClick={() => onSelect(c.id)}>
+            
+            {/* rank */}
+            <span className="cr-rank">{i + 1}</span>
+
+            {/* avatar */}
+            <div className="cr-ava" style={{ background: color + '22', color }}>{c.ini}</div>
+
+            {/* name + rfc */}
+            <div className="cr-info">
+              <div className="cr-name" title={c.nombre}>{c.nombre}</div>
+              <div className="cr-rfc">{c.rfc}</div>
+            </div>
+
+            {/* facturas */}
+            <div>
+              <div className="cr-facts">{c.facturas.length}</div>
+              <div className="cr-facts-sub">factura{c.facturas.length !== 1 ? 's' : ''}</div>
+            </div>
+
+            {/* total */}
+            <div className="cr-amt">{fmt(c.total)}</div>
+
+            {/* bar + pct */}
+            <div className="cr-bar-wrap">
+              <div className="cr-bar">
+                <div className="cr-bar-fill" style={{ width: `${pct}%`, background: sel ? '#624ab4' : color }}></div>
+              </div>
+              <span className="cr-pct">{pct.toFixed(0)}%</span>
+            </div>
+
+            {/* worst bucket badge */}
+            <div className="cr-status">
+              {wCfg &&
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+                background: wCfg.kib, color: wCfg.kc, whiteSpace: 'nowrap'
+              }}>
+                  {wCfg.sub}
+                </span>
+              }
+            </div>
+          </div>);
+
+      })}
+    </div>);
+
+}
+
+/* ── INVOICE TABLE ──────────────────────────────────────────────────────────── */
+function InvoiceTable({ facturas, compact }) {
+  const sorted = [...facturas].sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
+  const totals = facturas.reduce((a, f) => ({ sub: a.sub + f.subtotal, iva: a.iva + f.iva, tot: a.tot + f.total }), { sub: 0, iva: 0, tot: 0 });
+  const py = compact ? '7px 14px' : '10px 14px';
+  return (
+    <div className="tbl-wrap">
+      <div className="tbl-topbar">
+        <span className="sec-title">
+          Facturas&nbsp;<span className="sec-count">{facturas.length}</span>
+        </span>
+        <button className="btn btn-secondary" style={{ fontSize: 11, padding: '5px 11px' }}>
+          <IcoDownload /> Exportar
+        </button>
+      </div>
+      {sorted.length === 0 ?
+      <div className="tbl-empty">No hay facturas para mostrar.</div> :
+      <div className="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Folio</th>
+                  <th>Cliente</th>
+                  <th>F. Creación</th>
+                  <th>F. Vencimiento</th>
+                  <th>Concepto</th>
+                  <th className="r">Cant.</th>
+                  <th className="r">Precio Unit.</th>
+                  <th className="r">Subtotal</th>
+                  <th className="r">IVA 16%</th>
+                  <th className="r">Total</th>
+                  <th>Estatus</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((f) =>
+            <tr key={f.id}>
+                    <td style={{ padding: py }}><span className="td-id">{f.id}</span></td>
+                    <td style={{ padding: py }}>
+                      <div className="td-cliente-name">{CLI[f.clienteId]?.nombre}</div>
+                      <div className="td-cliente-rfc">{CLI[f.clienteId]?.rfc}</div>
+                    </td>
+                    <td style={{ padding: py }} className="td-date">{fmtD(f.fechaCreacion)}</td>
+                    <td style={{ padding: py }} className="td-date">{fmtD(f.fechaVencimiento)}</td>
+                    <td style={{ padding: py }} className="td-concept">{f.concepto}</td>
+                    <td style={{ padding: py }} className="r td-mono">{f.cantidad}</td>
+                    <td style={{ padding: py }} className="r td-mono">{fmt(f.precio)}</td>
+                    <td style={{ padding: py }} className="r td-mono">{fmt(f.subtotal)}</td>
+                    <td style={{ padding: py, color: 'var(--text-tertiary)' }} className="r td-mono">{fmt(f.iva)}</td>
+                    <td style={{ padding: py, fontWeight: 600 }} className="r td-mono">{fmt(f.total)}</td>
+                    <td style={{ padding: py }}><BucketBadge bucket={f.bucket} /></td>
+                  </tr>
+            )}
+                <tr className="trow-totals">
+                  <td colSpan={7} style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-tertiary)', letterSpacing: '.06em', textTransform: 'uppercase', padding: py }}>
+                    Totales ({facturas.length} facturas)
+                  </td>
+                  <td style={{ padding: py }} className="r td-mono">{fmt(totals.sub)}</td>
+                  <td style={{ padding: py, color: 'var(--text-tertiary)' }} className="r td-mono">{fmt(totals.iva)}</td>
+                  <td style={{ padding: py, fontSize: 13 }} className="r td-mono">{fmt(totals.tot)}</td>
+                  <td style={{ padding: py }}></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+      }
+    </div>);
+
+}
+
+/* ── FACTURACION DASHBOARD ─────────────────────────────────────────────────── */
+function FacturacionDashboard({ compact }) {
+  const [selBucket,  setSelBucket ] = useState(null);
+  const [selClient,  setSelClient ] = useState(null);
+  const [selEmpresa, setSelEmpresa] = useState('');
+
+  const empIds = useMemo(() =>
+    selEmpresa ? new Set(CLIENTES.filter(c => c.empresa === selEmpresa).map(c => c.id)) : null
+  , [selEmpresa]);
+
+  const byBucket = useMemo(() => {
+    const m = {};
+    BUCKETS.forEach(b => {
+      m[b] = FACTURAS.filter(f => f.bucket === b && (!empIds || empIds.has(f.clienteId)));
+    });
+    return m;
+  }, [empIds]);
+
+  const visibleClients = useMemo(() => {
+    const pool = (selBucket ? byBucket[selBucket] : FACTURAS)
+      .filter(f => !empIds || empIds.has(f.clienteId));
+    const ids = [...new Set(pool.map(f => f.clienteId))];
+    const maxT = ids.reduce((mx, id) => {
+      const t = pool.filter(f => f.clienteId === id).reduce((s, f) => s + f.total, 0);
+      return Math.max(mx, t);
+    }, 0);
+    return CLIENTES
+      .filter(c => ids.includes(c.id))
+      .map(c => ({
+        ...c,
+        facturas: pool.filter(f => f.clienteId === c.id),
+        total:    pool.filter(f => f.clienteId === c.id).reduce((s, f) => s + f.total, 0),
+      }))
+      .sort((a, b) => b.total - a.total)
+      .map(c => ({ ...c, pct: maxT > 0 ? (c.total / maxT) * 100 : 0 }));
+  }, [selBucket, byBucket, empIds]);
+
+  const visibleFacturas = useMemo(() => {
+    let pool = selClient ? FACTURAS.filter(f => f.clienteId === selClient) : FACTURAS;
+    if (empIds) pool = pool.filter(f => empIds.has(f.clienteId));
+    return pool;
+  }, [selClient, empIds]);
+
+  const handleBucket = b => {
+    if (selBucket === b) { setSelBucket(null); setSelClient(null); }
+    else                 { setSelBucket(b);    setSelClient(null); }
+  };
+  const handleClient = id => setSelClient(sel => sel === id ? null : id);
+  const clearAll = () => { setSelBucket(null); setSelClient(null); setSelEmpresa(''); };
+
+  const selClientName = selClient ? CLI[selClient]?.nombre : null;
+
+  const grandTotal = FACTURAS.reduce((s, f) => s + f.total, 0);
+
+  return (
+    <div>
+      {/* Page header */}
+      <div className="page-head">
+        <div className="page-title-wrap">
+          <div className="page-title">
+            Dashboard de Facturación
+            {(selBucket || selClient) &&
+            <button className="chip-clear" onClick={clearAll}>
+                <IcoClose s={10} /> Limpiar filtros
+              </button>
+            }
+          </div>
+          <div className="page-sub">
+            Cartera y cuentas por cobrar &nbsp;·&nbsp; {TODAY.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
+            &nbsp;·&nbsp; Total: <strong style={{ color: 'var(--text-primary)' }}>{fmt(grandTotal)}</strong>
+          </div>
+        </div>
+        <div className="page-actions">
+          <select value={selEmpresa} onChange={e=>{setSelEmpresa(e.target.value);setSelBucket(null);setSelClient(null);}}
+            style={{padding:'7px 12px',borderRadius:8,border:'1px solid var(--border-primary)',background:'var(--bg-primary)',
+              color:'var(--text-primary)',fontSize:12,fontFamily:'Poppins,sans-serif',cursor:'pointer',outline:'none',boxShadow:'var(--shadow-xs)',minWidth:160}}>
+            <option value="">Todas las empresas</option>
+            {EMPRESAS.map(e=><option key={e} value={e}>{e}</option>)}
+          </select>
+          <button className="btn btn-secondary"><IcoCalendar /> Rango de fechas</button>
+          <button className="btn btn-primary"><IcoSearch /> Buscar factura</button>
+        </div>
+      </div>
+
+      {/* Active filter chips */}
+      <div className="active-filters">
+        {(selBucket || selClient || selEmpresa) && <span className="af-label">Filtrando:</span>}
+        {selEmpresa &&
+          <span className="filter-chip" style={{background:'var(--bg-tertiary)',color:'var(--text-secondary)'}}>
+            {selEmpresa}
+            <span className="chip-x" onClick={()=>setSelEmpresa('')}><IcoClose s={9}/></span>
+          </span>
+        }
+        {selBucket &&
+        <span className="filter-chip" style={{ background: KPI[selBucket].kib, color: KPI[selBucket].kc }}>
+            {KPI[selBucket].sub}
+            <span className="chip-x" onClick={() => {setSelBucket(null);setSelClient(null);}}><IcoClose s={9} /></span>
+          </span>
+        }
+        {selClient &&
+        <span className="filter-chip" style={{ background: 'var(--brand-100)', color: 'var(--brand-700)' }}>
+            {selClientName}
+            <span className="chip-x" onClick={() => setSelClient(null)}><IcoClose s={9} /></span>
+          </span>
+        }
+      </div>
+
+      {/* KPI Cards */}
+      <div className="kpi-grid">
+        {BUCKETS.map((b) =>
+        <KPICard key={b} bucket={b} facturas={byBucket[b]} selected={selBucket === b} onClick={() => handleBucket(b)} />
+        )}
+      </div>
+
+      {/* Clients section */}
+      <div className="sec-head">
+        <div className="sec-title">
+          {selBucket ? `Clientes · ${KPI[selBucket].sub}` : 'Todos los clientes'}
+          <span className="sec-count">{visibleClients.length}</span>
+        </div>
+        {selClient &&
+        <button onClick={() => setSelClient(null)} style={{ fontSize: 11, color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <IcoClose s={10} /> Deseleccionar
+          </button>
+        }
+      </div>
+      <ClientsList
+        clientes={visibleClients}
+        selClient={selClient}
+        onSelect={handleClient}
+        selBucket={selBucket} />
+      
+
+      {/* Invoice Table */}
+      <div className="sec-head">
+        <div className="sec-title">
+          {selClient ? `Facturas · ${selClientName}` : 'Todas las facturas'}
+          <span className="sec-count">{visibleFacturas.length}</span>
+        </div>
+      </div>
+      <InvoiceTable facturas={visibleFacturas} compact={compact} />
+    </div>);
+
+}
+
+/* ── COMING SOON ───────────────────────────────────────────────────────────── */
+function ComingSoon({ label }) {
+  return (
+    <div className="cs">
+      <div className="cs-ico">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--text-quaternary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+        </svg>
+      </div>
+      <h3>{label}</h3>
+      <p>Este módulo está en desarrollo. Próximamente disponible en la plataforma.</p>
+    </div>);
+
+}
+
+/* ── TWEAKS PANEL ──────────────────────────────────────────────────────────── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "darkMode": false,
+  "compact": false,
+  "showTweaks": false
+}/*EDITMODE-END*/;
+
+function TweaksPanel({ open, onClose, dark, setDark, compact, setCompact }) {
+  return (
+    <div className={`tweaks-panel${open ? ' open' : ''}`}>
+      <div className="tw-title">
+        Tweaks
+        <button className="tw-close" onClick={onClose}><IcoClose s={14} /></button>
+      </div>
+      <div className="tw-row">
+        <span className="tw-label">Modo oscuro</span>
+        <button className={`tw-toggle${dark ? ' on' : ''}`} onClick={() => setDark((d) => !d)}>
+          <div className="tw-thumb"></div>
+        </button>
+      </div>
+      <div className="tw-row">
+        <span className="tw-label">Tabla compacta</span>
+        <button className={`tw-toggle${compact ? ' on' : ''}`} onClick={() => setCompact((c) => !c)}>
+          <div className="tw-thumb"></div>
+        </button>
+      </div>
+      <div className="tw-divider"></div>
+      <div style={{ fontSize: 11, color: 'var(--text-quaternary)', lineHeight: 1.6 }}>
+        Selecciona una tarjeta de antigüedad para filtrar clientes, luego un cliente para filtrar facturas.
+      </div>
+    </div>);
+
+}
+
+/* ── COMPRAS DE EQUIPOS DATA ──────────────────────────────────────────────── */
+const EQUIPOS_CAT_LIST = [
+{ modelo: 'Suntech ST4315', cat: 'GPS Tracker', costoUnit: 3200 },
+{ modelo: 'Suntech ST3300', cat: 'GPS Tracker', costoUnit: 2800 },
+{ modelo: 'Teltonika FMC920', cat: 'GPS Tracker', costoUnit: 4100 },
+{ modelo: 'Suntech ST4310', cat: 'GPS Tracker', costoUnit: 3500 }];
+
+const CAT_COLOR_MAP = { 'GPS Tracker': '#624ab4' };
+const MODELO_COLOR_MAP = { 'Suntech ST4315': '#624ab4', 'Suntech ST3300': '#079455', 'Teltonika FMC920': '#c2410c', 'Suntech ST4310': '#dc6803' };
+const PERSONAL_REC = ['Carlos López', 'Ana Martínez', 'Roberto García', 'María Torres', 'Luis Hernández'];
+const MESES_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+const COMPRAS_DATA = (() => {
+  let s = 9371 >>> 0;
+  const rng = () => {s ^= s << 13;s ^= s >> 17;s ^= s << 5;return (s >>> 0) / 0x100000000;};
+  const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+  const rp = (arr) => arr[Math.floor(rng() * arr.length)];
+  const pad = (v) => String(v).padStart(2, '0');
+  const list = [];let id = 1;
+  for (let y = 2023; y <= 2025; y++) {
+    for (let m = 1; m <= (y === 2025 ? 5 : 12); m++) {
+      for (let k = 0, n = ri(2, 5); k < n; k++) {
+        const eq = rp(EQUIPOS_CAT_LIST),qty = ri(1, 20),dC = ri(1, 25),dR = Math.min(dC + ri(3, 14), 28);
+        const r = rng();
+        list.push({ id: `OC-${y}-${pad(id++)}`, year: y, month: m,
+          fechaCompra: `${y}-${pad(m)}-${pad(dC)}`, fechaRecibido: `${y}-${pad(m)}-${pad(dR)}`,
+          modelo: eq.modelo, categoria: eq.cat, costoUnit: eq.costoUnit, cantidad: qty,
+          subtotal: eq.costoUnit * qty, recibio: rp(PERSONAL_REC),
+          estadoFactura: r < .58 ? 'pagado' : r < .76 ? '30' : r < .90 ? '60' : '90' });
+      }
+    }
+  }
+  return list;
+})();
+
+/* ── PURCHASE BAR CHART ───────────────────────────────────────────────────── */
+function PurchaseBarChart({ chartData, selKey, onBarClick }) {
+  const [hov, setHov] = useState(null);
+  const W = 880,H = 220,P = { t: 22, r: 20, b: 38, l: 70 };
+  const cW = W - P.l - P.r,cH = H - P.t - P.b;
+  const maxC = Math.max(...chartData.map((d) => d.cost), 1);
+  const n = chartData.length,slotW = cW / n;
+  const bW = Math.min(Math.max(slotW * .62, 8), 48);
+  return (
+    <div style={{ position: 'relative' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }} onMouseLeave={() => setHov(null)}>
+        {[.25, .5, .75, 1].map((f) => {
+          const y = P.t + cH * (1 - f),v = maxC * f;
+          return <g key={f}>
+            <line x1={P.l} x2={W - P.r} y1={y} y2={y} stroke="var(--border-tertiary)" strokeWidth={f === 1 ? .8 : .4} strokeDasharray={f === 1 ? '' : '4,4'} />
+            <text x={P.l - 6} y={y + 3.5} textAnchor="end" fontSize={9} fill="var(--text-quaternary)" fontFamily="Poppins,sans-serif">
+              {v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${(v / 1e3).toFixed(0)}K`}
+            </text>
+          </g>;
+        })}
+        <line x1={P.l} x2={W - P.r} y1={P.t + cH} y2={P.t + cH} stroke="var(--border-secondary)" strokeWidth={1} />
+
+        {chartData.map((d, i) => {
+          const cx = P.l + (i + .5) * slotW,bH = Math.max(d.cost / maxC * cH, 2);
+          const bx = cx - bW / 2,by = P.t + cH - bH;
+          const sel = selKey === d.key,dim = selKey && !sel;
+          return (
+            <g key={d.key} onClick={() => onBarClick(d.key)} style={{ cursor: 'pointer' }}
+            onMouseEnter={() => setHov({ cx, tipY: Math.max(by - 10, P.t + 2), d })}>
+              <rect x={P.l + i * slotW} y={P.t} width={slotW} height={cH} fill="transparent" />
+              <rect x={bx} y={by} width={bW} height={bH} fill={sel ? '#624ab4' : '#9b73ed'} opacity={dim ? .3 : 1} rx={3} />
+              {sel && <rect x={bx} y={by} width={bW} height={3} fill="#b899f7" rx={1.5} />}
+              {/* cost on top */}
+              <text x={cx} y={by - 4} textAnchor="middle" fontSize={8.5}
+              fill={sel ? '#624ab4' : 'var(--text-quaternary)'} fontFamily="Poppins,sans-serif">
+                {d.cost >= 1e6 ? `$${(d.cost / 1e6).toFixed(1)}M` : `$${(d.cost / 1e3).toFixed(0)}K`}
+              </text>
+              {/* qty inside bar */}
+              {bH > 18 && <text x={cx} y={by + bH / 2 + 3.5} textAnchor="middle" fontSize={8}
+              fill={sel ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.75)'} fontWeight="600" fontFamily="Poppins,sans-serif">
+                {d.qty}
+              </text>}
+              <text x={cx} y={H - 8} textAnchor="middle" fontSize={9.5}
+              fill={sel ? '#624ab4' : 'var(--text-tertiary)'} fontWeight={sel ? '700' : '400'} fontFamily="Poppins,sans-serif">
+                {d.label}
+              </text>
+            </g>);
+
+        })}
+        {hov && (() => {
+          const tx = Math.min(Math.max(hov.cx, P.l + 58), W - P.r - 58),ty = Math.max(hov.tipY, P.t + 2);
+          return <g>
+            <rect x={tx - 58} y={ty} width={116} height={54} rx={7}
+            fill="var(--bg-primary)" stroke="var(--border-primary)" strokeWidth={.8}
+            style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,.12))' }} />
+            <text x={tx} y={ty + 16} textAnchor="middle" fontSize={11} fontWeight="700"
+            fill="var(--text-primary)" fontFamily="Poppins,sans-serif">{hov.d.label}</text>
+            <text x={tx} y={ty + 31} textAnchor="middle" fontSize={9.5} fill="#4e3a91" fontFamily="Poppins,sans-serif">{fmt(hov.d.cost)}</text>
+            <text x={tx} y={ty + 46} textAnchor="middle" fontSize={9} fill="#067647" fontFamily="Poppins,sans-serif">{hov.d.qty} equipos</text>
+          </g>;
+        })()}
+      </svg>
+    </div>);
+
+}
+
+/* ── DONUT CHART ─────────────────────────────────────────────────────────── */
+function DonutChart({ segments }) {
+  const [hov, setHov] = useState(null);
+  const total = segments.reduce((s, g) => s + g.value, 0);
+  if (!total) return <div style={{ fontSize: 12, color: 'var(--text-quaternary)', padding: '20px 0', textAlign: 'center' }}>Sin datos</div>;
+  let cum = 0;
+  const grad = segments.map((s) => {const pct = s.value / total * 100,p = `${s.color} ${cum.toFixed(2)}% ${(cum + pct).toFixed(2)}%`;cum += pct;return p;}).join(', ');
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ position: 'relative', width: 88, height: 88, flexShrink: 0 }}>
+        <div style={{ width: 88, height: 88, borderRadius: '50%', background: `conic-gradient(${grad})` }}></div>
+        <div style={{ position: 'absolute', top: 13, left: 13, width: 62, height: 62, background: 'var(--bg-primary)', borderRadius: '50%',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{total}</span>
+          <span style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 1 }}>uds.</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {segments.map((s, i) =>
+        <div key={i} onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, cursor: 'default',
+          opacity: hov !== null && hov !== i ? .45 : 1, transition: 'opacity .13s' }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }}></div>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', minWidth: 22, textAlign: 'right' }}>{s.value}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-quaternary)', minWidth: 30, textAlign: 'right' }}>{(s.value / total * 100).toFixed(0)}%</span>
+          </div>
+        )}
+      </div>
+    </div>);
+
+}
+
+/* ── COMPRAS TABLE ────────────────────────────────────────────────────────── */
+function ComprasTable({ compras, compact }) {
+  const sorted = [...compras].sort((a, b) => new Date(b.fechaCompra) - new Date(a.fechaCompra));
+  const py = compact ? '7px 12px' : '10px 12px';
+  const sBadge = { pagado: { cls: 'badge badge-green', lbl: 'Pagado' }, '30': { cls: 'badge badge-yellow', lbl: '30 días' }, '60': { cls: 'badge badge-orange', lbl: '60 días' }, '90': { cls: 'badge badge-red', lbl: '90 días' } };
+  const initials = (name) => name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+  return (
+    <div className="tbl-wrap">
+      <div className="tbl-topbar">
+        <span className="sec-title">Órdenes de Compra&nbsp;<span className="sec-count">{compras.length}</span></span>
+        <button className="btn btn-secondary" style={{ fontSize: 11, padding: '5px 11px' }}><IcoDownload /> Exportar</button>
+      </div>
+      {sorted.length === 0 ?
+      <div className="tbl-empty">Sin órdenes para el período seleccionado.</div> :
+      <div className="tbl-scroll"><table>
+            <thead><tr>
+              <th>Folio</th><th>F. Compra</th><th>F. Recibido</th><th>Modelo</th><th>Categoría</th>
+              <th className="r">Cant.</th><th className="r">Costo Unit.</th><th className="r">Subtotal</th>
+              <th>Recibió</th><th>Estado Factura</th>
+            </tr></thead>
+            <tbody>
+              {sorted.map((c) => {
+              const sc = sBadge[c.estadoFactura] || sBadge.pagado,cc = CAT_COLOR_MAP[c.categoria] || '#667085';
+              return (
+                <tr key={c.id}>
+                    <td style={{ padding: py }}><span className="td-id">{c.id}</span></td>
+                    <td style={{ padding: py }} className="td-date">{fmtD(c.fechaCompra)}</td>
+                    <td style={{ padding: py }} className="td-date">{fmtD(c.fechaRecibido)}</td>
+                    <td style={{ padding: py }}><span className="td-cliente-name">{c.modelo}</span></td>
+                    <td style={{ padding: py }}><span className="cat-badge" style={{ background: (MODELO_COLOR_MAP[c.modelo] || '#667085') + '18', color: MODELO_COLOR_MAP[c.modelo] || '#667085' }}>{c.modelo}</span></td>
+                    <td style={{ padding: py }} className="r td-mono">{c.cantidad}</td>
+                    <td style={{ padding: py }} className="r td-mono">{fmt(c.costoUnit)}</td>
+                    <td style={{ padding: py, fontWeight: 600 }} className="r td-mono">{fmt(c.subtotal)}</td>
+                    <td style={{ padding: py }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--bg-tertiary)', fontSize: 9, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                          {initials(c.recibio)}
+                        </div>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.recibio}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: py }}><span className={sc.cls}>{sc.lbl}</span></td>
+                  </tr>);
+
+            })}
+            </tbody>
+          </table></div>}
+    </div>);
+
+}
+
+/* ── COMPRAS DASHBOARD ────────────────────────────────────────────────────── */
+function ComprasEquiposDashboard({ compact }) {
+  const [selYear, setSelYear] = useState('all');
+  const [selKey, setSelKey] = useState(null);
+
+  const chartData = useMemo(() => {
+    if (selYear === 'all') {
+      return [2023, 2024, 2025].map((y) => {
+        const it = COMPRAS_DATA.filter((c) => c.year === y);
+        return { key: String(y), label: String(y), cost: it.reduce((s, c) => s + c.subtotal, 0), qty: it.reduce((s, c) => s + c.cantidad, 0) };
+      });
+    }
+    const y = parseInt(selYear),maxM = y === 2025 ? 5 : 12;
+    return Array.from({ length: maxM }, (_, i) => {
+      const m = i + 1,it = COMPRAS_DATA.filter((c) => c.year === y && c.month === m);
+      return { key: `${y}-${m}`, label: MESES_ES[i], cost: it.reduce((s, c) => s + c.subtotal, 0), qty: it.reduce((s, c) => s + c.cantidad, 0) };
+    });
+  }, [selYear]);
+
+  const handleBarClick = (key) => {
+    if (selYear === 'all') {setSelYear(key);setSelKey(null);} else
+    setSelKey((k) => k === key ? null : key);
+  };
+
+  const filtered = useMemo(() => {
+    if (selKey) {const [y, m] = selKey.split('-').map(Number);return COMPRAS_DATA.filter((c) => c.year === y && c.month === m);}
+    if (selYear !== 'all') return COMPRAS_DATA.filter((c) => c.year === parseInt(selYear));
+    return COMPRAS_DATA;
+  }, [selYear, selKey]);
+
+  const totalCosto = filtered.reduce((s, c) => s + c.subtotal, 0);
+  const totalQty = filtered.reduce((s, c) => s + c.cantidad, 0);
+  const totalOrdenes = filtered.length;
+
+  const donutData = useMemo(() => {
+    const mods = {};
+    filtered.forEach((c) => {mods[c.modelo] = (mods[c.modelo] || 0) + c.cantidad;});
+    return Object.entries(mods).sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value, color: MODELO_COLOR_MAP[label] || '#667085' }));
+  }, [filtered]);
+
+  const selLabel = selKey ?
+  `${MESES_ES[parseInt(selKey.split('-')[1]) - 1]} ${selKey.split('-')[0]}` :
+  selYear === 'all' ? 'Todos los períodos 2023 – 2025' : `Año ${selYear}`;
+
+  return (
+    <div>
+      <div className="page-head">
+        <div className="page-title-wrap">
+          <div className="page-title">
+            Compras de Equipos
+            {(selYear !== 'all' || selKey) &&
+            <button className="chip-clear" onClick={() => {setSelYear('all');setSelKey(null);}}>
+                <IcoClose s={10} /> Limpiar filtros
+              </button>
+            }
+          </div>
+          <div className="page-sub">Historial de adquisiciones · {selLabel}</div>
+        </div>
+        <div className="page-actions">
+          <button className="btn btn-secondary"><IcoDownload /> Exportar</button>
+          <button className="btn btn-primary"><IcoSearch /> Buscar orden</button>
+        </div>
+      </div>
+
+      {/* ── CHART ── */}
+      <div className="chart-card">
+        <div className="chart-topbar">
+          <span className="sec-title">Compras por Período
+            {selKey && <span className="sec-count" style={{ marginLeft: 6 }}>
+              {MESES_ES[parseInt(selKey.split('-')[1]) - 1]} {selKey.split('-')[0]}
+            </span>}
+          </span>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {selYear !== 'all' && <span style={{ fontSize: 10, color: 'var(--text-quaternary)', marginRight: 4 }}>Clic en mes para filtrar</span>}
+            {selYear === 'all' && <span style={{ fontSize: 10, color: 'var(--text-quaternary)', marginRight: 4 }}>Clic en año para ver detalle</span>}
+            {['all', '2023', '2024', '2025'].map((y) =>
+            <button key={y} className={`yr-tab${selYear === y ? ' on' : ''}`}
+            onClick={() => {setSelYear(y);setSelKey(null);}}>
+                {y === 'all' ? '3 años' : y}
+              </button>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: '16px 16px 4px' }}>
+          <PurchaseBarChart chartData={chartData} selKey={selKey} onBarClick={handleBarClick} />
+        </div>
+        <div style={{ display: 'flex', gap: 16, padding: '0 20px 12px', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-tertiary)' }}>
+            <div style={{ width: 12, height: 8, background: '#9b73ed', borderRadius: 2 }}></div>Costo total (MXN)
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-tertiary)' }}>
+            <span style={{ fontWeight: 700, color: '#fff', background: '#9b73ed', borderRadius: 3, padding: '0 4px', fontSize: 9 }}>n</span>Equipos (en barra)
+          </div>
+        </div>
+      </div>
+
+      {/* ── KPIs + DONUT ── */}
+      <div className="compras-kpi-grid">
+        <div className="ckpi">
+          <div className="ckpi-head">
+            <div className="ckpi-ico" style={{ background: '#ebe0ff', color: '#624ab4' }}><IcoWave s={16} /></div>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 500 }}>Total Invertido</span>
+          </div>
+          <div className="ckpi-val">{fmt(totalCosto)}</div>
+          <div className="ckpi-sub">{totalOrdenes} órdenes de compra</div>
+        </div>
+        <div className="ckpi">
+          <div className="ckpi-head">
+            <div className="ckpi-ico" style={{ background: '#dcfae6', color: '#079455' }}><IcoShop s={16} /></div>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 500 }}>Equipos Adquiridos</span>
+          </div>
+          <div className="ckpi-val">{totalQty.toLocaleString('es-MX')}</div>
+          <div className="ckpi-sub">unidades en el período</div>
+        </div>
+        <div className="ckpi">
+          <div className="ckpi-head">
+            <div className="ckpi-ico" style={{ background: '#fef0c7', color: '#dc6803' }}><IcoTrending s={16} /></div>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 500 }}>Promedio por Orden</span>
+          </div>
+          <div className="ckpi-val">{totalOrdenes > 0 ? fmt(Math.round(totalCosto / totalOrdenes)) : '—'}</div>
+          <div className="ckpi-sub">costo promedio / OC</div>
+        </div>
+        <div className="ckpi">
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>Distribución por Modelo</div>
+          <DonutChart segments={donutData} />
+        </div>
+      </div>
+
+      {/* ── TABLE ── */}
+      <div className="sec-head">
+        <div className="sec-title">
+          {selKey ? `Órdenes · ${MESES_ES[parseInt(selKey.split('-')[1]) - 1]} ${selKey.split('-')[0]}` :
+          selYear !== 'all' ? `Órdenes · Año ${selYear}` : 'Todas las órdenes'}
+          <span className="sec-count">{filtered.length}</span>
+        </div>
+      </div>
+      <ComprasTable compras={filtered} compact={compact} />
+    </div>);
+
+}
+
+/* ── OPERACIONES DATA ─────────────────────────────────────────────────────── */
+const OP_MODELOS=['Suntech ST4315','Suntech ST3300','Teltonika FMC920','Suntech ST4310'];
+const OP_TIPOS=['Instalación','Revisión','Reinstalación','Cambio de equipo','Retiro'];
+const OP_SCFG={'Instalación':{c:'#079455',bg:'#dcfae6'},'Revisión':{c:'#624ab4',bg:'#ebe0ff'},'Reinstalación':{c:'#dc6803',bg:'#fef0c7'},'Cambio de equipo':{c:'#0369a1',bg:'#dbeafe'},'Retiro':{c:'#b42318',bg:'#fee4e2'}};
+const OP_TECS=['Ing. Ramírez','Téc. Castro','Ing. Flores','Téc. Morales','Ing. Soto'];
+const OP_TODAY=new Date('2026-05-15');
+const OP_DAYS_SINCE=d=>d?Math.floor((OP_TODAY-new Date(d+'T00:00:00'))/86400000):null;
+
+const OP_MESES=(()=>{
+  const m=[];
+  for(let i=11;i>=0;i--){const d=new Date(OP_TODAY.getFullYear(),OP_TODAY.getMonth()-i,1);
+    m.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'})});}
+  return m;
+})();
+
+const OP_VEHICULOS=(()=>{
+  let s=4567>>>0;
+  const rng=()=>{s^=s<<13;s^=s>>17;s^=s<<5;return(s>>>0)/0x100000000;};
+  const ri=(a,b)=>a+Math.floor(rng()*(b-a+1));
+  const rp=arr=>arr[Math.floor(rng()*arr.length)];
+  const list=[];let id=1;
+  [[1,35],[2,28],[3,22],[4,18],[5,15],[6,10],[7,8]].forEach(([cid,n])=>{
+    for(let i=0;i<n;i++){
+      const r=rng();let lr=null,status;
+      if(r<.65){const d=new Date(OP_TODAY);d.setDate(d.getDate()-ri(0,7));lr=d.toISOString().slice(0,10);status='activo';}
+      else if(r<.85){const d=new Date(OP_TODAY);d.setDate(d.getDate()-ri(31,180));lr=d.toISOString().slice(0,10);status='inactivo30';}
+      else{status='nunca';}
+      const L='ABCDEFGHJKLMNPQRSTUVWXYZ',D='0123456789';
+      const p=`${L[ri(0,22)]}${L[ri(0,22)]}${L[ri(0,22)]}-${D[ri(0,9)]}${D[ri(0,9)]}${D[ri(0,9)]}`;
+      list.push({id:id++,clienteId:cid,placa:p,modelo:rp(OP_MODELOS),imei:`35${ri(100000000000,999999999999)}`,lastReport:lr,status});
+    }
+  });
+  return list;
+})();
+
+const OP_SERVICIOS=(()=>{
+  let s=7891>>>0;
+  const rng=()=>{s^=s<<13;s^=s>>17;s^=s<<5;return(s>>>0)/0x100000000;};
+  const ri=(a,b)=>a+Math.floor(rng()*(b-a+1));
+  const rp=arr=>arr[Math.floor(rng()*arr.length)];
+  const list=[];let id=1;
+  const cids=[1,2,3,4,5,7];
+  OP_MESES.forEach(({key})=>{
+    const [y,m]=key.split('-').map(Number);
+    for(let i=0,n=ri(12,28);i<n;i++){
+      const cid=rp(cids);
+      const veh=OP_VEHICULOS.filter(v=>v.clienteId===cid);
+      const v=veh.length?rp(veh):null;
+      list.push({id:`SVC-${String(id++).padStart(4,'0')}`,clienteId:cid,vehiculoId:v?.id,placa:v?.placa||'—',
+        tipo:rp(OP_TIPOS),fecha:`${y}-${String(m).padStart(2,'0')}-${String(ri(1,27)).padStart(2,'0')}`,
+        tecnico:rp(OP_TECS),mes:key});
+    }
+  });
+  return list;
+})();
+
+/* ── OPERACIONES COMPONENTS ─────────────────────────────────────────────── */
+function ClientMiniBar({tipo,filtCli}){
+  const pool=OP_SERVICIOS.filter(s=>s.tipo===tipo&&(!filtCli||s.clienteId===filtCli));
+  if(!pool.length) return <div style={{height:22,display:'flex',alignItems:'center'}}><span style={{fontSize:9,color:'var(--text-quaternary)',fontStyle:'italic'}}>Sin servicios</span></div>;
+  const total=pool.length;
+  const byCli=CLIENTES.map(c=>({...c,n:pool.filter(s=>s.clienteId===c.id).length,col:CLI_COLORS[(c.id-1)%CLI_COLORS.length]})).filter(c=>c.n>0).sort((a,b)=>b.n-a.n);
+  return (
+    <div>
+      <div style={{height:4,borderRadius:99,display:'flex',overflow:'hidden',marginBottom:5}}>
+        {byCli.map(c=><div key={c.id} style={{height:'100%',background:c.col,flex:c.n/total}} title={c.nombre}/>)}
+      </div>
+      <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+        {byCli.slice(0,3).map(c=>(
+          <span key={c.id} style={{fontSize:9,color:'var(--text-quaternary)',display:'flex',alignItems:'center',gap:2}}>
+            <span style={{width:5,height:5,borderRadius:'50%',background:c.col,display:'inline-block'}}/>
+            {c.nombre.split(' ')[0]}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VehicleKpiCard({statusKey,label,sub,c,bg,bdr,count,total,selected,onClick,cliBreak}){
+  const icons={
+    activo:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+    inactivo30:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+    nunca:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+  };
+  return (
+    <div className={`kpi-card${selected?' sel':''}`} style={{'--kc':c,'--kb':bg,'--kib':bdr}} onClick={onClick}>
+      <div className="kpi-top"><div className="kpi-ico">{icons[statusKey]}</div><span className="kpi-tag">{sub}</span></div>
+      <div className="kpi-amount">{count}</div>
+      <div className="kpi-label">{label} · {total>0?((count/total)*100).toFixed(0):0}% del total</div>
+      <div style={{marginTop:10,paddingTop:10,borderTop:'1px solid var(--border-tertiary)'}}>
+        {cliBreak.slice(0,3).map(cl=>(
+          <div key={cl.id} style={{display:'flex',alignItems:'center',gap:5,marginBottom:4,fontSize:9,color:'var(--text-quaternary)'}}>
+            <span style={{minWidth:50,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{cl.nombre.split(' ')[0].slice(0,7)}</span>
+            <div style={{flex:1,height:3,borderRadius:99,background:'var(--border-secondary)',overflow:'hidden'}}>
+              <div style={{height:'100%',borderRadius:99,background:CLI_COLORS[(cl.id-1)%CLI_COLORS.length],width:`${count>0?(cl.n/count)*100:0}%`}}/>
+            </div>
+            <span style={{minWidth:14,textAlign:'right'}}>{cl.n}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ServicesStackedChart({data,selMes,onMesClick}){
+  const [hov,setHov]=useState(null);
+  const W=880,H=200,P={t:18,r:20,b:35,l:40};
+  const cW=W-P.l-P.r, cH=H-P.t-P.b;
+  const maxV=Math.max(...data.map(d=>d.total),1);
+  const n=data.length, slotW=cW/n, bW=Math.min(Math.max(slotW*.65,16),52);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',display:'block'}} onMouseLeave={()=>setHov(null)}>
+      {[.25,.5,.75,1].map(f=>{
+        const y=P.t+cH*(1-f);
+        return <g key={f}>
+          <line x1={P.l} x2={W-P.r} y1={y} y2={y} stroke="var(--border-tertiary)" strokeWidth={.4} strokeDasharray="3,4"/>
+          <text x={P.l-5} y={y+3.5} textAnchor="end" fontSize={9} fill="var(--text-quaternary)" fontFamily="Poppins,sans-serif">{Math.round(maxV*f)}</text>
+        </g>;
+      })}
+      <line x1={P.l} x2={W-P.r} y1={P.t+cH} y2={P.t+cH} stroke="var(--border-secondary)" strokeWidth={1}/>
+      {data.map((d,i)=>{
+        const cx=P.l+(i+.5)*slotW, bx=cx-bW/2;
+        const sel=selMes===d.key, dim=selMes&&!sel;
+        let cumH=0;
+        const segs=OP_TIPOS.map(t=>{
+          const cnt=d[t]||0, h=maxV>0?(cnt/maxV)*cH:0;
+          const seg={t,cnt,h,y:P.t+cH-cumH-h,c:OP_SCFG[t].c};
+          cumH+=h; return seg;
+        });
+        return (
+          <g key={d.key} onClick={()=>onMesClick(d.key)} style={{cursor:'pointer'}}
+            onMouseEnter={()=>setHov({cx,d,tipY:P.t+cH-(d.total/maxV)*cH-14})}>
+            <rect x={P.l+i*slotW} y={P.t} width={slotW} height={cH} fill="transparent"/>
+            {segs.map(sg=>sg.h>0.5&&<rect key={sg.t} x={bx} y={sg.y} width={bW} height={sg.h} fill={sg.c} opacity={dim?.22:sel?1:.82}/>)}
+            {sel&&<rect x={bx} y={P.t+cH-(d.total/maxV)*cH} width={bW} height={3} fill="#624ab4" rx={1.5}/>}
+            <text x={cx} y={H-8} textAnchor="middle" fontSize={9.5}
+              fill={sel?'#624ab4':'var(--text-tertiary)'} fontWeight={sel?'700':'400'} fontFamily="Poppins,sans-serif">{d.label}</text>
+          </g>
+        );
+      })}
+      {hov&&(()=>{
+        const tx=Math.min(Math.max(hov.cx,P.l+70),W-P.r-70),ty=Math.max(hov.tipY,P.t+2);
+        return <g>
+          <rect x={tx-70} y={ty} width={140} height={22+OP_TIPOS.length*13} rx={6}
+            fill="var(--bg-primary)" stroke="var(--border-primary)" strokeWidth={.8}
+            style={{filter:'drop-shadow(0 2px 8px rgba(0,0,0,.12))'}}/>
+          <text x={tx} y={ty+14} textAnchor="middle" fontSize={10} fontWeight="700" fill="var(--text-primary)" fontFamily="Poppins,sans-serif">{hov.d.label}</text>
+          {OP_TIPOS.map((t,i)=>(
+            <text key={t} x={tx} y={ty+27+i*13} textAnchor="middle" fontSize={9} fill={OP_SCFG[t].c} fontFamily="Poppins,sans-serif">
+              {t}: {hov.d[t]||0}
+            </text>
+          ))}
+        </g>;
+      })()}
+    </svg>
+  );
+}
+
+function OpPager({total,page,setPage,perPage}){
+  const pages=Math.max(1,Math.ceil(total/perPage));
+  if(pages<=1) return null;
+  const from=(page-1)*perPage+1, to=Math.min(page*perPage,total);
+  return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderTop:'1px solid var(--border-secondary)'}}>
+      <span style={{fontSize:11,color:'var(--text-tertiary)'}}>Mostrando {from}–{to} de {total}</span>
+      <div style={{display:'flex',gap:4}}>
+        <button className="btn btn-secondary" style={{padding:'4px 10px',fontSize:11}} disabled={page===1} onClick={()=>setPage(1)}>«</button>
+        <button className="btn btn-secondary" style={{padding:'4px 10px',fontSize:11}} disabled={page===1} onClick={()=>setPage(p=>p-1)}>‹ Anterior</button>
+        {Array.from({length:Math.min(5,pages)},(_,i)=>{
+          let p; if(pages<=5) p=i+1; else if(page<=3) p=i+1; else if(page>=pages-2) p=pages-4+i; else p=page-2+i;
+          return <button key={p} className="btn" onClick={()=>setPage(p)}
+            style={{padding:'4px 10px',fontSize:11,background:p===page?'var(--brand-600)':'var(--bg-primary)',color:p===page?'#fff':'var(--text-secondary)',border:'1px solid var(--border-primary)'}}>{p}</button>;
+        })}
+        <button className="btn btn-secondary" style={{padding:'4px 10px',fontSize:11}} disabled={page===pages} onClick={()=>setPage(p=>p+1)}>Siguiente ›</button>
+        <button className="btn btn-secondary" style={{padding:'4px 10px',fontSize:11}} disabled={page===pages} onClick={()=>setPage(pages)}>»</button>
+      </div>
+    </div>
+  );
+}
+
+function VehiculosTable({vehiculos,compact}){
+  const [page,setPage]=useState(1);
+  const PER=50;
+  const py=compact?'7px 14px':'10px 14px';
+  const sorted=useMemo(()=>[...vehiculos].sort((a,b)=>{
+    if(!a.lastReport&&b.lastReport) return 1;
+    if(a.lastReport&&!b.lastReport) return -1;
+    return new Date(b.lastReport||0)-new Date(a.lastReport||0);
+  }),[vehiculos]);
+  useEffect(()=>setPage(1),[vehiculos]);
+  const paged=sorted.slice((page-1)*PER, page*PER);
+  return (
+    <div className="tbl-wrap">
+      <div className="tbl-topbar">
+        <span className="sec-title">Vehículos <span className="sec-count">{vehiculos.length}</span></span>
+        <button className="btn btn-secondary" style={{fontSize:11,padding:'5px 11px'}}><IcoDownload/> Exportar</button>
+      </div>
+      {sorted.length===0?<div className="tbl-empty">Sin vehículos para el filtro seleccionado.</div>
+      :<><div className="tbl-scroll"><table>
+        <thead><tr><th>Placa</th><th>Modelo</th><th>IMEI</th><th>Cliente</th><th className="r">Último Reporte</th><th className="r">Días sin rep.</th><th>Estado</th></tr></thead>
+        <tbody>{paged.map(v=>{
+          const cl=CLI[v.clienteId], dias=OP_DAYS_SINCE(v.lastReport);
+          const col=CLI_COLORS[(v.clienteId-1)%CLI_COLORS.length];
+          return <tr key={v.id}>
+            <td style={{padding:py}}><span className="td-id">{v.placa}</span></td>
+            <td style={{padding:py}}><span style={{fontSize:12,color:'var(--text-primary)'}}>{v.modelo}</span></td>
+            <td style={{padding:py}}><span className="td-id" style={{fontSize:10}}>{v.imei}</span></td>
+            <td style={{padding:py}}>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <div style={{width:22,height:22,borderRadius:6,background:col+'22',color:col,fontSize:9,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{cl?.ini}</div>
+                <span style={{fontSize:11}}>{cl?.nombre}</span>
+              </div>
+            </td>
+            <td style={{padding:py}} className="r td-date">{v.lastReport?fmtD(v.lastReport):'—'}</td>
+            <td style={{padding:py,textAlign:'right'}}>
+              <span style={{fontSize:11,fontWeight:600,color:dias===null?'var(--text-quaternary)':dias>30?'#d92d20':dias>7?'#dc6803':'#079455'}}>
+                {dias===null?'—':`${dias} días`}
+              </span>
+            </td>
+            <td style={{padding:py}}>
+              {v.status==='activo'&&<span className="badge badge-green">Reportando</span>}
+              {v.status==='inactivo30'&&<span className="badge badge-orange">+30 días</span>}
+              {v.status==='nunca'&&<span className="badge badge-red">Nunca</span>}
+            </td>
+          </tr>;
+        })}</tbody>
+      </table></div>
+      <OpPager total={sorted.length} page={page} setPage={setPage} perPage={PER}/>
+      </>
+      }
+    </div>
+  );
+}
+
+function ServiciosTable({servicios,compact}){
+  const [page,setPage]=useState(1);
+  const PER=50;
+  const py=compact?'7px 14px':'10px 14px';
+  const sorted=useMemo(()=>[...servicios].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)),[servicios]);
+  useEffect(()=>setPage(1),[servicios]);
+  const paged=sorted.slice((page-1)*PER, page*PER);
+  return (
+    <div className="tbl-wrap">
+      <div className="tbl-topbar">
+        <span className="sec-title">Servicios <span className="sec-count">{servicios.length}</span></span>
+        <button className="btn btn-secondary" style={{fontSize:11,padding:'5px 11px'}}><IcoDownload/> Exportar</button>
+      </div>
+      {sorted.length===0?<div className="tbl-empty">Sin servicios para el filtro seleccionado.</div>
+      :<><div className="tbl-scroll"><table>
+        <thead><tr><th>Folio</th><th>Tipo</th><th>Fecha</th><th>Cliente</th><th>Placa</th><th>Técnico</th></tr></thead>
+        <tbody>{paged.map(s=>{
+          const cl=CLI[s.clienteId], cfg=OP_SCFG[s.tipo];
+          const col=CLI_COLORS[(s.clienteId-1)%CLI_COLORS.length];
+          return <tr key={s.id}>
+            <td style={{padding:py}}><span className="td-id">{s.id}</span></td>
+            <td style={{padding:py}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:99,background:cfg.bg,color:cfg.c,whiteSpace:'nowrap'}}>{s.tipo}</span></td>
+            <td style={{padding:py}} className="td-date">{fmtD(s.fecha)}</td>
+            <td style={{padding:py}}>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <div style={{width:22,height:22,borderRadius:6,background:col+'22',color:col,fontSize:9,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{cl?.ini}</div>
+                <span style={{fontSize:11}}>{cl?.nombre}</span>
+              </div>
+            </td>
+            <td style={{padding:py}}><span className="td-id">{s.placa}</span></td>
+            <td style={{padding:py,fontSize:11,color:'var(--text-secondary)'}}>{s.tecnico}</td>
+          </tr>;
+        })}</tbody>
+      </table></div>
+      <OpPager total={sorted.length} page={page} setPage={setPage} perPage={PER}/>
+      </>
+      }
+    </div>
+  );
+}
+
+/* ── OPERACIONES DASHBOARD ────────────────────────────────────────────────── */
+function OperacionesDashboard({compact}){
+  const [selStatus,setSelStatus]=useState(null);
+  const [selTipo,  setSelTipo  ]=useState(null);
+  const [selCli,   setSelCli   ]=useState(null);
+  const [selMes,   setSelMes   ]=useState(null);
+
+  const vPool=useMemo(()=>selCli?OP_VEHICULOS.filter(v=>v.clienteId===selCli):OP_VEHICULOS,[selCli]);
+  const sPool=useMemo(()=>selCli?OP_SERVICIOS.filter(s=>s.clienteId===selCli):OP_SERVICIOS,[selCli]);
+
+  const vStats=useMemo(()=>({
+    activo:vPool.filter(v=>v.status==='activo').length,
+    inactivo30:vPool.filter(v=>v.status==='inactivo30').length,
+    nunca:vPool.filter(v=>v.status==='nunca').length,
+    total:vPool.length,
+  }),[vPool]);
+
+  const svcStats=useMemo(()=>OP_TIPOS.reduce((a,t)=>({...a,[t]:sPool.filter(s=>s.tipo===t).length}),{}),[sPool]);
+
+  const chartData=useMemo(()=>OP_MESES.map(({key,label})=>{
+    const m=sPool.filter(s=>s.mes===key);
+    return {key,label,...OP_TIPOS.reduce((a,t)=>({...a,[t]:m.filter(s=>s.tipo===t).length}),{}),total:m.length};
+  }),[sPool]);
+
+  const cliBreak=(status)=>CLIENTES.map(c=>({...c,n:vPool.filter(v=>v.clienteId===c.id&&v.status===status).length})).filter(c=>c.n>0).sort((a,b)=>b.n-a.n);
+
+  const filtVeh=useMemo(()=>{ let v=vPool; if(selStatus) v=v.filter(x=>x.status===selStatus); return v; },[vPool,selStatus]);
+  const filtSvc=useMemo(()=>{ let s=sPool; if(selTipo) s=s.filter(x=>x.tipo===selTipo); if(selMes) s=s.filter(x=>x.mes===selMes); return s; },[sPool,selTipo,selMes]);
+
+  const showVeh=selStatus!==null;
+  const hasFilter=selStatus||selTipo||selCli||selMes;
+  const clearAll=()=>{setSelStatus(null);setSelTipo(null);setSelCli(null);setSelMes(null);};
+
+  const VKpiCfg=[
+    {statusKey:'activo',    label:'Reportando',           sub:'Últimos 7 días', c:'#079455',bg:'#ecfdf3',bdr:'#dcfae6'},
+    {statusKey:'inactivo30',label:'+30 días sin reporte', sub:'Inactivos',      c:'#dc6803',bg:'#fffaeb',bdr:'#fef0c7'},
+    {statusKey:'nunca',     label:'Nunca reportaron',     sub:'Sin registro',   c:'#b42318',bg:'#fef3f2',bdr:'#fee4e2'},
+  ];
+
+  return (
+    <div>
+      <div className="page-head">
+        <div className="page-title-wrap">
+          <div className="page-title">
+            Dashboard de Operaciones
+            {hasFilter&&<button className="chip-clear" onClick={clearAll}><IcoClose s={10}/> Limpiar filtros</button>}
+          </div>
+          <div className="page-sub">Estado de flota y servicios · {OP_TODAY.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          {selCli&&<button onClick={()=>setSelCli(null)} style={{fontSize:11,color:'var(--brand-600)',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>✕ Limpiar</button>}
+          <select value={selCli||''} onChange={e=>setSelCli(e.target.value?Number(e.target.value):null)}
+            style={{padding:'7px 12px',borderRadius:8,border:'1px solid var(--border-primary)',background:'var(--bg-primary)',
+              color:'var(--text-primary)',fontSize:12,fontFamily:'Poppins,sans-serif',cursor:'pointer',outline:'none',
+              boxShadow:'var(--shadow-xs)',minWidth:180}}>
+            <option value="">Todos los clientes</option>
+            {CLIENTES.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Flota */}
+      <div className="sec-head">
+        <div className="sec-title">Estado de Flota <span className="sec-count">{vStats.total} vehículos</span></div>
+        {selStatus&&<button onClick={()=>setSelStatus(null)} style={{fontSize:11,color:'var(--text-tertiary)',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}><IcoClose s={10}/> Deseleccionar</button>}
+      </div>
+      <div className="op-kpi-grid">
+        {VKpiCfg.map(cfg=>(
+          <VehicleKpiCard key={cfg.statusKey} {...cfg}
+            count={vStats[cfg.statusKey]} total={vStats.total}
+            selected={selStatus===cfg.statusKey}
+            onClick={()=>setSelStatus(s=>s===cfg.statusKey?null:cfg.statusKey)}
+            cliBreak={cliBreak(cfg.statusKey)}/>
+        ))}
+      </div>
+
+      {/* Servicios type cards */}
+      <div className="sec-head">
+        <div className="sec-title">Servicios Realizados <span className="sec-count">{sPool.length} totales</span></div>
+        {selTipo&&<button onClick={()=>setSelTipo(null)} style={{fontSize:11,color:'var(--text-tertiary)',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}><IcoClose s={10}/> Deseleccionar</button>}
+      </div>
+      <div className="op-svc-grid">
+        {OP_TIPOS.map(tipo=>{
+          const cfg=OP_SCFG[tipo];
+          return (
+            <div key={tipo} className={`op-svc-card${selTipo===tipo?' sel':''}`}
+              style={{'--oc':cfg.c,'--ob':cfg.bg}} onClick={()=>setSelTipo(t=>t===tipo?null:tipo)}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                <span style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',color:cfg.c}}>{tipo}</span>
+                {selTipo===tipo&&<span style={{color:cfg.c,lineHeight:0}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>}
+              </div>
+              <div style={{fontSize:28,fontWeight:700,color:'var(--text-primary)',lineHeight:1,marginBottom:8}}>{svcStats[tipo]||0}</div>
+              <ClientMiniBar tipo={tipo} filtCli={selCli}/>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Stacked chart */}
+      <div className="tbl-wrap" style={{marginBottom:18}}>
+        <div className="tbl-topbar">
+          <span className="sec-title">Servicios por Mes
+            {selMes&&<span className="sec-count" style={{marginLeft:6}}>{OP_MESES.find(m=>m.key===selMes)?.label}</span>}
+          </span>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+            {OP_TIPOS.map(t=>(
+              <div key={t} style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'var(--text-tertiary)'}}>
+                <div style={{width:8,height:8,borderRadius:2,background:OP_SCFG[t].c}}></div>{t}
+              </div>
+            ))}
+            <span style={{fontSize:10,color:'var(--text-quaternary)'}}>· Clic para filtrar</span>
+          </div>
+        </div>
+        <div style={{padding:'16px 16px 8px'}}>
+          <ServicesStackedChart data={chartData} selMes={selMes} onMesClick={k=>setSelMes(m=>m===k?null:k)}/>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="sec-head">
+        <div className="sec-title">
+          {showVeh
+            ?`Vehículos · ${selStatus==='activo'?'Reportando':selStatus==='inactivo30'?'+30 días sin reporte':'Nunca reportaron'}`
+            :`Servicios${selTipo?` · ${selTipo}`:''}${selMes?` · ${OP_MESES.find(m=>m.key===selMes)?.label}`:''}`}
+          <span className="sec-count">{showVeh?filtVeh.length:filtSvc.length}</span>
+        </div>
+      </div>
+      {showVeh
+        ?<VehiculosTable vehiculos={filtVeh} compact={compact}/>
+        :<ServiciosTable servicios={filtSvc} compact={compact}/>
+      }
+    </div>
+  );
+}
+
+/* ── APP ───────────────────────────────────────────────────────────────────── */
+function App() {
+  const [activeNav, setActiveNav] = useState('facturacion');
+  const [dark, setDark] = useState(TWEAK_DEFAULTS.darkMode);
+  const [compact, setCompact] = useState(TWEAK_DEFAULTS.compact);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
+
+  // Tweaks protocol
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setTweaksOpen(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweaksOpen(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { darkMode: dark } }, '*');
+  }, [dark]);
+
+  useEffect(() => {
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { compact } }, '*');
+  }, [compact]);
+
+  const closeTweaks = () => {
+    setTweaksOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const activeLabel = NAV.find((n) => n.id === activeNav)?.label || '';
+
+  return (
+    <div className="app">
+      {/* ── SIDEBAR ── */}
+      <aside className="sidebar">
+        <div className="s-logo">
+          <div className="s-logo-mark">
+            <IcoWave s={16} />
+          </div>
+          <div>
+            <div className="s-logo-name">BI Platform</div>
+            <div className="s-logo-sub">Business Intelligence</div>
+          </div>
+        </div>
+        <nav className="s-nav">
+          <div className="s-section">
+            <div className="s-grp">Módulos</div>
+            {NAV.map((item) =>
+            <div key={item.id} className={`nav-item${activeNav === item.id ? ' active' : ''}`} onClick={() => setActiveNav(item.id)}>
+                <span className="nav-icon"><NavIcon name={item.icon} /></span>
+                <span>{item.label}</span>
+                {item.badge && <span className="nav-badge">{item.badge}</span>}
+              </div>
+            )}
+          </div>
+        </nav>
+        <div className="s-footer">
+          <div className="s-user">
+            <div className="s-ava">AM</div>
+            <div>
+              <div className="s-uname">Ana Martínez</div>
+              <div className="s-urole">Administrador</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── MAIN ── */}
+      <div className="main">
+        <div className="topbar">
+          <div className="breadcrumb">
+            <span>BI Platform</span>
+            <span className="bc-sep">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </span>
+            <span className="bc-curr">{activeLabel}</span>
+          </div>
+          <div className="tb-spacer"></div>
+          <button className="tb-btn" onClick={() => setDark((d) => !d)} title="Cambiar tema">
+            {dark ? <IcoSun /> : <IcoMoon />}
+          </button>
+          <button className="tb-btn" onClick={() => setTweaksOpen((o) => !o)} title="Ajustes de visualización">
+            <IcoSettings />
+          </button>
+          <div className="tb-div"></div>
+          <div className="tb-avatar">AM</div>
+        </div>
+
+        <div className="content" style={{ opacity: "2" }}>
+          {activeNav === 'facturacion' ?
+          <FacturacionDashboard compact={compact} /> :
+          activeNav === 'compras' ?
+          <ComprasEquiposDashboard compact={compact} /> :
+          activeNav === 'operaciones' ?
+          <OperacionesDashboard compact={compact} /> :
+          <ComingSoon label={activeLabel} />
+          }
+        </div>
+      </div>
+
+      {/* ── TWEAKS PANEL ── */}
+      <TweaksPanel
+        open={tweaksOpen}
+        onClose={closeTweaks}
+        dark={dark} setDark={setDark}
+        compact={compact} setCompact={setCompact} />
+      
+    </div>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

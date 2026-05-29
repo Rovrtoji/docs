@@ -1,0 +1,93 @@
+---
+title: "Mockups de UI"
+description: "Prototipos interactivos de pantallas clave del ERP/CRM y del Portal Cliente."
+sidebarTitle: "Mockups"
+icon: "palette"
+keywords: ["mockup", "prototipo", "UI", "diseño", "dashboard", "wireframe"]
+---
+
+<Note>
+  Mockups **funcionales** (React + UMD) que reflejan el diseño visual y la interacción esperada de cada pantalla. Sirven de referencia para los equipos de desarrollo y producto. Cada mockup soporta modo claro y oscuro.
+</Note>
+
+<Info>
+  **Cómo se sirven:** los archivos HTML viven en `mockups/` del repo de documentación y se publican vía **GitHub Pages**. Esta página los embebe con `<iframe>` para que puedas interactuar con ellos sin salir de la documentación.
+
+  Si el iframe se ve en blanco, ver [Habilitar GitHub Pages](#habilitar-github-pages) abajo.
+</Info>
+
+## BI Platform — Facturación
+
+Dashboard de BI para análisis de facturación: KPIs financieros, gráficas comparativas, tabla de facturas y filtros por periodo. Incluye sidebar de navegación entre dashboards y modo claro/oscuro.
+
+<Frame caption="Mockup interactivo · BI Platform Facturación">
+  <iframe
+    src="https://rovrtoji.github.io/docs/mockups/bi-dashboard.html"
+    width="100%"
+    height="780"
+    style={{ border: "1px solid var(--mintlify-border-secondary)", borderRadius: "12px" }}
+    title="BI Dashboard mockup"
+  />
+</Frame>
+
+**Abrir en pantalla completa:** [bi-dashboard.html](https://rovrtoji.github.io/docs/mockups/bi-dashboard.html)
+
+---
+
+## Hub Backoffice — Handoff
+
+Mockup del flujo de handoff seguro entre apps del hub: launcher, transición a la app destino y manejo de errores de token. Refleja las HU-02 y HU-03.
+
+<Frame caption="Mockup interactivo · Handoff entre apps del hub">
+  <iframe
+    src="https://rovrtoji.github.io/docs/mockups/handoff-hub-backoffice.html"
+    width="100%"
+    height="780"
+    style={{ border: "1px solid var(--mintlify-border-secondary)", borderRadius: "12px" }}
+    title="Handoff hub backoffice mockup"
+  />
+</Frame>
+
+**Abrir en pantalla completa:** [handoff-hub-backoffice.html](https://rovrtoji.github.io/docs/mockups/handoff-hub-backoffice.html)
+
+---
+
+## Habilitar GitHub Pages
+
+Para que los iframes funcionen, GitHub Pages debe estar activo sobre el repo `Rovrtoji/docs`:
+
+<Steps>
+  <Step title="Abrir Settings del repo">
+    Ve a [github.com/Rovrtoji/docs/settings/pages](https://github.com/Rovrtoji/docs/settings/pages).
+  </Step>
+  <Step title="Configurar Source">
+    En **Build and deployment** → **Source**, elige **Deploy from a branch**.
+  </Step>
+  <Step title="Elegir branch y carpeta">
+    En **Branch**, selecciona `main` y `/ (root)`. Click **Save**.
+  </Step>
+  <Step title="Esperar al primer deploy">
+    GitHub tarda 1-2 minutos en publicar. Te aparecerá la URL `https://rovrtoji.github.io/docs/` cuando esté listo.
+  </Step>
+  <Step title="Verificar">
+    Abre directamente [https://rovrtoji.github.io/docs/mockups/bi-dashboard.html](https://rovrtoji.github.io/docs/mockups/bi-dashboard.html). Si renderiza el dashboard, los iframes de esta página también funcionarán.
+  </Step>
+</Steps>
+
+<Tip>
+  **Mientras tanto:** si quieres ver los mockups sin habilitar GitHub Pages, abre los archivos HTML directamente desde tu carpeta local con doble-click — se abren en el navegador y funcionan igual.
+</Tip>
+
+## Agregar un mockup nuevo
+
+<Steps>
+  <Step title="Coloca el HTML">
+    Guarda el archivo en `docs/mockups/<nombre-kebab-case>.html`. Sin espacios en el nombre.
+  </Step>
+  <Step title="Agrega la sección en esta página">
+    Copia uno de los bloques `<Frame>` de arriba, cambia el `src` del iframe y el `title`.
+  </Step>
+  <Step title="Push">
+    Commit + push. GitHub Pages publica el archivo automáticamente. Mintlify re-renderiza esta página con el iframe nuevo.
+  </Step>
+</Steps>

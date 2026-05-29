@@ -21,6 +21,10 @@
           {
             "group": "Roadmap",
             "pages": ["index"]
+          },
+          {
+            "group": "Diseño",
+            "pages": ["mockups"]
           }
         ]
       },

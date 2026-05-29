@@ -5,3 +5,6 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Mockups HTML — servidos por GitHub Pages, no procesados como contenido MDX
+mockups/

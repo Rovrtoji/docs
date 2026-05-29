@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Handoff · Hub + Backoffice v2.1</title>
+<style>
+:root{--bg:#F0EEE5;--bg-soft:#F7F4EC;--bg-strong:#E7E3D7;--paper:#FAF8F2;--text:#1F1E1D;--text-soft:#57534E;--text-muted:#8E8A82;--border:#DFD9CB;--border-soft:#E9E4D6;--accent:#C96442;--accent-strong:#A24A2D;--accent-soft:#FCE7DD;--success:#5C8A3E;--success-soft:#EBF2DD;--warning:#B5832E;--warning-soft:#FAEFD4;--error:#B7474E;--error-soft:#FBE3E2;--info:#3D6783;--info-soft:#DDE7EF;--code-bg:#EAE6D9;--shadow:0 1px 2px rgba(31,30,29,.06),0 1px 3px rgba(31,30,29,.04);--shadow-lg:0 10px 24px rgba(31,30,29,.08)}
+[data-theme="dark"]{--bg:#1F1E1D;--bg-soft:#2A2826;--bg-strong:#3A3733;--paper:#262423;--text:#F0EEE5;--text-soft:#C9C3B5;--text-muted:#8E8A82;--border:#3A3733;--border-soft:#2F2C29;--accent:#DA7757;--accent-strong:#E89171;--accent-soft:#3A2418;--success:#8FB76A;--success-soft:#1F2A14;--warning:#DAA84A;--warning-soft:#2D2210;--error:#D87278;--error-soft:#2C1517;--info:#9CB7CC;--info-soft:#1E2A36;--code-bg:#2F2C28;--shadow:0 1px 3px rgba(0,0,0,.5);--shadow-lg:0 10px 24px rgba(0,0,0,.5)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{font-family:"Inter","Söhne",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+code,pre,.mono{font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+.wrap{display:grid;grid-template-columns:280px 1fr;max-width:1320px;margin:0 auto}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:28px 22px;border-right:1px solid var(--border);background:var(--bg-soft)}
+nav.toc .brand{font-weight:700;font-size:16px;color:var(--text)}
+nav.toc .brand-sub{font-size:11px;color:var(--text-muted);margin:4px 0 22px;text-transform:uppercase;letter-spacing:.12em}
+nav.toc .group{margin:18px 0 4px;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;font-weight:600}
+nav.toc a{display:block;padding:6px 11px;margin:1px 0 1px 8px;border-radius:7px;color:var(--text-soft);text-decoration:none;font-size:13px;transition:all .15s}
+nav.toc a:hover{background:var(--bg-strong);color:var(--text)}
+nav.toc a.active{background:var(--accent-soft);color:var(--accent-strong);font-weight:600}
+main{padding:0 56px 140px;min-width:0}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:16px 0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border-soft)}
+.topbar .crumb{font-size:13px;color:var(--text-muted)}.topbar .crumb b{color:var(--text-soft)}
+.theme-btn{border:1px solid var(--border);background:var(--paper);color:var(--text);border-radius:8px;padding:7px 13px;cursor:pointer;font-size:13px}
+.theme-btn:hover{background:var(--bg-strong)}
+.hero{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.hero .eyebrow{color:var(--accent);font-weight:600;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase}
+.hero h1{font-size:42px;line-height:1.1;margin:12px 0 14px;letter-spacing:-.02em;font-weight:700}
+.hero p.lead{font-size:17px;color:var(--text-soft);max-width:820px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:500;background:var(--paper);color:var(--text-soft);border:1px solid var(--border)}
+.overview{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:24px}
+@media (max-width:780px){.overview{grid-template-columns:1fr}}
+.ms-card{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);text-decoration:none;color:inherit}
+.ms-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.ms-card .ms-id{font-family:ui-monospace,monospace;font-size:11px;color:var(--accent-strong);background:var(--accent-soft);padding:3px 9px;border-radius:5px;font-weight:600;display:inline-block}
+.ms-card h3{font-size:18px;margin:8px 0 6px;font-weight:700}
+.ms-card p{font-size:13.5px;color:var(--text-soft);margin:0}
+section{padding:40px 0;border-bottom:1px solid var(--border-soft);scroll-margin-top:80px}
+section:last-child{border-bottom:none}
+section>h2{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+section>h2+.h{font-size:30px;letter-spacing:-.01em;margin-bottom:18px;font-weight:700}
+h3{font-size:19px;margin:28px 0 10px;font-weight:600}
+h4{font-size:15.5px;margin:20px 0 6px;font-weight:600;color:var(--text)}
+p{margin-bottom:14px;color:var(--text-soft)}
+p strong,li strong,td strong{color:var(--text);font-weight:600}
+ul,ol{margin:0 0 16px 22px}
+li{margin-bottom:8px;color:var(--text-soft)}
+.phase{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin:16px 0;box-shadow:var(--shadow);scroll-margin-top:80px}
+.phase header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.phase .ph-id{font-family:ui-monospace,monospace;font-size:12px;color:var(--success);background:var(--success-soft);padding:3px 9px;border-radius:6px;font-weight:600}
+.phase h3{margin:0;font-size:18px;font-weight:600;flex:1;min-width:200px}
+.phase .ticket{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text-muted)}
+table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13px;background:var(--paper);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:var(--bg-soft)}
+tr:last-child td{border-bottom:none}
+pre{background:var(--code-bg);color:var(--text);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.55;border:1px solid var(--border-soft);margin:8px 0 16px}
+code:not(pre code){background:var(--code-bg);color:var(--accent-strong);padding:2px 6px;border-radius:5px;font-size:.9em;font-weight:500}
+.callout{border-radius:12px;padding:14px 18px;margin:16px 0;font-size:14px;border:1px solid}
+.callout.info{background:var(--info-soft);border-color:color-mix(in srgb,var(--info) 35%,transparent);color:var(--text)}
+.callout.warn{background:var(--warning-soft);border-color:color-mix(in srgb,var(--warning) 35%,transparent);color:var(--text)}
+.callout.ok{background:var(--success-soft);border-color:color-mix(in srgb,var(--success) 35%,transparent);color:var(--text)}
+.callout.danger{background:var(--error-soft);border-color:color-mix(in srgb,var(--error) 35%,transparent);color:var(--text)}
+.callout b{color:var(--text)}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.pill.deploy{background:var(--success-soft);color:var(--success)}
+.pill.pending{background:var(--warning-soft);color:var(--warning)}
+.pill.curso{background:var(--info-soft);color:var(--info)}
+.pill.blocked{background:var(--bg-strong);color:var(--text-muted)}
+footer{padding:50px 0 0;color:var(--text-muted);font-size:13px}
+@media (max-width:980px){.wrap{grid-template-columns:1fr}nav.toc{display:none}main{padding:0 22px 80px}.hero h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc">
+    <div class="brand">Handoff Hub + Backoffice</div>
+    <div class="brand-sub">Plan v2.1 · 2026-05-29</div>
+    <a href="#resumen">Resumen ejecutivo</a>
+    <a href="#contexto">Contexto y planeación</a>
+    <div class="group">Backoffice v2.1</div>
+    <a href="#fa">Fase A · Shell topbar</a>
+    <a href="#fb1">Fase B.1 · Audit coverage</a>
+    <a href="#fb2">Fase B.2 · Contador micrositios</a>
+    <a href="#fc1">Fase C.1 · Notificaciones</a>
+    <a href="#fc2">Fase C.2 · Catálogos ↔ usuario</a>
+    <a href="#fc3">Fase C.3 · UX roles</a>
+    <a href="#fd">Fase D · 5 fixes visuales</a>
+    <div class="group">Hub v2</div>
+    <a href="#hb-l">HB.L · Login</a>
+    <a href="#hb-h">HB.H · Launcher + audit</a>
+    <a href="#hb-val">Validación 2026-04-27</a>
+    <div class="group">Transversales</div>
+    <a href="#auth">Auth F3-02b</a>
+    <a href="#dt017">DT-017 cleanup</a>
+    <a href="#superadmin">Super_admin hub</a>
+    <a href="#csrf-fix">Fix CSRF handoff</a>
+    <div class="group">Cierre</div>
+    <a href="#matriz">Matriz Jira</a>
+    <a href="#archivos">Archivos clave</a>
+    <a href="#decisiones">Decisiones técnicas</a>
+    <a href="#riesgos">Riesgos y pendientes</a>
+    <a href="#deploy">Cómo desplegar</a>
+    <a href="#proximos">Próximos pasos</a>
+    <a href="#refs">Referencias</a>
+  </nav>
+
+  <main>
+    <div class="topbar">
+      <span class="crumb">proyecto interno / <b>handoff hub + backoffice</b></span>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </div>
+
+    <header class="hero" id="resumen">
+      <div class="eyebrow">Documento de handoff · Plan v2.1</div>
+      <h1>Hub + Backoffice<br>Cierre v2.1 y migración UX</h1>
+      <p class="lead">
+        Resumen completo del trabajo realizado desde la <strong>planeación de
+        cambios solicitados</strong> hasta el cierre. Cubre alcance, decisiones,
+        ejecución, archivos clave, riesgos y próximos pasos. Receptores:
+        <strong>QA final, DevOps y soporte post-deploy</strong>.
+      </p>
+      <div class="badges">
+        <span class="badge">2 planes paralelos</span>
+        <span class="badge">8 fases backoffice</span>
+        <span class="badge">5 subtareas hub</span>
+        <span class="badge">20 tickets cerrados</span>
+        <span class="badge">5 fixes Fase D</span>
+        <span class="badge">1 fix CSRF post-cierre</span>
+      </div>
+      <div class="overview">
+        <a class="ms-card" href="#fa">
+          <span class="ms-id">Backoffice v2.1</span>
+          <h3>14 tickets · 1 pendiente QA</h3>
+          <p>Fases A · B.1 · B.2 · C.1 · C.2 · C.3 · D — shell UX, audit, contador apps, notificaciones reales, catálogos ↔ usuario, UX roles, 5 fixes.</p>
+        </a>
+        <a class="ms-card" href="#hb-l">
+          <span class="ms-id">Hub v2</span>
+          <h3>6 tickets · todos en to_deploy</h3>
+          <p>Login UUI + redirect dual + forgot/reset, launcher tipo Odoo, audit del handoff entre apps. Validado el 2026-04-27.</p>
+        </a>
+      </div>
+    </header>
+
+    <section id="contexto">
+      <h2>Punto de partida</h2>
+      <div class="h">Contexto y planeación</div>
+      <h3>Origen</h3>
+      <p>El plan v2.1 nace del cierre del backoffice tras adoptar <strong>UUI v8</strong> (Untitled UI) como kit de componentes oficial. Antes de tocar código, el usuario fijó decisiones de diseño:</p>
+      <ul>
+        <li>Roles con <code>role_applications</code> plano (sin sub-aplicaciones)</li>
+        <li>Notificaciones backend reales mínimas (no placeholders)</li>
+        <li>Catálogos enlazados a usuarios vía FK <code>position_id</code> y <code>manager_user_id</code></li>
+      </ul>
+      <p>El plan <strong>Hub v2</strong> es paralelo: el hub (apps internas, puerto 5173) había quedado atrás del patrón UUI y necesitaba migración visual y refactor del launcher.</p>
+      <h3>Documentos canónicos</h3>
+      <table>
+        <thead><tr><th>Documento</th><th>Ubicación</th></tr></thead>
+        <tbody>
+          <tr><td>Spec Backoffice v2.1</td><td><code>plan_v2/02_backoffice/SPEC_V2.1_CIERRE_BACKOFFICE.md</code></td></tr>
+          <tr><td>Checklist backoffice</td><td><code>plan_v2/02_backoffice/checklist.md</code></td></tr>
+          <tr><td>Spec hub</td><td><code>plan_v2/01_hub/checklist.md</code></td></tr>
+          <tr><td>Progreso global</td><td><code>plan_v2/progreso.md</code></td></tr>
+          <tr><td>Workflow agentes</td><td><code>plan_v2/workflow.md</code></td></tr>
+          <tr><td>Plan local hub</td><td><code>~/.claude/plans/happy-roaming-popcorn.md</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="fa">
+      <h2>Backoffice</h2>
+      <div class="h">Fase A · Shell topbar UX</div>
+      <div class="phase">
+        <header><span class="ph-id">FA-01</span><h3>Shell topbar UX</h3><span class="ticket">IOS-98 frontend · IOS-99 QA pendiente</span></header>
+        <ul>
+          <li><code>user-menu.tsx</code> con Perfil / Ajustes / Logout</li>
+          <li><code>notification-bell.tsx</code> <strong>NUEVO</strong> (badge + popover placeholder) — reemplazado en Fase C.1 por la versión real</li>
+          <li>Sidebar: rename "Aplicaciones" → "Micrositios" con icono <code>Globe01</code></li>
+          <li>Eliminado footer con tarjeta de usuario</li>
+          <li><code>app.tsx</code> integra la Bell en el header</li>
+          <li>Smoke Playwright validado light + dark</li>
+        </ul>
+        <div class="callout warn"><b>Pendiente:</b> IOS-99 QA visual (checklist de 11 puntos) no se ha ejecutado.</div>
+      </div>
+    </section>
+
+    <section id="fb1">
+      <h2>Backoffice</h2>
+      <div class="h">Fase B.1 · Audit coverage extendido</div>
+      <div class="phase">
+        <header><span class="ph-id">FB.1-01</span><h3>Backend</h3><span class="ticket">IOS-105</span></header>
+        <p><code>audit_service.log_action()</code> extendido a:</p>
+        <ul>
+          <li><code>roles_v2</code>: create / update / delete / permissions_set / applications_set</li>
+          <li><code>users_contract</code>: roles_set / role_assign / role_revoke</li>
+          <li><code>catalogs</code>: dept / pos / area_manager</li>
+          <li><code>applications</code>: CRUD apps + menu views</li>
+        </ul>
+        <p><strong>Excluido attendance</strong> por decisión del usuario.</p>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">FB.1-02</span><h3>QA backend</h3><span class="ticket">IOS-106</span></header>
+        <p>Script e2e contra DB real: <strong>9/9 PASS</strong> (role_create/update/permissions_set/applications_set, user_role_assign/revoke, department_create, position_create, application_create). Suite completa <code>pytest tests/</code>: <strong>42/42 PASS</strong>, sin regresiones.</p>
+      </div>
+    </section>
+
+    <section id="fb2">
+      <h2>Backoffice</h2>
+      <div class="h">Fase B.2 · Contador de micrositios</div>
+      <div class="phase">
+        <header><span class="ph-id">FB.2-01</span><h3>Backend</h3><span class="ticket">IOS-107</span></header>
+        <ul>
+          <li><code>rbac_service.count_users_per_application()</code> con query agregada (DISTINCT sobre <code>usuarios_roles</code>, sin N+1)</li>
+          <li>Campo <code>assigned_users_count</code> en <code>ApplicationOut</code></li>
+          <li>Hidratación en <code>list_applications</code> y <code>get_application</code></li>
+        </ul>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">FB.2-02</span><h3>Frontend</h3><span class="ticket">IOS-108</span></header>
+        <p><code>microsites/list.tsx</code> consume <code>assigned_users_count</code>. Card footer muestra <strong>"N usuarios"</strong> con icono <code>Users01</code> + "Orden X". Modal de detalles agrega tile "Usuarios con acceso". Typecheck sin errores nuevos.</p>
+      </div>
+    </section>
+
+    <section id="fc1">
+      <h2>Backoffice</h2>
+      <div class="h">Fase C.1 · Notificaciones backend real</div>
+      <p>Padre: <strong>IOS-109</strong> (en curso). Sustituye el placeholder Bell de Fase A.</p>
+      <table>
+        <thead><tr><th>Ticket</th><th>Subtarea</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td><code>IOS-110</code></td><td>FC.1-01 backend</td><td>Migración <code>user_notifications</code> + modelo <code>UserNotification</code> + <code>notification_service</code> (create / list / mark_read / mark_all_read / unread_count / list_admin_user_ids). <code>alembic upgrade head</code> aplicado.</td></tr>
+          <tr><td><code>IOS-111</code></td><td>FC.1-02 API</td><td>4 endpoints REST <code>/api/v1/notifications</code> + schemas. Ownership validado en el servicio (no <code>require_permission</code>).</td></tr>
+          <tr><td><code>IOS-112</code></td><td>FC.1-03 trigger</td><td><code>audit_service.log_action()</code> dispara <code>notification_service.create_for_users</code> a admins cuando <code>action in SECURITY_ACTIONS</code> (7 acciones). Best-effort con <code>logger.exception</code>.</td></tr>
+          <tr><td><code>IOS-113</code></td><td>FC.1-04 frontend</td><td>Hook <code>useNotifications</code> (polling 60s) + <code>NotificationBell</code> real (lista, badge, mark-read, mark-all-read). <code>app.tsx</code> pasa <code>onNavigate</code> con react-router.</td></tr>
+          <tr><td><code>IOS-114</code></td><td>QA</td><td>Service layer 8/8 + trigger audit→security 3/3 + smoke Playwright (Bell muestra "1 sin leer" tras <code>role_delete</code> HTTP, dropdown lista "Evento de seguridad: role delete" con badge "Seguridad"). Footer "Marcar todas como leídas" OK.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout info"><b>SECURITY_ACTIONS</b> (7): <code>user_delete</code>, <code>role_delete</code>, <code>role_permissions_set</code>, <code>role_applications_set</code>, <code>revoke_session</code>, <code>login_failed</code>, <code>application_delete</code>. Notifica a TODOS los super_admin + auditor.</div>
+    </section>
+
+    <section id="fc2">
+      <h2>Backoffice</h2>
+      <div class="h">Fase C.2 · Catálogos ↔ usuario (puesto + jefe)</div>
+      <div class="phase">
+        <header><span class="ph-id">FC.2-01</span><h3>Backend</h3><span class="ticket">IOS-115</span></header>
+        <ul>
+          <li>Migración <code>usuarios.position_id</code> + <code>usuarios.manager_user_id</code> con backfill</li>
+          <li>Modelo <code>User</code> con relaciones <code>position</code> / <code>manager</code></li>
+          <li><code>GET /users/{id}</code> ahora devuelve <code>positionName</code>, <code>departmentName</code>, <code>managerName</code>, <code>managerEmail</code></li>
+          <li><code>PATCH /users/{id}</code> acepta <code>positionId</code> y <code>managerUserId</code></li>
+          <li><code>GET /catalogs/departments</code> y <code>/catalogs/positions</code> con contadores sin N+1</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">FC.2-02</span><h3>Frontend</h3><span class="ticket">IOS-116</span></header>
+        <p><code>users/detail</code> muestra <strong>Puesto + Jefe directo</strong> (con link al detalle del jefe). Modal editar tiene <code>Select</code> puesto + <code>Select</code> jefe (pobla desde <code>/catalogs/positions</code> y <code>/users</code>). Cards de catalogs muestran "N puestos · M usuarios" y "N usuarios" por puesto.</p>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">FC.2-03</span><h3>QA + fixes</h3><span class="ticket">IOS-117</span></header>
+        <p>Smoke Playwright + fix detectado durante QA:</p>
+        <div class="callout warn"><b>Fix aplicado durante QA:</b> <code>catalogs.py</code> corregido — <code>svc.create/update/delete_position</code> retornan <code>dict</code> (no objeto). Acceso ahora con <code>pos["id"]</code>, no <code>pos.id</code>.</div>
+      </div>
+    </section>
+
+    <section id="fc3">
+      <h2>Backoffice</h2>
+      <div class="h">Fase C.3 · UX roles ("Da acceso a:")</div>
+      <div class="phase">
+        <header><span class="ph-id">FC.3-01</span><h3>Frontend</h3><span class="ticket">IOS-118</span></header>
+        <p><code>users/detail</code> tab <strong>Roles</strong> muestra "Da acceso a: App1, App2…" por cada rol asignado. Cache por rol para no pegar al backend en cada render. Sin cambios de backend (reusa <code>GET /roles/{id}/applications</code>).</p>
+        <div class="callout warn"><b>Bug detectado durante QA:</b> <code>RoleOption</code> TS estaba <code>{id: string, name: string}</code> cuando el contrato real era <code>{id: int, nombre: string}</code> — nunca matcheaba y "Da acceso a:" no aparecía. Corregido y documentado en memoria como regla persistente.</div>
+      </div>
+    </section>
+
+    <section id="fd">
+      <h2>Backoffice</h2>
+      <div class="h">Fase D · 5 fixes visuales</div>
+      <p>Mergeados pero <strong>sin tickets Jira separados</strong>. Recomendable agruparlos en un ticket consolidado para trazabilidad de despliegue.</p>
+      <table>
+        <thead><tr><th>#</th><th>Fix</th><th>Archivo</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Dropdown users actions</td><td><code>users/list.tsx</code></td></tr>
+          <tr><td>2</td><td>Crash de <code>Select</code> dentro de <code>Tabs</code> en catalogs</td><td><code>catalogs/*.tsx</code> — Select fuera de <code>&lt;Tabs&gt;</code></td></tr>
+          <tr><td>3</td><td>Audit log: rango de fechas en una fila + username real (no id)</td><td><code>audit/list.tsx</code> + endpoint</td></tr>
+          <tr><td>4</td><td>Login con doble eye (botón manual sobre el nativo de UUI)</td><td><code>login.tsx</code></td></tr>
+          <tr><td>5</td><td><strong>Pantalla <code>forgot-password.tsx</code> NUEVA</strong> + ruta en <code>app.tsx</code></td><td><code>apps/backoffice/src/pages/forgot-password.tsx</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="hb-l">
+      <h2>Hub v2</h2>
+      <div class="h">HB.L · Login</div>
+      <div class="phase">
+        <header><span class="ph-id">HB.L-01</span><h3>Login UUI + redirect dual</h3><span class="ticket">IOS-119</span></header>
+        <p>Login hub migrado <strong>v2 → UUI</strong> + ThemeToggle + <strong>redirect dual</strong>: admin → backoffice vía handoff, empleado → <code>/launcher</code>.</p>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">HB.L-02</span><h3>Forgot / Reset password</h3><span class="ticket">IOS-120</span></header>
+        <p><code>forgot-password</code> + <code>reset-password</code> del hub unificados al patrón UUI: Alert + iconos <code>Mail01</code>/<code>Lock01</code>/<code>Shield01</code> + ThemeToggle + Input password nativo.</p>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">HB.L-03</span><h3>QA Smoke</h3><span class="ticket">IOS-121</span></header>
+        <p>Smoke Playwright: login <code>ricardo</code> (super_admin) redirige a backoffice, UI alineada, forgot y reset con patrón UUI.</p>
+      </div>
+    </section>
+
+    <section id="hb-h">
+      <h2>Hub v2</h2>
+      <div class="h">HB.H · Launcher + audit del handoff</div>
+      <div class="phase">
+        <header><span class="ph-id">HB.H-01</span><h3>Launcher tipo Odoo</h3><span class="ticket">IOS-122</span></header>
+        <p>Pantalla <code>/launcher</code> tipo Odoo: <code>HubHeader</code> (saludo + theme + user menu) + <code>AppsGrid</code> responsive (5 / 3 / 2 cols) + <code>AppTile</code> (icono 80px con gradient + hover scale). Reusa <code>resolveIcon</code> del package <code>@finanzas/app-shell</code>.</p>
+        <div class="callout info"><b>Decisión de scope (YAGNI):</b> sin favoritos, sin recientes, sin búsqueda. Solo grid de apps con icono y nombre.</div>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">HB.H-02</span><h3>Audit handoff</h3><span class="ticket">IOS-123</span></header>
+        <p>Audit del handoff enriquecido: <code>details={target_app, ttl_seconds}</code> en <code>handoff_initiate</code> y <code>details={target_app, handoff_id}</code> en <code>handoff_exchange</code>. 42/42 tests pass. Consultable: <code>GET /api/v1/audit-log?resource=auth_handoff</code>.</p>
+      </div>
+      <div class="phase">
+        <header><span class="ph-id">HB.H-03</span><h3>QA Smoke launcher</h3><span class="ticket">IOS-124</span></header>
+        <p>5 cols responsive + handoff end-to-end + audit visible en <code>audit_log</code>.</p>
+      </div>
+    </section>
+
+    <section id="hb-val">
+      <h2>Hub v2</h2>
+      <div class="h">Validación 2026-04-27</div>
+      <p>Al reabrir el plan <code>happy-roaming-popcorn.md</code> el 2026-04-27, se confirmó que el scope ya estaba <strong>100% implementado</strong> y registrado en IOS-119..124 (<code>to_deploy</code>). Los duplicados generados por error se cerraron como <code>Blocked</code> apuntando al ticket original.</p>
+      <table>
+        <thead><tr><th>HU</th><th>Original</th><th>Duplicado</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>HB.L-01</td><td><code>IOS-119</code></td><td><code>IOS-125</code></td><td><span class="pill blocked">Blocked</span></td></tr>
+          <tr><td>HB.L-02</td><td><code>IOS-120</code></td><td><code>IOS-126</code></td><td><span class="pill blocked">Blocked</span></td></tr>
+          <tr><td>HB.L-03</td><td><code>IOS-121</code></td><td><code>IOS-127</code></td><td><span class="pill blocked">Blocked</span></td></tr>
+          <tr><td>HB.H-01</td><td><code>IOS-122</code></td><td><code>IOS-128</code></td><td><span class="pill blocked">Blocked</span></td></tr>
+          <tr><td>HB.H-02</td><td><code>IOS-123</code></td><td><code>IOS-129</code></td><td><span class="pill blocked">Blocked</span></td></tr>
+          <tr><td>HB.H-03</td><td><code>IOS-124</code></td><td><code>IOS-130</code></td><td><span class="pill blocked">Blocked</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="auth">
+      <h2>Cambios transversales</h2>
+      <div class="h">Auth F3-02b · Cookie httpOnly + CSRF double-submit</div>
+      <p><strong>Commits:</strong> <code>26311af</code>, <code>bf5f75b</code>, <code>c0afee4</code>, <code>6776cde</code> (Merge PR #6), <code>07b36b1</code> (Merge PR #7), <code>f50f5a5</code>.</p>
+      <ul>
+        <li>Cookies <code>token</code> y <code>csrf_token</code> como httpOnly por backend</li>
+        <li>Frontend usa <code>credentials: 'include'</code> + header <code>X-CSRF-Token</code> en métodos mutantes</li>
+        <li><code>ApiClientOptions</code> ya no recibe <code>token?</code> (limpiado en <code>c0afee4</code>)</li>
+        <li><code>localStorage.getItem('token')</code> eliminado de los callsites</li>
+      </ul>
+    </section>
+
+    <section id="dt017">
+      <h2>Cambios transversales</h2>
+      <div class="h">DT-017 · Cleanup typecheck + lint</div>
+      <p><strong>Commits:</strong> <code>7d2cd32</code>, <code>f1057f0</code> (PR #9), <code>66d0ad2</code>, <code>027ec29</code> (PR #10), <code>1c0efcd</code>, <code>383a20f</code>.</p>
+      <ul>
+        <li>Biome auto-fix masivo</li>
+        <li>Sanitization de <code>tsconfig.json</code> por app (rootDir, paths)</li>
+        <li><code>SelectItemType</code> callbacks con tipado correcto (DT-017b)</li>
+        <li><code>type="button"</code> agregado a <strong>122 botones</strong> (<code>useButtonType</code>)</li>
+        <li>Residuales <code>noArrayIndexKey</code>, a11y modal, directivas tailwind</li>
+      </ul>
+    </section>
+
+    <section id="superadmin">
+      <h2>Cambios transversales</h2>
+      <div class="h">Super_admin también accede al hub (Opción A)</div>
+      <p><strong>Commit:</strong> <code>9645df0</code>.</p>
+      <p>Decisión del usuario tras feedback: cualquier usuario, incluido <code>super_admin</code>, debe poder ingresar al <code>/launcher</code> del hub (antes era redirigido directo al backoffice). El backoffice sigue siendo el destino por default vía handoff, pero el launcher queda accesible.</p>
+    </section>
+
+    <section id="csrf-fix">
+      <h2>Cambios transversales</h2>
+      <div class="h">Fix CSRF en handoff (post-cierre)</div>
+      <p><strong>Commit:</strong> <code>8fb4874</code>.</p>
+      <div class="callout danger">
+        <b>Bug detectado durante prueba real:</b> el botón "abrir app" del launcher <strong>no enviaba <code>X-CSRF-Token</code></strong> al <code>POST /api/v1/auth/handoff</code>. El backend respondía <strong>403 csrf token missing or mismatched</strong> y el <code>catch</code> del hub caía al fallback silencioso <code>window.location.href = app.base_url</code>, dejando al usuario en bucle hub → app sin sesión → hub.
+      </div>
+      <p><strong>Solución:</strong></p>
+      <ul>
+        <li>Import de <code>readCookie</code>, <code>CSRF_COOKIE_NAME</code>, <code>CSRF_HEADER_NAME</code> desde <code>@finanzas/api-client</code></li>
+        <li><code>credentials: 'include'</code> en el fetch</li>
+        <li>Header <code>X-CSRF-Token</code> leído de la cookie <code>csrf_token</code></li>
+      </ul>
+      <p>Verificado end-to-end con Chrome DevTools MCP: login con <code>ricardo / Jona050311</code> → click Finanzas → llega a <code>localhost:5175</code> con sesión iniciada y sidebar completo.</p>
+    </section>
+
+    <section id="matriz">
+      <h2>Cierre</h2>
+      <div class="h">Matriz consolidada de tickets Jira</div>
+      <h3>Backoffice v2.1</h3>
+      <table>
+        <thead><tr><th>Fase</th><th>Ticket</th><th>Asignado</th><th>Estado</th><th>Resumen</th></tr></thead>
+        <tbody>
+          <tr><td>A · Shell topbar</td><td><code>IOS-98</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>UserMenu + Bell + sidebar rename</td></tr>
+          <tr><td>A · QA</td><td><code>IOS-99</code></td><td>qa-frontend</td><td><span class="pill pending">pendiente</span></td><td>Checklist 11 puntos sin ejecutar</td></tr>
+          <tr><td>B.1 · Audit coverage</td><td><code>IOS-105</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td>Log a roles_v2/users/catalogs/applications</td></tr>
+          <tr><td>B.1 · QA</td><td><code>IOS-106</code></td><td>qa-backend</td><td><span class="pill deploy">to_deploy</span></td><td>9/9 + 42/42 suite</td></tr>
+          <tr><td>B.2 · Conteo apps</td><td><code>IOS-107</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td><code>assigned_users_count</code></td></tr>
+          <tr><td>B.2 · UI</td><td><code>IOS-108</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>Cards "N usuarios"</td></tr>
+          <tr><td>C.1 · Padre</td><td><code>IOS-109</code></td><td>PM</td><td><span class="pill curso">en curso</span></td><td>Tarea padre notificaciones</td></tr>
+          <tr><td>C.1 · DB+modelo</td><td><code>IOS-110</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td><code>user_notifications</code> + service</td></tr>
+          <tr><td>C.1 · API</td><td><code>IOS-111</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td>4 endpoints REST</td></tr>
+          <tr><td>C.1 · Trigger</td><td><code>IOS-112</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td>SECURITY_ACTIONS dispara notif</td></tr>
+          <tr><td>C.1 · Hook + Bell</td><td><code>IOS-113</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>useNotifications + Bell real</td></tr>
+          <tr><td>C.1 · QA</td><td><code>IOS-114</code></td><td>qa-frontend</td><td><span class="pill deploy">to_deploy</span></td><td>Service + smoke Playwright</td></tr>
+          <tr><td>C.2 · Backend</td><td><code>IOS-115</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td>FK position/manager + endpoints</td></tr>
+          <tr><td>C.2 · UI</td><td><code>IOS-116</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>Puesto + Jefe en detail/edit</td></tr>
+          <tr><td>C.2 · QA</td><td><code>IOS-117</code></td><td>qa-frontend</td><td><span class="pill deploy">to_deploy</span></td><td>+ fix catalogs dict + RoleOption</td></tr>
+          <tr><td>C.3 · UX roles</td><td><code>IOS-118</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>"Da acceso a:" con cache</td></tr>
+          <tr><td>D · 5 fixes</td><td>sin ticket</td><td>varios</td><td><span class="pill deploy">deployed</span></td><td>dropdown/catalogs/audit/login/forgot</td></tr>
+        </tbody>
+      </table>
+      <h3>Hub v2</h3>
+      <table>
+        <thead><tr><th>Subtarea</th><th>Ticket</th><th>Asignado</th><th>Estado</th><th>Resumen</th></tr></thead>
+        <tbody>
+          <tr><td>HB.L-01</td><td><code>IOS-119</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>Login UUI + redirect dual</td></tr>
+          <tr><td>HB.L-02</td><td><code>IOS-120</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>Forgot/reset unificados UUI</td></tr>
+          <tr><td>HB.L-03</td><td><code>IOS-121</code></td><td>qa-frontend</td><td><span class="pill deploy">to_deploy</span></td><td>Smoke Playwright login</td></tr>
+          <tr><td>HB.H-01</td><td><code>IOS-122</code></td><td>frontend-dev</td><td><span class="pill deploy">to_deploy</span></td><td>Launcher tipo Odoo</td></tr>
+          <tr><td>HB.H-02</td><td><code>IOS-123</code></td><td>backend</td><td><span class="pill deploy">to_deploy</span></td><td>Audit handoff enriquecido</td></tr>
+          <tr><td>HB.H-03</td><td><code>IOS-124</code></td><td>qa-frontend</td><td><span class="pill deploy">to_deploy</span></td><td>QA smoke launcher</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="archivos">
+      <h2>Cierre</h2>
+      <div class="h">Archivos clave creados / modificados</div>
+      <h3>Backend</h3>
+      <table>
+        <thead><tr><th>Archivo</th><th>Origen</th><th>Fase</th></tr></thead>
+        <tbody>
+          <tr><td><code>alembic/versions/j1a2b3c4d5e6_user_notifications.py</code></td><td>nuevo</td><td>C.1</td></tr>
+          <tr><td><code>alembic/versions/j2b3c4d5e6f7_usuarios_position_manager_fk.py</code></td><td>nuevo</td><td>C.2</td></tr>
+          <tr><td><code>app/application/services/notification_service.py</code></td><td>nuevo</td><td>C.1</td></tr>
+          <tr><td><code>app/presentation/api/v1/notifications.py</code></td><td>nuevo</td><td>C.1</td></tr>
+          <tr><td><code>app/presentation/schemas/notification_schema.py</code></td><td>nuevo</td><td>C.1</td></tr>
+          <tr><td><code>app/application/services/audit_service.py</code></td><td>extendido</td><td>B.1, C.1</td></tr>
+          <tr><td><code>app/application/services/rbac_service.py</code></td><td><code>count_users_per_application</code></td><td>B.2</td></tr>
+          <tr><td><code>app/presentation/api/v1/users_contract.py</code></td><td>+ position/manager</td><td>C.2</td></tr>
+          <tr><td><code>app/presentation/api/v1/catalogs.py</code></td><td>counts + dict fix</td><td>C.2</td></tr>
+          <tr><td><code>app/presentation/api/v1/auth.py</code></td><td>audit handoff enriquecido</td><td>HB.H-02</td></tr>
+        </tbody>
+      </table>
+      <h3>Frontend (monorepo)</h3>
+      <table>
+        <thead><tr><th>Archivo</th><th>Cambio</th><th>Fase / commit</th></tr></thead>
+        <tbody>
+          <tr><td><code>packages/app-shell/src/notification-bell.tsx</code></td><td>placeholder → real</td><td>A → C.1</td></tr>
+          <tr><td><code>packages/app-shell/src/hooks/use-notifications.ts</code></td><td>nuevo</td><td>C.1</td></tr>
+          <tr><td><code>packages/app-shell/src/user-menu.tsx</code></td><td>Perfil/Ajustes/Logout</td><td>A</td></tr>
+          <tr><td><code>apps/backoffice/src/app.tsx</code></td><td>Bell + onNavigate router</td><td>A, C.1</td></tr>
+          <tr><td><code>apps/backoffice/src/pages/forgot-password.tsx</code></td><td>nuevo</td><td>Fix D-5</td></tr>
+          <tr><td><code>apps/backoffice/src/pages/users/detail.tsx</code></td><td>Puesto + Jefe + Da acceso a:</td><td>C.2, C.3</td></tr>
+          <tr><td><code>apps/backoffice/src/pages/microsites/list.tsx</code></td><td>N usuarios</td><td>B.2</td></tr>
+          <tr><td><code>apps/backoffice/src/pages/catalogs/*.tsx</code></td><td>Select fuera de Tabs</td><td>Fix D-2</td></tr>
+          <tr><td><code>apps/hub/src/pages/login.tsx</code></td><td>UUI + redirect dual</td><td>HB.L-01</td></tr>
+          <tr><td><code>apps/hub/src/pages/forgot-password.tsx</code>, <code>reset-password.tsx</code></td><td>UUI patrón</td><td>HB.L-02</td></tr>
+          <tr><td><code>apps/hub/src/pages/launcher.tsx</code></td><td>Odoo-style + CSRF fix</td><td>HB.H-01 + commit <code>8fb4874</code></td></tr>
+          <tr><td><code>apps/hub/src/components/hub-header.tsx</code>, <code>apps-grid.tsx</code>, <code>app-tile.tsx</code></td><td>nuevos</td><td>HB.H-01</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="decisiones">
+      <h2>Cierre</h2>
+      <div class="h">Decisiones técnicas que el equipo debe conocer</div>
+      <p>Estas decisiones quedaron grabadas en memoria persistente y aplican a cualquier trabajo futuro sobre estas áreas:</p>
+      <ol>
+        <li><strong>Cookie httpOnly + CSRF double-submit (F3-02b)</strong> es el patrón oficial de auth. <strong>No</strong> usar Bearer token en frontend ni guardarlo en localStorage.</li>
+        <li><strong>UUI Input <code>type="password"</code> ya trae toggle nativo de ojito.</strong> No agregar botón manual (causa duplicación del Fix D-4).</li>
+        <li><strong><code>GET /api/v1/roles</code> devuelve <code>{id:int, nombre:str}</code></strong> (no <code>name</code>). Las interfaces TS deben coincidir o no matchean.</li>
+        <li><strong><code>Select</code> de UUI dentro de <code>&lt;Tabs&gt;</code> crashea</strong> con <code>selectionManager</code> al cambiar de panel. Mover el <code>Select</code> fuera del <code>Tabs</code> o dar <code>key</code> dinámica.</li>
+        <li><strong><code>catalog_service.{create,update,soft_delete}_position</code> y <code>{create,delete}_area_manager</code> retornan <code>dict</code></strong>. Acceder con <code>pos["id"]</code>, no <code>pos.id</code>.</li>
+        <li><strong>Backend en puerto 8090 debe reiniciarse manualmente</strong> para cargar código nuevo (no tiene auto-reload). Esto fue causa de varios falsos negativos en QA.</li>
+        <li><strong>Token de handoff:</strong> SHA256 + TTL 60s + single-use + binding IP/UA. Audit con <code>resource=auth_handoff</code>.</li>
+        <li><strong><code>SECURITY_ACTIONS</code></strong> (7): <code>user_delete</code>, <code>role_delete</code>, <code>role_permissions_set</code>, <code>role_applications_set</code>, <code>revoke_session</code>, <code>login_failed</code>, <code>application_delete</code>. Notifican a super_admin + auditor.</li>
+      </ol>
+    </section>
+
+    <section id="riesgos">
+      <h2>Cierre</h2>
+      <div class="h">Riesgos y pendientes</div>
+      <table>
+        <thead><tr><th>#</th><th>Punto</th><th>Severidad</th><th>Recomendación</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>IOS-99</code> (QA Fase A) sin ejecutar</td><td>Media</td><td>Cerrar con QA visual de 11 puntos antes de deploy a prod</td></tr>
+          <tr><td>2</td><td>Fase D · 5 fixes sin ticket Jira</td><td>Baja</td><td>Crear ticket consolidado para trazabilidad</td></tr>
+          <tr><td>3</td><td>Bug CSRF en handoff (<code>8fb4874</code>)</td><td>Resuelto</td><td>Verificar tras deploy con login <code>ricardo / Jona050311</code> → click Finanzas</td></tr>
+          <tr><td>4</td><td>Backend 8090 sin auto-reload</td><td>Operativa</td><td>Documentar en runbook de despliegue (reiniciar uvicorn tras cada deploy)</td></tr>
+          <tr><td>5</td><td><code>super_admin</code> accede al hub (Opción A)</td><td>Decidida</td><td>Mantener; cualquier rollback debe revisar <code>9645df0</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="deploy">
+      <h2>Cierre</h2>
+      <div class="h">Cómo desplegar y probar</div>
+      <h3>Pre-deploy</h3>
+      <pre># Backend
+cd finananzaspython
+source .venv/bin/activate
+alembic upgrade head           # aplica j1a2…user_notifications y j2b3…position_manager
+pytest tests/ -q               # debe dar 42/42 PASS</pre>
+      <h3>Despliegue</h3>
+      <ol>
+        <li>Detener y reiniciar <code>uvicorn main:app --port 8090</code> (sin <code>--reload</code> en prod).</li>
+        <li>Rebuildear apps frontend: <code>pnpm build:hub</code> y <code>pnpm build:backoffice</code>.</li>
+        <li>Servir los bundles con nginx (config ya documentada).</li>
+      </ol>
+      <h3>Smoke test post-deploy (10 minutos)</h3>
+      <ol>
+        <li><strong>Hub login</strong> — <code>/login</code>, ingresar <code>ricardo / &lt;pass&gt;</code>, confirmar redirect a backoffice.</li>
+        <li><strong>Empleado</strong> — usuario sin rol admin → debe aterrizar en <code>/launcher</code> con sus apps.</li>
+        <li><strong>Launcher</strong> — click en Finanzas → debe abrir Finanzas con sesión (sin pasar por login).</li>
+        <li><strong>Forgot password</strong> (hub y backoffice) — flujo idle → sent.</li>
+        <li><strong>Backoffice notificaciones</strong> — disparar <code>role_delete</code> vía API → ver badge en la Bell.</li>
+        <li><strong>Backoffice users</strong> — abrir un usuario, ver Puesto + Jefe directo, abrir modal editar, confirmar Selects pueblan.</li>
+        <li><strong>Backoffice roles</strong> — verificar "Da acceso a: App1, App2" en tab Roles del detail.</li>
+        <li><strong>Backoffice catalogs</strong> — abrir departamentos, confirmar contador "N puestos · M usuarios".</li>
+        <li><strong>Audit log</strong> — <code>GET /api/v1/audit-log?resource=auth_handoff</code> debe mostrar actividad.</li>
+      </ol>
+    </section>
+
+    <section id="proximos">
+      <h2>Cierre</h2>
+      <div class="h">Próximos pasos sugeridos</div>
+      <ol>
+        <li><strong>Ejecutar QA de IOS-99</strong> (Fase A) y mover a <code>to_deploy</code>.</li>
+        <li><strong>Crear ticket consolidado</strong> para los 5 fixes de Fase D.</li>
+        <li><strong>Documentar el reinicio de uvicorn</strong> en el runbook operativo.</li>
+        <li><strong>Validar el fix CSRF</strong> (commit <code>8fb4874</code>) end-to-end en staging.</li>
+        <li>Transicionar todos los tickets <code>to_deploy</code> → <code>deployed</code> tras el rollout.</li>
+      </ol>
+    </section>
+
+    <section id="refs">
+      <h2>Cierre</h2>
+      <div class="h">Referencias</div>
+      <ul>
+        <li><strong>Plan global:</strong> <code>plan_v2/progreso.md</code> (líneas 67–162 contienen el detalle de v2.1 y Hub v2)</li>
+        <li><strong>Spec Backoffice:</strong> <code>plan_v2/02_backoffice/SPEC_V2.1_CIERRE_BACKOFFICE.md</code></li>
+        <li><strong>Plan local Hub:</strong> <code>~/.claude/plans/happy-roaming-popcorn.md</code></li>
+        <li><strong>Memoria de cierre:</strong> <code>~/.claude/projects/-home-ricardo-Documentos-appsinternas/memory/session_2026_04_22_cierre_backoffice.md</code></li>
+        <li><strong>Workflow agentes:</strong> <code>plan_v2/workflow.md</code></li>
+        <li><strong>Doc de arquitectura BD:</strong> <code>proyecto interno/arquitectura-bd.html</code></li>
+        <li><strong>Catálogo de endpoints:</strong> <code>proyecto interno/endpoints-api.html</code></li>
+        <li><strong>Roadmap M→E→HDU:</strong> <code>proyecto interno/historias-usuario.html</code> (M1 cubre login + RBAC, M4 notificaciones)</li>
+      </ul>
+    </section>
+
+    <footer>Handoff document · Plan v2.1 cierre Backoffice + Hub v2 · 2026-05-29 · <span class="mono">proyecto interno/</span></footer>
+  </main>
+</div>
+
+<script>
+  const KEY='hb-handoff-theme';
+  const saved=localStorage.getItem(KEY); if(saved)document.documentElement.setAttribute('data-theme',saved);
+  function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',cur);localStorage.setItem(KEY,cur);}
+  const links=[...document.querySelectorAll('nav.toc a')];
+  const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+  const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map.get(x.target.id);if(a)a.classList.add('active');}});},{rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('section[id]').forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
