@@ -20,17 +20,34 @@ keywords: ["mockup", "prototipo", "UI", "diseño", "dashboard", "wireframe"]
 
 Dashboard de BI para análisis de facturación: KPIs financieros, gráficas comparativas, tabla de facturas y filtros por periodo. Incluye sidebar de navegación entre dashboards y modo claro/oscuro.
 
-<Frame caption="Mockup interactivo · BI Platform Facturación">
+<div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "10px", fontSize: "13px" }}>
+  <span style={{ color: "#667085", fontWeight: 500 }}>Zoom:</span>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-bi'); f.style.transform = 'scale(1)'; f.style.width = '100%'; f.style.height = '900px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >100%</button>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-bi'); f.style.transform = 'scale(0.75)'; f.style.width = '133.33%'; f.style.height = '1200px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >75%</button>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-bi'); f.style.transform = 'scale(0.5)'; f.style.width = '200%'; f.style.height = '1800px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >50%</button>
+</div>
+
+<div style={{ height: "900px", overflow: "hidden", border: "1px solid #d0d5dd", borderRadius: "12px" }}>
   <iframe
+    id="iframe-bi"
     src="https://rovrtoji.github.io/docs/mockups/bi-dashboard.html"
     width="100%"
     height="900"
     allow="fullscreen"
     allowFullScreen
-    style={{ border: "1px solid var(--mintlify-border-secondary)", borderRadius: "12px" }}
+    style={{ border: "none", transformOrigin: "top left", transition: "transform 0.2s, width 0.2s, height 0.2s" }}
     title="BI Dashboard mockup"
   />
-</Frame>
+</div>
 
 <CardGroup cols={2}>
   <Card title="Abrir en pestaña nueva" icon="arrow-up-right-from-square" href="https://rovrtoji.github.io/docs/mockups/bi-dashboard.html">
@@ -42,11 +59,7 @@ Dashboard de BI para análisis de facturación: KPIs financieros, gráficas comp
 </CardGroup>
 
 <Tip>
-  **Para ver el mockup más grande, tres opciones:**
-
-  1. **Pantalla completa del iframe:** click derecho **dentro** del mockup → *Esta sección* → *Pantalla completa* (Chrome/Edge). Sale con `Esc`.
-  2. **Abrir en pestaña nueva:** click en el card "Abrir en pestaña nueva" → ahí puedes hacer zoom con `Ctrl/⌘ + +` libremente.
-  3. **Zoom del navegador:** `Ctrl/⌘ +` aumenta el tamaño de **toda la página** (incluye el iframe). Útil pero también agranda el sidebar y la barra de Mintlify.
+  **Zoom:** los botones de arriba reescalan el iframe — a menos zoom, ves **más contenido** del mockup en el mismo espacio. También puedes hacer click derecho dentro del mockup → *Esta sección* → *Pantalla completa* para el modo fullscreen del navegador.
 </Tip>
 
 ---
@@ -55,17 +68,34 @@ Dashboard de BI para análisis de facturación: KPIs financieros, gráficas comp
 
 Mockup del flujo de handoff seguro entre apps del hub: launcher, transición a la app destino y manejo de errores de token. Refleja las HU-02 y HU-03.
 
-<Frame caption="Mockup interactivo · Handoff entre apps del hub">
+<div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "10px", fontSize: "13px" }}>
+  <span style={{ color: "#667085", fontWeight: 500 }}>Zoom:</span>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-handoff'); f.style.transform = 'scale(1)'; f.style.width = '100%'; f.style.height = '900px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >100%</button>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-handoff'); f.style.transform = 'scale(0.75)'; f.style.width = '133.33%'; f.style.height = '1200px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >75%</button>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-handoff'); f.style.transform = 'scale(0.5)'; f.style.width = '200%'; f.style.height = '1800px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >50%</button>
+</div>
+
+<div style={{ height: "900px", overflow: "hidden", border: "1px solid #d0d5dd", borderRadius: "12px" }}>
   <iframe
+    id="iframe-handoff"
     src="https://rovrtoji.github.io/docs/mockups/handoff-hub-backoffice.html"
     width="100%"
     height="900"
     allow="fullscreen"
     allowFullScreen
-    style={{ border: "1px solid var(--mintlify-border-secondary)", borderRadius: "12px" }}
+    style={{ border: "none", transformOrigin: "top left", transition: "transform 0.2s, width 0.2s, height 0.2s" }}
     title="Handoff hub backoffice mockup"
   />
-</Frame>
+</div>
 
 <CardGroup cols={2}>
   <Card title="Abrir en pestaña nueva" icon="arrow-up-right-from-square" href="https://rovrtoji.github.io/docs/mockups/handoff-hub-backoffice.html">
