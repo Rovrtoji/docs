@@ -32,12 +32,20 @@
             "pages": ["diagrama-bd", "arquitectura-bd"]
           },
           {
-            "group": "API",
+            "group": "API ERP",
             "pages": ["endpoints-api"]
           },
           {
-            "group": "API Reference",
+            "group": "API Reference ERP",
             "openapi": "openapi.json"
+          },
+          {
+            "group": "API Portal Cliente",
+            "pages": ["endpoints-portal-api"]
+          },
+          {
+            "group": "API Reference Portal",
+            "openapi": "openapi-portal.json"
           }
         ]
       }

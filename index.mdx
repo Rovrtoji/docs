@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 7 Milestones · 14 Epics · 38 HDU · 3 perfiles de usuario.
+  **Totales:** 8 Milestones · 20 Epics · 55 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -19,6 +19,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 | **EMP** | Empleado | Usuario final del checador móvil. |
 | **ADM** | Administrador | RRHH, finanzas, manager. Gestión, dashboards y configuración. |
 | **OPS** | Operador / DevOps | Operación del sistema: despliegues, migración, monitoreo. |
+| **CLT** | Cliente externo | Usuario del **Portal Cliente** (Soporte GPS): consulta su flota, levanta solicitudes y sube cargas masivas. Multi-tenant. |
 
 ## Cómo leer una historia
 
@@ -701,6 +702,274 @@ Mantenimiento del modelo de control de acceso: roles, permisos y el mapeo de apl
 
 ---
 
+## M8 · Portal Cliente (Soporte GPS)
+
+<Info>
+  **6 epics · 17 HDU.** Proyecto `soportecliente` — portal externo que las **empresas cliente** usan para visualizar su flota GPS, consultar órdenes de trabajo, levantar solicitudes de servicio y subir cargas masivas de instalaciones. Multi-tenant con jerarquía estricta `tenant → account → unit → device`. **Comparte base de datos con el ERP** (`finananzaspython`) y agrega 3 tablas propias (`portal_users`, `portal_user_account_access`, `monitoring_dedicate_vehicle_profiles`). Integra datos GPS de Wialon/Navixy y gestión de tickets de Odoo.
+</Info>
+
+### EP-15 · Acceso y administración del portal
+
+Login propio del portal (separado del hub interno), registro auto-gestionado, control de qué cuentas puede ver cada usuario cliente y administración de usuarios del propio tenant.
+
+<AccordionGroup>
+  <Accordion title="HU-39 · Iniciar sesión en el portal cliente" icon="log-in">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como cliente del servicio GPS, quiero iniciar sesión en el portal con mi correo y contraseña, para acceder a la información de mi flota.
+
+    **Criterios de aceptación:**
+    - Dado que estoy en la página de login del portal, cuando ingreso credenciales válidas, entonces accedo al dashboard de mi tenant.
+    - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro.
+    - Dado que mi usuario fue desactivado, cuando intento entrar, entonces el portal me lo informa.
+
+    <Tip>**Notas técnicas:** Backend `soportecliente` · `POST /api/v1/auth/login` · tabla `portal_users` (separada de `usuarios` del ERP). El `tenant_id` queda en el JWT y filtra todas las queries posteriores.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-40 · Registrarme como usuario del portal" icon="user-plus">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente nuevo invitado al portal, quiero registrarme dejando mis datos, para tener acceso a mi cuenta sin esperar que me den de alta manualmente.
+
+    **Criterios de aceptación:**
+    - Dado que tengo el código de invitación de mi cuenta, cuando me registro con correo, contraseña y datos básicos, entonces mi usuario queda creado pendiente de aprobación o activo según política.
+    - Dado que mi correo ya está registrado, cuando intento crear otra cuenta, entonces veo un error claro.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/auth/register` → crea fila en `portal_users` con `status=pending` o `active`. Hash de contraseña con bcrypt.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-41 · Cambiar entre cuentas a las que tengo acceso" icon="repeat">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario que opera varias cuentas (propias o compartidas por terceros), quiero cambiar entre ellas dentro del portal, para revisar la flota y los tickets de cada una sin volver a iniciar sesión.
+
+    **Criterios de aceptación:**
+    - Dado que mi usuario tiene varias cuentas asignadas, cuando abro el selector, entonces veo todas (propias y compartidas) con su nombre.
+    - Dado que selecciono otra cuenta, cuando cambio, entonces todo el portal (dashboard, vehículos, solicitudes) se filtra a esa cuenta.
+
+    <Tip>**Notas técnicas:** Tablas `portal_user_account_access` (acceso del usuario) y `account_share` (cuentas compartidas entre tenants). El `account_id` activo se persiste por sesión.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-42 · Administrar usuarios de mi tenant" icon="users-cog">
+    **Rol:** CLT (administrador del cliente) &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administrador de mi empresa, quiero dar de alta, editar y desactivar usuarios del portal de mi propio tenant, para controlar quién de mi equipo accede sin depender del proveedor.
+
+    **Criterios de aceptación:**
+    - Dado que tengo rol de administrador del cliente, cuando abro la pantalla de usuarios, entonces solo veo a los usuarios de mi tenant.
+    - Dado que doy de alta un usuario, cuando guardo, entonces recibe correo con instrucciones para activar su cuenta.
+    - Dado que desactivo a un usuario, cuando guardo, entonces ese usuario ya no puede iniciar sesión.
+
+    <Tip>**Notas técnicas:** Pantalla `AdminUsersPage`. CRUD sobre `portal_users` filtrado por `tenant_id`. Es **estrictamente multi-tenant**: nunca expone usuarios de otros tenants.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-16 · Mi flota
+
+Visualización del parque vehicular del cliente: lista, detalle de cada unidad (con mapa) y su histórico de servicio.
+
+<AccordionGroup>
+  <Accordion title="HU-43 · Ver el dashboard de mi flota" icon="layout-dashboard">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como cliente, quiero ver un panel con el estado general de mi flota (unidades totales, en línea, sin reporte, etc.), para saber rápido cómo está mi operación.
+
+    **Criterios de aceptación:**
+    - Dado que entro al portal, cuando carga el dashboard, entonces veo los KPIs principales (total, en línea, offline, alertas, solicitudes abiertas).
+    - Dado que cambio de cuenta, cuando se actualiza, entonces los KPIs reflejan solo la cuenta seleccionada.
+
+    <Tip>**Notas técnicas:** Pantalla `DashboardPage`. Combina datos de `cms_unidades` + `service_requests` + estados de Wialon/Navixy.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-44 · Consultar el detalle y mapa de un vehículo" icon="map-pin">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como cliente, quiero abrir el detalle de una unidad para ver sus datos (placa, equipo, perfil) y su posición en el mapa, para verificar dónde está y qué equipo trae instalado.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono una unidad de la lista, cuando carga el detalle, entonces veo placa/VIN, modelo, hardware GPS, última posición y perfil de monitoreo.
+    - Dado que la unidad reportó hace poco, cuando veo el mapa, entonces aparece su marcador con timestamp.
+    - Dado que la unidad no es de mi tenant, cuando intento abrirla directo por URL, entonces el portal me devuelve 404 / acceso denegado.
+
+    <Tip>**Notas técnicas:** Pantallas `VehiclesListPage` + `VehicleDetailPage`. `GET /api/v1/vehicles/{unit_id}`. Mapa con **Leaflet**. Posición desde `monitoring_dedicate_vehicle_profiles` + integración Wialon. Filtro de tenant **obligatorio** en backend.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-45 · Ver historial de servicio de un vehículo" icon="history">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero ver el historial de órdenes de trabajo de una unidad específica, para entender qué intervenciones se han hecho sobre ella.
+
+    **Criterios de aceptación:**
+    - Dado que abro el detalle de la unidad, cuando reviso la pestaña de servicio, entonces veo el listado de órdenes de trabajo con fecha y estado.
+
+    <Tip>**Notas técnicas:** `GET /api/v1/vehicles/{unit_id}/work-orders`. Reusa `work_orders` (tabla compartida con el ERP).</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-17 · Solicitudes de servicio
+
+Canal autoservicio del cliente para abrir tickets sobre sus unidades, darles seguimiento y aportar evidencia.
+
+<AccordionGroup>
+  <Accordion title="HU-46 · Levantar una solicitud de servicio nueva" icon="ticket-plus">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como cliente, quiero abrir una solicitud de servicio sobre una de mis unidades indicando el tipo de problema, para que el equipo de soporte la atienda.
+
+    **Criterios de aceptación:**
+    - Dado que estoy en mi cuenta, cuando voy a "Nueva solicitud" y selecciono unidad + tipo de problema + descripción, entonces la solicitud queda creada con estado inicial.
+    - Dado que adjunto imágenes o documentos, cuando envío, entonces quedan ligados a la solicitud como evidencia inicial.
+    - Dado que selecciono una unidad que no es de mi tenant, cuando envío, entonces el backend rechaza la solicitud.
+
+    <Tip>**Notas técnicas:** Pantalla `RequestNewPage`. `POST /api/v1/service-requests`. Tablas `service_requests` + `support_request_types` + `support_evidence`. Integración con Odoo para creación del ticket externo.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-47 · Consultar mis solicitudes de servicio" icon="ticket">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como cliente, quiero ver el listado de mis solicitudes con su estado actual y filtrar por tipo o fecha, para hacer seguimiento de lo que está abierto y lo que ya se resolvió.
+
+    **Criterios de aceptación:**
+    - Dado que abro la pantalla de solicitudes, cuando carga, entonces veo mis solicitudes con su estado, fecha y unidad.
+    - Dado que filtro por estado o tipo, cuando aplico, entonces la lista se actualiza.
+    - Dado que abro el detalle, cuando carga, entonces veo todo el ciclo: descripción, comentarios, evidencia y cambios de etapa.
+
+    <Tip>**Notas técnicas:** `RequestsListPage` + `RequestDetailPage`. `GET /api/v1/service-requests` y `GET /api/v1/service-requests/{id}`. Estados desde `support_stages`. Bitácora en `support_audit_log`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-48 · Comentar en una solicitud" icon="message-square">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero agregar comentarios en una solicitud abierta, para aportar más contexto al equipo de soporte.
+
+    **Criterios de aceptación:**
+    - Dado que la solicitud está abierta, cuando escribo un comentario y envío, entonces queda visible en el hilo con mi nombre y fecha.
+    - Dado que el equipo de soporte responde, cuando vuelvo a abrir la solicitud, entonces veo su comentario.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/service-requests/{sr_id}/comments`. Tabla `support_comments`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-49 · Adjuntar evidencia a una solicitud" icon="paperclip">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero subir fotos o documentos a una solicitud, para que el equipo de soporte tenga material que les ayude a diagnosticar.
+
+    **Criterios de aceptación:**
+    - Dado que abro una solicitud activa, cuando subo un archivo válido, entonces queda asociado a la solicitud y visible para soporte.
+    - Dado que el archivo excede el tamaño o formato permitido, cuando intento subirlo, entonces el portal lo rechaza con un mensaje claro.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/service-requests/{sr_id}/evidence` y `DELETE /api/v1/service-requests/{sr_id}/evidence/{id}`. Tabla `support_evidence`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-18 · Órdenes de trabajo (consulta)
+
+Vista de solo lectura para el cliente sobre las órdenes de trabajo que el proveedor ejecuta contra su flota.
+
+<AccordionGroup>
+  <Accordion title="HU-50 · Ver mis órdenes de trabajo" icon="clipboard-list">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero consultar las órdenes de trabajo que el proveedor está ejecutando o ya cerró sobre mi flota, para conocer el estatus de las intervenciones.
+
+    **Criterios de aceptación:**
+    - Dado que abro la pantalla de órdenes, cuando carga, entonces veo todas las que corresponden a mi tenant.
+    - Dado que filtro por estado o por unidad, cuando aplico, entonces la lista se actualiza.
+
+    <Tip>**Notas técnicas:** `WorkOrdersListPage`. `GET /api/v1/work-orders`. Tabla `work_orders`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-51 · Consultar el detalle de una orden de trabajo" icon="file-text">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero abrir el detalle de una orden para ver qué se hizo, sobre qué unidad y cuándo, para tener trazabilidad.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono una orden, cuando carga el detalle, entonces veo unidad, tipo de trabajo, fechas y estado actual.
+
+    <Tip>**Notas técnicas:** `GET /api/v1/work-orders/{wo_id}`. Reusa `work_orders` y datos relacionados de la unidad.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-19 · Carga masiva de instalaciones
+
+Permite al cliente subir documentos (PDF/fotos) con varios trabajos a la vez y que el sistema los procese — incluye **OCR** para extraer datos automáticamente.
+
+<AccordionGroup>
+  <Accordion title="HU-52 · Subir un lote de instalaciones con OCR" icon="scan-text">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente con muchas instalaciones para reportar, quiero subir un documento (PDF/imagen) y que el sistema reconozca los datos automáticamente con OCR, para no capturar uno por uno.
+
+    **Criterios de aceptación:**
+    - Dado que subo un archivo válido, cuando se procesa, entonces el sistema extrae los campos (placa, equipo, fecha) y crea un lote de instalaciones a revisar.
+    - Dado que un campo no se reconoce, cuando reviso el lote, entonces puedo corregirlo a mano antes de confirmar.
+
+    <Tip>**Notas técnicas:** Pantalla `InstallationUploadPage`. `POST /api/v1/installations` + `POST /api/v1/ocr/recognize` para reconocimiento. Cada lote vive en una nueva entidad (instalación batch). Soporte de imágenes y PDFs.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-53 · Ver mis lotes de instalaciones" icon="package-2">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero ver los lotes de instalaciones que subí y su estado de procesamiento, para saber cuáles ya quedaron registrados y cuáles requieren revisión.
+
+    **Criterios de aceptación:**
+    - Dado que abro la pantalla de instalaciones, cuando carga, entonces veo mis lotes con fecha, número de ítems y estado.
+    - Dado que abro las estadísticas, cuando carga, entonces veo conteos globales por estado.
+
+    <Tip>**Notas técnicas:** `InstallationsListPage`. `GET /api/v1/installations` y `GET /api/v1/installations/stats`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-54 · Consultar el detalle de un lote de instalaciones" icon="list-checks">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero abrir un lote y revisar fila por fila las instalaciones que contiene, para validar lo que el OCR detectó antes de confirmar.
+
+    **Criterios de aceptación:**
+    - Dado que abro un lote, cuando carga el detalle, entonces veo cabecera + ítems con sus campos extraídos.
+
+    <Tip>**Notas técnicas:** `InstallationDetailPage`. `GET /api/v1/installations/{batch_id}` y `GET /api/v1/installations/{batch_id}/items`.</Tip>
+  </Accordion>
+</AccordionGroup>
+
+### EP-20 · Notificaciones del portal
+
+Canal de avisos in-app para que el cliente se entere de cambios en sus solicitudes, órdenes y lotes.
+
+<AccordionGroup>
+  <Accordion title="HU-55 · Recibir notificaciones del portal" icon="bell">
+    **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como cliente, quiero recibir notificaciones cuando una solicitud cambia de estado o cuando hay novedades en mis órdenes, para enterarme sin tener que estar refrescando la pantalla.
+
+    **Criterios de aceptación:**
+    - Dado que hay novedades para mí, cuando entro al portal, entonces veo un badge con el conteo de notificaciones sin leer.
+    - Dado que abro la lista, cuando hago clic en una notificación, entonces queda marcada como leída y, si tiene enlace, me lleva al recurso relacionado.
+    - Dado que tengo varias sin leer, cuando uso "Marcar todas como leídas", entonces el badge desaparece.
+
+    <Tip>**Notas técnicas:** Pantalla `NotificationsPage`. Endpoints `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PUT /api/v1/notifications/{id}/read`, `PUT /api/v1/notifications/read-all`. Tabla `notifications` (dominio `notifications` del backend del portal).</Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
 ## Apéndice · Matriz general
 
 | Milestone | Epic | HDU | Rol | Prioridad |
@@ -743,3 +1012,20 @@ Mantenimiento del modelo de control de acceso: roles, permisos y el mapeo de apl
 |  |  | HU-36 Catálogo de permisos | ADM | Media |
 |  |  | HU-37 Asignar permisos a un rol | ADM | Alta |
 |  |  | HU-38 Aplicaciones por rol | ADM | Alta |
+| **M8** Portal Cliente (Soporte GPS) | EP-15 Acceso y administración | HU-39 Iniciar sesión en el portal | CLT | Alta |
+|  |  | HU-40 Registrarme | CLT | Media |
+|  |  | HU-41 Cambiar entre cuentas | CLT | Alta |
+|  |  | HU-42 Administrar usuarios de mi tenant | CLT | Media |
+|  | EP-16 Mi flota | HU-43 Dashboard de flota | CLT | Alta |
+|  |  | HU-44 Detalle y mapa de un vehículo | CLT | Alta |
+|  |  | HU-45 Historial de servicio | CLT | Media |
+|  | EP-17 Solicitudes de servicio | HU-46 Levantar nueva solicitud | CLT | Alta |
+|  |  | HU-47 Consultar mis solicitudes | CLT | Alta |
+|  |  | HU-48 Comentar en una solicitud | CLT | Media |
+|  |  | HU-49 Adjuntar evidencia | CLT | Media |
+|  | EP-18 Órdenes de trabajo (consulta) | HU-50 Ver órdenes de trabajo | CLT | Media |
+|  |  | HU-51 Detalle de una orden | CLT | Media |
+|  | EP-19 Carga masiva de instalaciones | HU-52 Subir lote con OCR | CLT | Media |
+|  |  | HU-53 Ver lotes procesados | CLT | Media |
+|  |  | HU-54 Detalle de un lote | CLT | Media |
+|  | EP-20 Notificaciones del portal | HU-55 Recibir notificaciones del portal | CLT | Media |

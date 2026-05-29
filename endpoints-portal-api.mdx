@@ -1,0 +1,172 @@
+---
+title: "Endpoints Portal Cliente"
+description: "Catálogo de los 30 endpoints del Portal Cliente (Soporte GPS), backend `soportecliente`."
+sidebarTitle: "Endpoints Portal"
+icon: "globe"
+keywords: ["API", "REST", "endpoints", "portal cliente", "soportecliente", "multi-tenant"]
+---
+
+<Note>
+  Documentación generada del backend `soportecliente`. Todos los endpoints viven bajo `/api/v1`. Multi-tenant: el `tenant_id` se infiere del JWT y filtra automáticamente todas las consultas.
+
+  **Totales:** 30 endpoints · 7 módulos.
+</Note>
+
+<Info>
+  **Playground interactivo:** este catálogo es la vista general. Para probar cada endpoint con ejemplos request/response, schemas y autenticación, abre el grupo **API Reference Portal** en el sidebar — está auto-generado desde el `openapi-portal.json` del backend.
+</Info>
+
+## Cómo consumir esta API
+
+- **Base URL:** `https://portal.<dominio>` (prod) o `http://localhost:8000` (local)
+- **Prefijo:** todos los endpoints viven bajo `/api/v1`
+- **Autenticación:** JWT por header `Authorization: Bearer <token>` obtenido vía `POST /api/v1/auth/login`. **No** se usan cookies httpOnly (a diferencia del ERP `finananzaspython`)
+- **Multi-tenant:** todos los endpoints filtran por `tenant_id` derivado del token. Acceder a recursos de otro tenant devuelve **404** (no 403, para no filtrar existencia)
+
+<Warning>
+  El portal y el ERP son backends **separados** con autenticación diferente:
+  - **ERP** (`finananzaspython`): cookie httpOnly + CSRF double-submit
+  - **Portal** (`soportecliente`): JWT Bearer
+</Warning>
+
+## Resumen por módulo
+
+| # | Módulo | Prefijo | Endpoints |
+|---|---|---|---|
+| 1 | auth | `/auth` | 3 |
+| 2 | installations | `/installations` | 5 |
+| 3 | notifications | `/notifications` | 4 |
+| 4 | ocr | `/ocr` | 1 |
+| 5 | service-requests | `/service-requests` | 10 |
+| 6 | vehicles | `/vehicles` | 4 |
+| 7 | work-orders | `/work-orders` | 3 |
+
+---
+
+## auth
+
+Login, registro de usuarios y sesión actual.
+
+Prefijo: `/auth` · Tag OpenAPI: `auth` · **3 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/auth/login` | `login` | Login con email y password; devuelve JWT |
+| **POST** | `/api/v1/auth/register` | `register` | Registro auto-gestionado de un usuario del portal |
+| **GET** | `/api/v1/auth/me` | `me` | Información del usuario actual (a partir del JWT) |
+
+---
+
+## installations
+
+Carga masiva de instalaciones por lotes + estadísticas. Soporta OCR para extraer datos automáticamente.
+
+Prefijo: `/installations` · Tag OpenAPI: `installations` · **5 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/installations` | `upload_installation` | Sube un lote nuevo de instalaciones |
+| **GET** | `/api/v1/installations` | `list_installations` | Lista mis lotes con su estado |
+| **GET** | `/api/v1/installations/stats` | `installation_stats` | Conteos globales por estado |
+| **GET** | `/api/v1/installations/{batch_id}` | `get_installation` | Detalle del lote (cabecera) |
+| **GET** | `/api/v1/installations/{batch_id}/items` | `get_installation_items` | Ítems del lote con campos OCR extraídos |
+
+---
+
+## notifications
+
+Notificaciones in-app del portal (avisos de cambios en solicitudes, órdenes, lotes).
+
+Prefijo: `/notifications` · Tag OpenAPI: `notifications` · **4 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/notifications` | `list_notifs` | Lista de mis notificaciones |
+| **GET** | `/api/v1/notifications/unread-count` | `unread_count` | Conteo de no leídas (para badge) |
+| **PUT** | `/api/v1/notifications/{notification_id}/read` | `read_notif` | Marca una notificación como leída |
+| **PUT** | `/api/v1/notifications/read-all` | `read_all` | Marca todas como leídas |
+
+---
+
+## ocr
+
+Reconocimiento OCR para extraer datos de documentos (PDF/imágenes).
+
+Prefijo: `/ocr` · Tag OpenAPI: `ocr` · **1 endpoint**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **POST** | `/api/v1/ocr/recognize` | `recognize` | Procesa un archivo y devuelve los campos detectados (placa, equipo, fecha) |
+
+---
+
+## service-requests
+
+Solicitudes de servicio: CRUD, comentarios y evidencia adjunta. Canal autoservicio del cliente para abrir tickets sobre sus unidades.
+
+Prefijo: `/service-requests` · Tag OpenAPI: `service-requests` · **10 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/service-requests` | `list_srs` | Lista mis solicitudes |
+| **POST** | `/api/v1/service-requests` | `create_sr` | Crea nueva solicitud |
+| **GET** | `/api/v1/service-requests/stats` | `service_request_stats` | Conteos por estado |
+| **GET** | `/api/v1/service-requests/{sr_id}` | `get_sr` | Detalle de una solicitud |
+| **PUT** | `/api/v1/service-requests/{sr_id}` | `update_sr` | Actualiza una solicitud |
+| **POST** | `/api/v1/service-requests/{sr_id}/comments` | `create_comment` | Agrega comentario al hilo |
+| **GET** | `/api/v1/service-requests/{sr_id}/comments` | `get_comments` | Lista comentarios |
+| **POST** | `/api/v1/service-requests/{sr_id}/evidence` | `upload_sr_evidence` | Sube archivo de evidencia |
+| **GET** | `/api/v1/service-requests/{sr_id}/evidence` | `list_sr_evidence` | Lista archivos adjuntos |
+| **DELETE** | `/api/v1/service-requests/{sr_id}/evidence/{evidence_id}` | `delete_sr_evidence` | Elimina un archivo adjunto |
+
+---
+
+## vehicles
+
+Listado y detalle de las unidades GPS del tenant + sus órdenes de trabajo.
+
+Prefijo: `/vehicles` · Tag OpenAPI: `vehicles` · **4 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/vehicles` | `list_vehicles_endpoint` | Lista de unidades del tenant |
+| **GET** | `/api/v1/vehicles/stats` | `vehicle_stats` | KPIs de flota (total, online, offline, etc.) |
+| **GET** | `/api/v1/vehicles/{unit_id}/work-orders` | `vehicle_work_orders` | Historial de servicio de la unidad |
+| **GET** | `/api/v1/vehicles/{unit_id}` | `get_vehicle` | Detalle + perfil + última posición |
+
+---
+
+## work-orders
+
+Consulta de órdenes de trabajo del tenant (solo lectura para el cliente).
+
+Prefijo: `/work-orders` · Tag OpenAPI: `work-orders` · **3 endpoints**
+
+| Método | Ruta | Función | Descripción |
+|---|---|---|---|
+| **GET** | `/api/v1/work-orders` | `list_wos` | Lista de órdenes del tenant |
+| **GET** | `/api/v1/work-orders/stats` | `work_order_stats` | Conteos por estado |
+| **GET** | `/api/v1/work-orders/{wo_id}` | `get_wo` | Detalle de una orden |
+
+---
+
+## Comparativa con el API del ERP
+
+<Tabs>
+  <Tab title="Portal Cliente">
+    - **Backend:** `soportecliente`
+    - **Auth:** JWT Bearer
+    - **Usuarios:** tabla `portal_users` (externos)
+    - **Multi-tenant:** sí, filtro automático por `cliente_id`
+    - **Total:** 30 endpoints en 7 módulos
+    - **Audiencia:** clientes externos (CLT)
+  </Tab>
+  <Tab title="ERP">
+    - **Backend:** `finananzaspython`
+    - **Auth:** cookie httpOnly + CSRF double-submit
+    - **Usuarios:** tabla `usuarios` (internos del proveedor)
+    - **Multi-tenant:** no aplicable (single-tenant)
+    - **Total:** 237 endpoints en 29 módulos
+    - **Audiencia:** empleados, administradores, DevOps (EMP / ADM / OPS)
+  </Tab>
+</Tabs>

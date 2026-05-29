@@ -12,7 +12,7 @@ keywords: ["diagrama", "ER", "entidad-relación", "base de datos", "mermaid", "e
 
 ## Vista general de dominios
 
-Cómo se relacionan los 8 dominios a alto nivel.
+Cómo se relacionan los 9 dominios a alto nivel.
 
 ```mermaid
 flowchart LR
@@ -24,6 +24,7 @@ flowchart LR
     CMS[Sistema externo<br/>CMS / GPS]
     SUP[Soporte GPS<br/>portal cliente]
     ATT[Asistencias<br/>checador]
+    PORT[Portal Cliente<br/>soportecliente]
 
     AUTH --> CRM
     AUTH --> FIN
@@ -39,6 +40,10 @@ flowchart LR
     OPS --> FIN
     CRM -.->|sin FK formal| SUP
     CMS -.->|sin FK formal| SUP
+    PORT -.->|lee, multi-tenant| CRM
+    PORT -.->|lee| SUP
+    PORT -.->|lee| OPS
+    PORT -.->|lee| CMS
 ```
 
 ---
@@ -204,6 +209,22 @@ erDiagram
     USUARIOS ||--o{ ATTENDANCE_RECORDS : "registra día"
     ATTENDANCE_RECORDS ||--o{ ATTENDANCE_EVENT_LOGS : "compuesto por eventos"
     USUARIOS ||--o{ ATTENDANCE_EVENT_LOGS : "ejecuta evento"
+```
+
+---
+
+## Dominio 9 · Portal Cliente (Soporte GPS)
+
+Tablas exclusivas del backend `soportecliente`: usuarios externos del cliente y su acceso a cuentas B2B. Comparte la mayoría de tablas con el ERP (lee de `iquo_cliente`, `cms_unidades`, `service_requests`, etc.).
+
+```mermaid
+erDiagram
+    IQUO_CLIENTE ||--o{ PORTAL_USERS : "tenant"
+    PORTAL_USERS ||--o{ PORTAL_USER_ACCOUNT_ACCESS : "puede ver"
+    CLIENTE_B2B_ACCOUNTS ||--o{ PORTAL_USER_ACCOUNT_ACCESS : "accedida por"
+    CMS_UNIDADES ||--o| MONITORING_DEDICATE_VEHICLE_PROFILES : "perfil físico"
+    PORTAL_USERS ||..o{ SERVICE_REQUESTS : "crea (multi-tenant)"
+    PORTAL_USERS ||..o{ NOTIFICATIONS : "recibe"
 ```
 
 ---

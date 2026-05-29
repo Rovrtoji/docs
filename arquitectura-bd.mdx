@@ -24,6 +24,7 @@ keywords: ["base de datos", "tablas", "SQLAlchemy", "PostgreSQL", "esquema", "ar
 | 6 | Sistema externo CMS (flota GPS) | 4 |
 | 7 | Soporte GPS (portal cliente) | 9 |
 | 8 | Asistencias (checador) | 3 |
+| 9 | Portal Cliente (Soporte GPS) | 3 |
 
 ---
 
@@ -1080,3 +1081,112 @@ Horario semanal, registros consolidados por empleado/día y bitácora detallada 
     - La clave `idempotency_key` no puede repetirse, así se evita procesar dos veces el mismo evento
   </Accordion>
 </AccordionGroup>
+
+---
+
+## Dominio: Portal Cliente (Soporte GPS)
+
+<Info>
+  El backend del portal cliente (`soportecliente`) **comparte la misma base de datos** que el ERP — todas las tablas `iquo_cliente`, `cms_unidades`, `cms_hardware`, `inventory_items`, `work_orders`, `service_requests`, `support_*` y `cliente_b2b_accounts` ya están documentadas en los dominios anteriores.
+
+  Lo único que el portal **agrega** son las 3 tablas que se describen aquí. Para detalle de aislamiento multi-tenant, consulta la sección final.
+</Info>
+
+<AccordionGroup>
+  <Accordion title="portal_users" icon="user-cog">
+    **Para qué sirve:** usuarios externos del cliente que entran al portal. **No están en la tabla `usuarios` del ERP** (que es para usuarios internos del proveedor) — son dos universos de usuarios separados con sus propios mecanismos de login.
+
+    **Campos:**
+    - `id` — número único (autoincrement, PK)
+    - `cliente_id` — FK lógica a `iquo_cliente.id`; el portal lo usa para filtrar por tenant. **Indexada**.
+    - `email` — correo (único)
+    - `password_hash` — hash bcrypt
+    - `full_name` — nombre completo
+    - `phone` — teléfono de contacto (opcional)
+    - `role` — rol en el portal (`operator` por defecto, también `admin_client`)
+    - `activo` — sí/no (default `true`)
+    - `intentos_fallidos` — contador anti-fuerza-bruta (default `0`)
+    - `bloqueado_hasta` — bloqueo temporal por intentos fallidos (opcional)
+    - `ultimo_acceso` — último login exitoso (opcional)
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente` (FK lógica vía `cliente_id`)
+    - Tabla `portal_user_account_access` (qué cuentas B2B puede ver)
+  </Accordion>
+
+  <Accordion title="portal_user_account_access" icon="link">
+    **Para qué sirve:** define qué cuentas B2B puede ver cada usuario del portal. Un usuario puede ver más de una cuenta (las de su tenant, más las compartidas vía `account_share`), y una cuenta puede ser vista por varios usuarios.
+
+    **Campos:**
+    - `id` — número único (autoincrement, PK)
+    - `portal_user_id` — FK → `portal_users.id` · `ON DELETE CASCADE`
+    - `b2b_account_id` — FK lógica a `cliente_b2b_accounts.id`
+    - `created_at` — fecha y hora
+
+    **Constraint:**
+    - `UNIQUE(portal_user_id, b2b_account_id)` — un usuario solo puede tener una entrada por cuenta (índice único `ix_portal_access_user_account`)
+
+    **Se relaciona con:**
+    - Tabla `portal_users` (N:1)
+    - Tabla `cliente_b2b_accounts` (N:1, FK lógica)
+  </Accordion>
+
+  <Accordion title="monitoring_dedicate_vehicle_profiles" icon="car-front">
+    **Para qué sirve:** perfil físico del vehículo (placas, VIN, marca, color, año). El portal lo usa para mostrar la ficha del vehículo en `VehicleDetailPage`. **También es usada por el ERP** — el portal solo la lee, no la mantiene.
+
+    **Campos:**
+    - `id` — número único (autoincrement, PK)
+    - `unit_id` — FK lógica a la unidad (id de Wialon/Navixy)
+    - `vin` — VIN del vehículo (opcional)
+    - `plates` — placas (opcional)
+    - `color` — color (opcional)
+    - `brand` — marca (opcional)
+    - `model_year` — año del modelo (opcional)
+    - `unit_name` — nombre/alias de la unidad (opcional)
+
+    **Se relaciona con:**
+    - `unit_id` apunta lógicamente a la entidad `unit` (sin FK rígida porque las unidades viven mayormente en Wialon)
+  </Accordion>
+</AccordionGroup>
+
+### Tablas compartidas con el ERP
+
+El portal usa estas tablas **del lado del lector**, no las define. Sus definiciones canónicas están en los dominios anteriores:
+
+| Tabla | De qué se ocupa el portal |
+|---|---|
+| `iquo_cliente` | Lee el cliente (tenant) del usuario logueado |
+| `cms_unidades` | Listado y detalle de la flota |
+| `cms_hardware` | Equipo GPS instalado en cada unidad |
+| `cliente_b2b_accounts` | Cuentas operativas del tenant (selector de cuenta) |
+| `work_orders` | Vista de solo lectura para el cliente |
+| `inventory_items` | Para resolver el equipo asociado a una instalación |
+| `service_requests` | El cliente las crea y consulta (escritura controlada por `tenant_id`) |
+| `support_request_types` | Catálogo de tipos de solicitud |
+| `support_stages` | Estados/etapas de una solicitud |
+| `support_comments` | Hilo de comentarios de la solicitud |
+| `support_evidence` | Adjuntos de la solicitud |
+| `support_audit_log` | Bitácora de cambios sobre solicitudes |
+| `notifications` | Notificaciones in-app del portal (el portal **sí escribe** aquí) |
+
+### Aislamiento multi-tenant
+
+<Warning>
+  **Garantía:** ninguna fila de un cliente A se puede ver desde la sesión de un cliente B, aunque la base sea la misma.
+</Warning>
+
+<Steps>
+  <Step title="Login devuelve JWT">
+    `POST /api/v1/auth/login` valida credenciales contra `portal_users` y devuelve un JWT que incluye el `cliente_id` del usuario.
+  </Step>
+  <Step title="Cada endpoint lee el JWT">
+    Cada endpoint depende de `get_current_user()` que extrae el `cliente_id` del token Authorization.
+  </Step>
+  <Step title="Filtro automático en queries">
+    Todas las queries del backend **agregan automáticamente** el filtro `WHERE iquo_cliente.id = :cliente_id` (directa o vía join).
+  </Step>
+  <Step title="Recursos ajenos devuelven 404">
+    Si un endpoint recibe un `unit_id` u otro recurso que no pertenece al tenant del usuario, retorna **404 (no 403)** para no filtrar la existencia de recursos de otros tenants.
+  </Step>
+</Steps>
