@@ -19,6 +19,10 @@
         "tab": "Producto",
         "groups": [
           {
+            "group": "Introducción",
+            "pages": ["vision-general"]
+          },
+          {
             "group": "Roadmap",
             "pages": ["index", "hdu-pendientes"]
           },

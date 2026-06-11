@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP/CRM · Presentación Ejecutiva</title>
+<style>
+  :root {
+    --bg: #F0EEE5;
+    --surface: #FBFAF6;
+    --surface-2: #F4F2E9;
+    --ink: #1E1D1A;
+    --ink-soft: #4A4842;
+    --muted: #6F6C63;
+    --accent: #C96442;
+    --accent-soft: #E4B7A6;
+    --line: #DAD6C8;
+    --ok: #4F7A52;
+    --warn: #B07A2E;
+    --shadow: 0 1px 3px rgba(30,29,26,.07), 0 8px 24px rgba(30,29,26,.06);
+  }
+  html[data-theme="dark"] {
+    --bg: #1A1916;
+    --surface: #232220;
+    --surface-2: #2B2A27;
+    --ink: #F0EEE5;
+    --ink-soft: #CFCcC0;
+    --muted: #9A968B;
+    --accent: #E08161;
+    --accent-soft: #5A3A2E;
+    --line: #38362F;
+    --ok: #88BA8A;
+    --warn: #D7A24E;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; transition: background .3s, color .3s;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.hero {
+    padding: 72px 0 56px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-2), var(--bg));
+  }
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: .16em; font-size: 12px;
+    font-weight: 600; color: var(--accent);
+  }
+  h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.1; margin: 12px 0 16px; letter-spacing: -.02em; }
+  .lede { font-size: clamp(17px, 2.2vw, 21px); color: var(--ink-soft); max-width: 720px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .pill {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 14px; font-size: 13px; color: var(--ink-soft); box-shadow: var(--shadow);
+  }
+  .pill b { color: var(--accent); }
+  section { padding: 52px 0; border-bottom: 1px solid var(--line); }
+  h2 { font-size: clamp(22px, 3vw, 30px); margin: 0 0 8px; letter-spacing: -.01em; }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  .sub { color: var(--muted); margin: 0 0 28px; font-size: 15px; }
+  .grid { display: grid; gap: 18px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 820px) { .g2, .g3, .g4 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .g2, .g3, .g4 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; box-shadow: var(--shadow);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .card .tag { font-size: 12px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+  .metric { text-align: left; }
+  .metric .big { font-size: 38px; font-weight: 700; letter-spacing: -.02em; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .metric .lbl { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+  .stack .row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
+  .stack .row .k { color: var(--muted); min-width: 130px; }
+  .stack .row .v { color: var(--ink); font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  td b { color: var(--ink); }
+  .status { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-block; }
+  .s-ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+  .s-prog { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .diagram {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13px; color: var(--ink-soft); white-space: pre; overflow-x: auto; line-height: 1.5;
+  }
+  ul.clean { list-style: none; padding: 0; margin: 0; }
+  ul.clean li { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink-soft); }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li b { color: var(--ink); }
+  .toggle {
+    position: fixed; top: 18px; right: 18px; z-index: 50;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--ink-soft); box-shadow: var(--shadow);
+  }
+  footer { padding: 40px 0 60px; color: var(--muted); font-size: 13px; }
+  .accent-bar { width: 44px; height: 4px; background: var(--accent); border-radius: 4px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<button class="toggle" onclick="toggleTheme()" id="tgl">🌙 Modo oscuro</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Plataforma interna · Resumen ejecutivo</div>
+    <h1>ERP / CRM corporativo</h1>
+    <p class="lede">Una plataforma única que reemplaza el ERP legacy (Odoo 17) por un stack moderno: aplicaciones web en React, un backend FastAPI sobre PostgreSQL y servicios independientes para facturación, asistencia y monitoreo GPS.</p>
+    <div class="meta-row">
+      <span class="pill"><b>6</b> apps web</span>
+      <span class="pill"><b>231</b> endpoints API</span>
+      <span class="pill"><b>8</b> milestones · <b>55</b> historias</span>
+      <span class="pill"><b>3</b> servicios independientes</span>
+      <span class="pill">Doc actualizada · jun 2026</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">01</span>Qué es</h2>
+    <p class="sub">El sistema operativo de la empresa de rastreo y soluciones GPS B2B.</p>
+    <div class="grid g3">
+      <div class="card">
+        <div class="tag">Negocio</div>
+        <h3>Operación 360°</h3>
+        <p>Clientes, instalaciones, soporte, inventario, finanzas y monitoreo GPS en una sola plataforma, con datos compartidos y trazables.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Tecnología</div>
+        <h3>Stack moderno</h3>
+        <p>Frontend React + Vite (monorepo), backend FastAPI asíncrono, PostgreSQL, Redis y almacenamiento S3. Despliegue en Docker / Dokploy.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Estrategia</div>
+        <h3>Salida de Odoo</h3>
+        <p>Migración progresiva del legacy Odoo 17 a código propio, sin licencias de terceros y con control total de la evolución del producto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">02</span>Arquitectura</h2>
+    <p class="sub">Apps web independientes, un backend central y servicios satélite que comparten la misma base de datos.</p>
+    <div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│   APPS WEB (React + Vite · monorepo)                         │
+│   Hub · Backoffice · Finanzas · Operaciones · CRM · RH      │
+│   + Checador (asistencia) · + Portal Cliente (Soporte GPS)  │
+└───────────────────────────┬─────────────────────────────────┘
+                            │  HTTPS · cookie httpOnly + CSRF
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│   BACKEND  ·  FastAPI async  ·  ~30 módulos / 231 endpoints  │
+│   RBAC · Clientes · Finanzas · Operaciones · Dashboards · …  │
+└───────────────────────────┬─────────────────────────────────┘
+                            ▼
+┌──────────────┐   ┌──────────────┐   ┌─────────────────────┐
+│  PostgreSQL  │   │    Redis     │   │   Almacenamiento S3  │
+│  (datos)     │   │   (cache)    │   │   (evidencias/docs)  │
+└──────┬───────┘   └──────────────┘   └─────────────────────┘
+       ▲ comparten base
+   ┌───┴───────────────┬───────────────────────┐
+   │  AlegraPy         │  Central de Monitoreo │  (servicios
+   │  (facturación)    │  (GPS B2B + Centinela)│   independientes)
+   └───────────────────┴───────────────────────┘</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">03</span>Aplicaciones</h2>
+    <p class="sub">Seis frontends en el monorepo más dos portales especializados, con un acceso unificado (Hub estilo Odoo).</p>
+    <div class="grid g3">
+      <div class="card"><div class="tag">Acceso</div><h3>Hub</h3><p>Punto de entrada único: login, launcher de aplicaciones y handoff seguro de sesión hacia cada app.</p></div>
+      <div class="card"><div class="tag">Administración</div><h3>Backoffice</h3><p>RBAC, usuarios, roles, catálogos, micrositios, auditoría y notificaciones in-app.</p></div>
+      <div class="card"><div class="tag">Finanzas</div><h3>Finanzas Web</h3><p>Ingresos, facturación, cuentas, proveedores, reportes y dashboards financieros.</p></div>
+      <div class="card"><div class="tag">Operación</div><h3>Operaciones Web</h3><p>Órdenes de trabajo, instalaciones, inventario y evidencias de campo.</p></div>
+      <div class="card"><div class="tag">Comercial</div><h3>CRM Web</h3><p>Gestión de clientes, contactos y relación comercial.</p></div>
+      <div class="card"><div class="tag">Personas</div><h3>RH Web</h3><p>Empleados, horarios y la base de Recursos Humanos.</p></div>
+      <div class="card"><div class="tag">Móvil/Web</div><h3>Checador</h3><p>Registro de asistencia con geolocalización e idempotencia; app separada con su propio backend.</p></div>
+      <div class="card"><div class="tag">Externo</div><h3>Portal Cliente</h3><p>Soporte GPS multi-tenant para el cliente final: flota, solicitudes, evidencias y notificaciones.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">04</span>Servicios independientes</h2>
+    <p class="sub">Procesos desacoplados del backend principal; comparten solo la base de datos.</p>
+    <div class="grid g3">
+      <div class="card">
+        <div class="tag">Facturación</div>
+        <h3>AlegraPy</h3>
+        <p>Sincroniza las facturas de la API de Alegra hacia PostgreSQL todos los días a las <b>3:00 AM (CDMX)</b>. Reemplazó el viejo sync por MongoDB; corre en su propio contenedor.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Asistencia</div>
+        <h3>Checador</h3>
+        <p>Registro de entradas/salidas con foto y ubicación. Backend propio, idempotencia por <code>Idempotency-Key</code> y almacenamiento de evidencias en S3.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Monitoreo</div>
+        <h3>Central de Monitoreo</h3>
+        <p>Monitoreo GPS B2B (preventivo, reactivo, cámaras) e integración con Centinela/ANERPV vía el wialon-bridge. 15 tablas propias.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">05</span>El sistema en números</h2>
+    <p class="sub">Magnitud de lo ya construido y documentado.</p>
+    <div class="grid g4">
+      <div class="card metric"><div class="big">231</div><div class="lbl">Endpoints REST (ERP)</div></div>
+      <div class="card metric"><div class="big">232</div><div class="lbl">Modelos de datos (schemas)</div></div>
+      <div class="card metric"><div class="big">~30</div><div class="lbl">Módulos de backend</div></div>
+      <div class="card metric"><div class="big">30</div><div class="lbl">Endpoints Portal Cliente</div></div>
+      <div class="card metric"><div class="big">8</div><div class="lbl">Milestones de producto</div></div>
+      <div class="card metric"><div class="big">20</div><div class="lbl">Epics</div></div>
+      <div class="card metric"><div class="big">55</div><div class="lbl">Historias de usuario</div></div>
+      <div class="card metric"><div class="big">6+2</div><div class="lbl">Apps web + portales</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">06</span>Roadmap por milestones</h2>
+    <p class="sub">Catálogo jerárquico Milestone → Epic → Historia de Usuario (resumen).</p>
+    <table>
+      <thead><tr><th>Milestone</th><th>Foco</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td><b>M1 · Plataforma y acceso</b></td><td>Login, Hub, RBAC, backoffice, auditoría</td><td><span class="status s-ok">Entregado</span></td></tr>
+        <tr><td><b>M2 · Attendance</b></td><td>Checador de asistencia + administración</td><td><span class="status s-ok">Entregado</span></td></tr>
+        <tr><td><b>M3 · Finanzas</b></td><td>Ingresos, facturación, cuentas, dashboards</td><td><span class="status s-ok">Entregado</span></td></tr>
+        <tr><td><b>M4 · Experiencia transversal</b></td><td>Notificaciones, UX unificada UUI</td><td><span class="status s-ok">Entregado</span></td></tr>
+        <tr><td><b>M5 · Operaciones y DevOps</b></td><td>Infra, despliegue, servicios</td><td><span class="status s-ok">Entregado</span></td></tr>
+        <tr><td><b>M6 · Operaciones de campo</b></td><td>Órdenes, instalaciones, inventario</td><td><span class="status s-prog">En curso</span></td></tr>
+        <tr><td><b>M7 · Recursos Humanos</b></td><td>Empleados, nómina, padrón</td><td><span class="status s-prog">En curso</span></td></tr>
+        <tr><td><b>M8 · Portal Cliente (Soporte GPS)</b></td><td>Flota, solicitudes y soporte del cliente final</td><td><span class="status s-ok">Entregado</span></td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin-top:18px">Backlog adicional identificado (Catálogos, Comercial, Compras, Finanzas avanzadas, BI y Dashboards extendidos, Integraciones externas) documentado como HDU pendientes para planeación.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">07</span>Seguridad y calidad</h2>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Autenticación</h3>
+        <ul class="clean">
+          <li><b>Cookie httpOnly + CSRF</b> double-submit en todo el frontend (sin tokens en localStorage).</li>
+          <li><b>Handoff de sesión</b> entre apps: token SHA-256, un solo uso, TTL 60 s, ligado a IP/UA.</li>
+          <li><b>RBAC</b> por roles y aplicaciones, con auditoría de acciones sensibles.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Trazabilidad</h3>
+        <ul class="clean">
+          <li><b>Audit log</b> de creación/edición/borrado en RBAC, usuarios, catálogos y aplicaciones.</li>
+          <li><b>Notificaciones</b> automáticas a administradores ante eventos de seguridad.</li>
+          <li><b>OpenAPI 3.1</b> generado del código real: la documentación nunca se desincroniza.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="accent-bar"></div>
+    <h2><span class="num">08</span>Estado y próximos pasos</h2>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Listo</h3>
+        <ul class="clean">
+          <li>Plataforma de acceso, RBAC y backoffice en producción.</li>
+          <li>Finanzas, asistencia y portal cliente operativos.</li>
+          <li>AlegraPy como servicio independiente de facturación.</li>
+          <li>Documentación técnica centralizada y publicable (Mintlify).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>En camino</h3>
+        <ul class="clean">
+          <li>Operaciones de campo e inventario (M6).</li>
+          <li>Recursos Humanos completo y nómina (M7).</li>
+          <li>BI / dashboards extendidos e integraciones externas.</li>
+          <li>Despliegue del fix CORS de checador y de AlegraPy en Dokploy.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Presentación ejecutiva · ERP/CRM corporativo · generada desde la documentación técnica central (<code>proyecto interno/docs</code>) · junio 2026.
+  </div>
+</footer>
+
+<script>
+  function setTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('tgl').textContent = t === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro';
+    try { localStorage.setItem('pe-theme', t); } catch(e){}
+  }
+  function toggleTheme(){
+    setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+  (function(){
+    let t = 'light';
+    try { t = localStorage.getItem('pe-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'); } catch(e){}
+    setTheme(t);
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+---
+title: "Visión general del sistema"
+description: "Documento autocontenido del ERP/CRM: arquitectura, repos, apps, backend, servicios, base de datos, roadmap y convenciones."
+sidebarTitle: "Visión general"
+icon: "compass"
+keywords: ["visión general", "arquitectura", "ERP", "CRM", "GPS", "B2B", "introducción"]
+---
+
+<Note>
+  Documento de contexto único y autocontenido del ERP/CRM. Pensado para que cualquier persona o asistente de IA (Claude, ChatGPT, Cursor, etc.) entienda **todo el sistema** sin tener que explorar el repositorio.
+
+  **Última actualización:** junio 2026.
+</Note>
+
+## Qué es el sistema
+
+Plataforma interna **ERP/CRM** de una empresa de **rastreo y soluciones GPS B2B**. Reemplaza progresivamente el ERP legacy **Odoo 17** por código propio. Cubre la operación completa: clientes, instalaciones, soporte, inventario, finanzas, asistencia del personal y monitoreo GPS.
+
+**Idioma del proyecto:** español (código, comentarios y documentación).
+
+## Arquitectura en una frase
+
+Varias **apps web React** consumen un **backend FastAPI asíncrono** sobre **PostgreSQL**, con **Redis** (cache) y **S3** (archivos). Tres **servicios independientes** (facturación, asistencia, monitoreo) comparten la misma base de datos pero corren como procesos separados.
+
+```
+Apps web (React+Vite)  ──HTTPS, cookie httpOnly + CSRF──▶  Backend FastAPI
+                                                              │
+                          PostgreSQL ◀── Redis ── S3 ─────────┘
+                              ▲
+            AlegraPy · Checador · Central de Monitoreo  (servicios satélite)
+```
+
+## Apps del frontend
+
+Apps en `monorepositroriofinanzas/apps/` (puertos dev típicos 5173–5178):
+
+| App | Rol |
+|---|---|
+| `hub` | Acceso unificado: login, launcher tipo Odoo, handoff de sesión. |
+| `backoffice` | Administración: RBAC, usuarios, roles, catálogos, micrositios, auditoría, notificaciones. |
+| `finanzas-web` | Ingresos, facturación, cuentas, proveedores, reportes, dashboards financieros. |
+| `operations-web` | Órdenes de trabajo, instalaciones, inventario, evidencias. |
+| `crm-web` | Clientes, contactos, relación comercial. |
+| `rh-web` | Empleados, horarios, Recursos Humanos. |
+
+**Frontends fuera del monorepo:**
+- **Checador** (`internal-apps-attendance`): registro de asistencia con geolocalización.
+- **Portal Cliente** (Soporte GPS): multi-tenant para el cliente final.
+
+<Tip>
+  **Componentes UI:** kit oficial **Untitled UI (UUI) v8** (`@untitledui/react`). Tokens semánticos para dark/light. `ThemeToggle` presente en todas las pantallas.
+</Tip>
+
+## Backend (FastAPI)
+
+- **Stack:** FastAPI + SQLAlchemy 2 async + asyncpg + Alembic + Pydantic v2 + Redis + APScheduler + boto3 (S3). Python ≥ 3.12. Paquete `app/` (layout plano).
+- **Tamaño:** ~30 módulos de routers, **162 paths / 231 operaciones**, **232 schemas**. OpenAPI **3.1.0** generado del código real (siempre sincronizado).
+- **Puerto dev:** 8090/8091.
+
+**Módulos de API** (routers `app/presentation/api/v1/`):
+
+`auth`, `usuarios`, `users_contract`, `roles`, `roles_v2`, `permissions`, `permisos`, `applications`, `audit`, `catalogs`, `clientes`, `cms_unificado`, `billing_accounts`, `legal_entities`, `ingresos`, `billing`, `alegra_invoices`, `installation_payments`, `inventory`, `work_orders`, `work_order_evidence`, `operations_dashboard`, `equipmentpurchases_dashboard`, `financial_dashboard`, `dashboard`, `filters`, `notifications`, `storage`, `support`, `attendance`, `health`, `dependencies`.
+
+<Warning>
+  **Auth (patrón oficial F3-02b):** cookie **httpOnly** (`token`, `csrf_token`) + **CSRF double-submit** (header `X-CSRF-Token` en métodos mutantes). El frontend usa `credentials: 'include'`. **No** usar Bearer token ni `localStorage`.
+</Warning>
+
+**Handoff entre apps:** token SHA-256, un solo uso, TTL 60 s, ligado a IP/UA. Auditable con `GET /api/v1/audit-log?resource=auth_handoff`.
+
+## Servicios independientes
+
+<AccordionGroup>
+  <Accordion title="AlegraPy — facturación" icon="receipt">
+    - Sincroniza facturas de la **API de Alegra** (`api.alegra.com`) hacia la tabla `invoices` de PostgreSQL, **3:00 AM hora CDMX**, diario.
+    - Reemplazó el sync anterior por **MongoDB** (ya eliminado). Ya **no usa Mongo**.
+    - Corre como **contenedor separado** (`services/alegrapy/`), no en el scheduler del backend. Comparten solo PostgreSQL. Deploy Docker + Dokploy (`dokploy-network`).
+    - Config clave: `CRON_AT_HOUR=3`, `TZ_CRON=America/Mexico_City`, `SKIP_MONGO=true`, `SKIP_REDIS=true`. Empresas normalizadas a `soluciones` / `ramsa` (minúscula).
+    - `cliente_id` lo mapea el backend (`AUTO_BACKFILL_INVOICES`), no AlegraPy.
+
+    Ver: [Arquitectura AlegraPy](/alegrapy-arquitectura).
+  </Accordion>
+
+  <Accordion title="Checador — asistencia" icon="clock">
+    - App + backend propios. Login con **JSON** `{ identifier, password }` (no form-urlencoded).
+    - Registro de asistencia exige header **`Idempotency-Key`**; evidencias en S3.
+    - El CORS del backend debe permitir `Idempotency-Key` en `allow_headers` (fix PR #30).
+  </Accordion>
+
+  <Accordion title="Central de Monitoreo — GPS B2B" icon="radar">
+    - Migración del legacy Odoo `monitoreocompleto` a React + FastAPI.
+    - 15 tablas propias (preventivo, reactivo, historial, alertas Centinela, cámaras, contactos, catálogos). Reutiliza `cms_unidades`, `cliente_b2b_accounts`, `iquo_cliente`, `usuarios` del ERP.
+    - Integra **Centinela/ANERPV** vía `wialon-bridge` (webhook idempotente `wialon_bridge_inbox`). Sync de catálogo de unidades por cron 05:00 CDMX.
+
+    Ver: [Anexo BD · Central de Monitoreo](/arquitectura-bd-anexo-monitoreo).
+  </Accordion>
+</AccordionGroup>
+
+## Base de datos
+
+- **Motor:** PostgreSQL (una sola base compartida por backend, portal y servicios).
+- **Migraciones:** Alembic (`AUTO_MIGRATE=true` aplica en startup).
+- **Dominios documentados:** Auth/RBAC, Catálogos, Clientes, CMS (unidades/hardware), Finanzas (invoices, ingresos, pagos), Operaciones (work orders, inventario), Attendance, Soporte, Portal Cliente, Central de Monitoreo.
+
+**Aislamiento multi-tenant del portal:** el JWT lleva `cliente_id`; todas las queries filtran por tenant; recurso de otro tenant devuelve **404 (no 403)**.
+
+<CardGroup cols={2}>
+  <Card title="Diagrama ER" href="/diagrama-bd" icon="diagram-project">
+    Diagramas interactivos por dominio.
+  </Card>
+  <Card title="Catálogo de tablas" href="/arquitectura-bd" icon="database">
+    Descripción de cada tabla y sus campos.
+  </Card>
+</CardGroup>
+
+## Roadmap (producto)
+
+Catálogo jerárquico **Milestone → Epic → HDU**. Totales actuales: **8 Milestones · 20 Epics · 55 HDU · 4 perfiles de usuario.**
+
+| Milestone | Foco | Estado |
+|---|---|---|
+| M1 · Plataforma y acceso | Login, Hub, RBAC, backoffice, auditoría | Entregado |
+| M2 · Attendance | Checador de asistencia | Entregado |
+| M3 · Finanzas | Ingresos, facturación, cuentas, dashboards | Entregado |
+| M4 · Experiencia transversal | Notificaciones, UX unificada UUI | Entregado |
+| M5 · Operaciones y DevOps | Infra, despliegue, servicios | Entregado |
+| M6 · Operaciones de campo | Órdenes, instalaciones, inventario | En curso |
+| M7 · Recursos Humanos | Empleados, nómina, padrón | En curso |
+| M8 · Portal Cliente (Soporte GPS) | Flota, solicitudes, soporte | Entregado |
+
+Backlog adicional (Catálogos/Altas, Comercial/Ventas, Compras, Finanzas avanzadas, BI/Dashboards extendidos, Integraciones externas) en [HDU pendientes](/hdu-pendientes).
+
+## Convenciones y decisiones permanentes
+
+<Steps>
+  <Step title="Auth">
+    Cookie httpOnly + CSRF double-submit. Nunca Bearer/localStorage en frontend.
+  </Step>
+  <Step title="UUI Input password">
+    `type="password"` ya trae toggle de ojito nativo; no agregar botón manual.
+  </Step>
+  <Step title="GET /api/v1/roles">
+    Devuelve `{id:int, nombre:str}` (no `name`). Las interfaces TS deben coincidir.
+  </Step>
+  <Step title="Select de UUI dentro de Tabs">
+    Crashea; mover el `Select` fuera o usar `key` dinámica.
+  </Step>
+  <Step title="Catálogos">
+    `catalog_service.{create,update,soft_delete}_position` retornan `dict`, no objeto.
+  </Step>
+  <Step title="Backend sin auto-reload en prod">
+    Reiniciar uvicorn tras cada deploy.
+  </Step>
+  <Step title="Documentación">
+    Toda doc nueva en `proyecto interno/` (`.md` + `.html`/`.mdx`), no en los repos de código.
+  </Step>
+  <Step title="Código">
+    Sin comentarios narrativos; solo tags de ticket (`# F1-XX`). SOLID, reusables primero, tokens semánticos.
+  </Step>
+  <Step title="No CLIs nuevas">
+    Preferir Python con el venv existente.
+  </Step>
+  <Step title="Secretos">
+    `.env`/`.env.bak` jamás se commitean (verificar `.gitignore`).
+  </Step>
+</Steps>
+
+## Estado conocido (junio 2026)
+
+<Info>
+  - **PR #34** (backend): eliminación del sync Mongo + integración AlegraPy — pendiente merge/deploy.
+  - **Fix CORS `Idempotency-Key`** (checador, PR #30): verificar que `main.py` lo incluya en `allow_headers`.
+  - **AlegraPy:** dry-run real contra la API de Alegra pendiente (faltan credenciales productivas).
+  - **CORS del bucket S3** del checador (`internal-apps-checador-prod`): configuración pendiente.
+  - **M6 / M7** en curso; backlog de HDU pendientes sin rellenar.
+</Info>

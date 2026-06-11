@@ -104,6 +104,48 @@ Mockup del flujo de handoff seguro entre apps del hub: launcher, transición a l
 
 ---
 
+## Presentación ejecutiva
+
+Mockup tipo deck para stakeholders ejecutivos: resumen del sistema, KPIs, módulos clave y roadmap. Útil para presentaciones de avance del proyecto.
+
+<div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "10px", fontSize: "13px" }}>
+  <span style={{ color: "#667085", fontWeight: 500 }}>Zoom:</span>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-presentacion'); f.style.transform = 'scale(1)'; f.style.width = '100%'; f.style.height = '900px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >100%</button>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-presentacion'); f.style.transform = 'scale(0.75)'; f.style.width = '133.33%'; f.style.height = '1200px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >75%</button>
+  <button
+    onClick={() => { const f = document.getElementById('iframe-presentacion'); f.style.transform = 'scale(0.5)'; f.style.width = '200%'; f.style.height = '1800px'; }}
+    style={{ padding: "4px 12px", border: "1px solid #d0d5dd", background: "#fff", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#344054" }}
+  >50%</button>
+</div>
+
+<div style={{ position: "relative", width: "100%", height: "900px", overflow: "hidden", border: "1px solid #d0d5dd", borderRadius: "12px" }}>
+  <iframe
+    id="iframe-presentacion"
+    src="https://rovrtoji.github.io/docs/mockups/presentacion-ejecutiva.html"
+    allow="fullscreen"
+    allowFullScreen
+    style={{ position: "absolute", top: 0, left: 0, display: "block", border: "none", width: "100%", height: "900px", transformOrigin: "top left", transition: "transform 0.2s, width 0.2s, height 0.2s" }}
+    title="Presentación ejecutiva mockup"
+  />
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Abrir en pestaña nueva" icon="arrow-up-right-from-square" href="https://rovrtoji.github.io/docs/mockups/presentacion-ejecutiva.html">
+    Pantalla completa para presentación a stakeholders.
+  </Card>
+  <Card title="Modo claro / oscuro" icon="circle-half-stroke">
+    Toggle de tema integrado dentro del mockup.
+  </Card>
+</CardGroup>
+
+---
+
 ## Habilitar GitHub Pages
 
 Para que los iframes funcionen, GitHub Pages debe estar activo sobre el repo `Rovrtoji/docs`:
