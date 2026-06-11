@@ -1,0 +1,690 @@
+---
+title: "Backlog · HDU pendientes"
+sidebarTitle: "Backlog · HDU pendientes"
+description: "Historias de usuario faltantes detectadas al comparar el diagrama de arquitectura contra las HDU documentadas. Plantillas M6–M12 (EP-10..35, HU-25..56)."
+icon: "list-check"
+keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendientes"]
+---
+
+> Este documento contiene las **historias de usuario faltantes** detectadas al
+> comparar el diagrama de arquitectura del sistema contra las 24 HDU ya
+> documentadas en [`historias-usuario.md`](/index).
+>
+> Cada apartado tiene una **plantilla vacía** lista para rellenar (los blancos
+> son `_____`). Una vez completo, lo integramos al doc principal y regeneramos
+> también la versión HTML.
+
+---
+
+## Resumen ejecutivo
+
+| Estado | Bloques del diagrama | Cantidad |
+|---|---|---|
+| ✅ Cubierto | Checador de asistencia (registro + admin), Cliente (alta básica) | 2 |
+| ⚠️ Parcial | Bancos (solo ingresos), Empleados (solo horario), Contactos, Estado de resultado | 4 |
+| ❌ Falta | Altas/catálogos, Comercial, Órdenes de servicio, Inventario, Compras, Proveedores, Central de Monitoreo, Soporte (Cliente/Operación), Fleetmanager, Técnicos, Gastos, Comisiones, Facturación, CXC/CXP, Nómina, Bancos (egresos/conciliación), Dashboards WEB (4 grupos), Integraciones (CMS externo, Plataforma de Ruteo) | ~25 |
+
+**Numeración nueva:** las HDU pendientes empezarán en **HU-25**.
+**Milestones nuevos:** **M6 a M12**.
+**Epics nuevos:** **EP-10 a EP-35**.
+
+---
+
+## Cobertura del diagrama (detallada)
+
+| Bloque del diagrama | Elementos | Estado | HDU que lo cubre |
+|---|---|---|---|
+| WEB · Dashboards Clientes | Altas, vehículos, facturación, pagos, estado cta, instalaciones/soporte, monitoreo | ⚠️ Parcial | HU-16 (Cliente 360 solo individual) |
+| WEB · Dashboards Instalaciones | x mes / x técnico / x cliente, gastos, viáticos, pagos a técnicos | ❌ Falta | — |
+| WEB · Dashboards Rentabilidad | Facturación mensual, gastos op/adm, nómina, viáticos, inventario, CXC, CXP | ⚠️ Parcial | HU-21 (Estado de resultado básico) |
+| WEB · Dashboards Productos y Servicios | Tipo de servicio, canal de venta, vendedor, proveedor, facturación | ❌ Falta | — |
+| EC2 · Altas | CMS, vendedor, tipo servicio, canal, estatus, precios, instalaciones, soporte, objeto-fleetmanager | ❌ Falta | — |
+| EC2 · Finanzas | Gastos adm/op, CXC, CXP, nómina | ⚠️ Parcial | HU-18, HU-19 (solo ingresos) |
+| EC2 · Gastos | Captura de gastos | ❌ Falta | — |
+| EC2 · Comisiones | Cálculo de comisiones | ❌ Falta | — |
+| EC2 · Facturación | Automatic, upload layout, histórico | ❌ Falta | — |
+| EC2 · Técnicos | Locales, foráneos | ❌ Falta | — |
+| EC2 · Instalaciones | Seguimiento de garantías, histórico | ❌ Falta | — |
+| EC2 · Proyecto | Canvas con etapas | ❌ Falta | — |
+| EC2 · Comercial | Canales de venta, vendedor | ❌ Falta | — |
+| EC2 · Venta | Control documental, aprobaciones/rechazos | ❌ Falta | — |
+| EC2 · Mesa de control | Control documental, aprobaciones | ❌ Falta | — |
+| EC2 · Órdenes de servicio | OC, canvas (etapas), histórico | ❌ Falta | — |
+| EC2 · Productos y Servicios | Catálogo | ❌ Falta | — |
+| EC2 · Inventario | Stock mínimo, SIM's, GPS, cámaras, sensores | ❌ Falta | — |
+| EC2 · Proveedores | Alta y gestión | ❌ Falta | — |
+| EC2 · Compras | OC, autorización | ❌ Falta | — |
+| EC2 · Surtido de Stock + Panel Reabastecimiento | Reposición | ❌ Falta | — |
+| EC2 · Central de Monitoreo | Dedicado, reactivo, cámara, centinela | ❌ Falta | — |
+| EC2 · Contactos · Alta | Captura de contactos | ⚠️ Parcial | HU-17 (contactos por cliente) |
+| EC2 · Cliente · Config. Facturación | Datos fiscales | ⚠️ Parcial | HU-17 |
+| EC2 · Bancos | Ingresos, egresos, conciliación | ⚠️ Parcial | HU-18, HU-19 (solo ingresos) |
+| EC2 · Soporte Operación | Seguimiento a tickets, histórico | ❌ Falta | — |
+| EC2 · Soporte Cliente | Tickets, histórico | ❌ Falta | — |
+| EC2 · Fleetmanager | Historial de instalaciones, tickets, monitoreos | ❌ Falta | — |
+| EC2 · Empleados | Nombre, puesto, categoría, sueldo, carga social, horario | ⚠️ Parcial | HU-15 (solo horario) |
+| EC2 · Checador de Asistencia | Registro | ✅ Cubierto | HU-08..HU-14 |
+| Integración · CMS externo | Sincronización | ❌ Falta | — |
+| Integración · Plataforma de Ruteo | Alta del vehículo | ❌ Falta | — |
+| Infra · Redis / Mongo / Postgres | Almacenamiento | N/A | — |
+
+---
+
+## Plantilla de HDU (copiar para cada apartado)
+
+```markdown
+#### HU-XX · _____ (título)
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+- Dado que _____, cuando _____, entonces _____.
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+```
+
+---
+
+# Apartados a rellenar
+
+> Cada milestone propuesto está marcado como **(PROPUESTO)** porque la decisión
+> final de alcance la toma el arquitecto/PO. Los IDs de epic y HDU son
+> tentativos y pueden renumerarse al integrar.
+
+---
+
+## M6 · Catálogos y Altas (PROPUESTO)
+
+> Bloque del diagrama: **EC2 · Altas** (CMS, Vendedor, Tipo de servicio, Canal,
+> Estatus, Precios, Instalaciones, Soporte, Objeto-Fleetmanager). Aquí se
+> definen los catálogos maestros que alimentan al resto del sistema.
+
+### EP-10 · Gestión de catálogos del sistema (PROPUESTO)
+
+#### HU-25 · _____ (título — ej. "Mantener catálogo de tipos de servicio")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+> 📝 Sub-catálogos detectados a cubrir: CMS, Vendedor, Tipo de servicio, Canal,
+> Estatus, Precios, Instalaciones (catálogo), Soporte (catálogo),
+> Objeto-Fleetmanager. **Duplica la plantilla de arriba por cada catálogo que
+> merezca su propia HDU**, o consolida en una sola si el patrón es el mismo.
+
+---
+
+## M7 · Comercial y Ventas (PROPUESTO)
+
+> Bloques del diagrama: **EC2 · Proyecto · Comercial · Venta · Mesa de control
+> · Órdenes de servicio**.
+
+### EP-11 · Proyectos y oportunidades comerciales (PROPUESTO)
+
+#### HU-26 · _____ (título — ej. "Crear un proyecto con sus etapas")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (Canvas con etapas)
+
+---
+
+#### HU-27 · _____ (título — ej. "Configurar canales de venta y vendedores")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-12 · Venta y control documental (PROPUESTO)
+
+#### HU-28 · _____ (título — ej. "Capturar una venta con sus documentos")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+#### HU-29 · _____ (título — ej. "Aprobar o rechazar una venta en la mesa de control")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-13 · Órdenes de servicio (PROPUESTO)
+
+#### HU-30 · _____ (título — ej. "Crear una orden de servicio")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (OC, canvas/etapas, histórico)
+
+---
+
+## M8 · Operaciones e Instalaciones (PROPUESTO)
+
+> Bloques del diagrama: **EC2 · Técnicos · Instalaciones · Soporte Cliente ·
+> Soporte Operación · Central de Monitoreo · Fleetmanager**.
+
+### EP-14 · Gestión de técnicos (PROPUESTO)
+
+#### HU-31 · _____ (título — ej. "Registrar y gestionar técnicos locales y foráneos")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-15 · Instalaciones (PROPUESTO)
+
+#### HU-32 · _____ (título — ej. "Crear y dar seguimiento a una instalación")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (seguimiento de garantías, histórico)
+
+---
+
+### EP-16 · Soporte Cliente y Operación (PROPUESTO)
+
+#### HU-33 · _____ (título — ej. "Levantar un ticket de soporte cliente")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+#### HU-34 · _____ (título — ej. "Dar seguimiento a un ticket de soporte operación")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-17 · Central de Monitoreo (PROPUESTO)
+
+#### HU-35 · _____ (título — ej. "Atender un evento de monitoreo dedicado")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (modos: dedicado / reactivo / cámara / centinela)
+
+> 📝 Considerar si los 4 modos (Dedicado, Reactivo, Cámara, Centinela) merecen
+> HDU separadas o una sola con criterios por modo.
+
+---
+
+### EP-18 · Fleetmanager (PROPUESTO)
+
+#### HU-36 · _____ (título — ej. "Consultar el historial unificado de una unidad")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (historial de instalaciones + tickets + monitoreos)
+
+---
+
+## M9 · Inventario y Compras (PROPUESTO)
+
+> Bloques del diagrama: **EC2 · Productos y Servicios · Inventario ·
+> Proveedores · Compras · Surtido de Stock · Panel de Reabastecimiento**.
+
+### EP-19 · Catálogo de productos y servicios (PROPUESTO)
+
+#### HU-37 · _____ (título — ej. "Mantener el catálogo de productos y servicios")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-20 · Inventario (PROPUESTO)
+
+#### HU-38 · _____ (título — ej. "Gestionar inventario de SIMs, GPS, cámaras y sensores")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (stock mínimo)
+
+---
+
+### EP-21 · Proveedores (PROPUESTO)
+
+#### HU-39 · _____ (título — ej. "Mantener el catálogo de proveedores")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-22 · Compras (PROPUESTO)
+
+#### HU-40 · _____ (título — ej. "Crear una orden de compra con flujo de autorización")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-23 · Reabastecimiento (PROPUESTO)
+
+#### HU-41 · _____ (título — ej. "Surtir stock desde el panel de reabastecimiento")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+## M10 · Finanzas avanzadas (extensión de M3)
+
+> Bloques del diagrama: **EC2 · Finanzas (Gastos adm/op, CXC, CXP, Nómina) ·
+> Gastos · Comisiones · Facturación · Bancos (egresos, conciliación)**.
+
+### EP-24 · Gastos (PROPUESTO)
+
+#### HU-42 · _____ (título — ej. "Capturar gastos administrativos y operativos")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-25 · Cuentas por cobrar / por pagar (PROPUESTO)
+
+#### HU-43 · _____ (título — ej. "Gestionar CXC")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+#### HU-44 · _____ (título — ej. "Gestionar CXP")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-26 · Nómina y empleados completo (PROPUESTO)
+
+#### HU-45 · _____ (título — ej. "Mantener el padrón completo de empleados")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (puesto, categoría, sueldo, carga social, horario)
+
+---
+
+#### HU-46 · _____ (título — ej. "Procesar la nómina del periodo")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-27 · Comisiones (PROPUESTO)
+
+#### HU-47 · _____ (título — ej. "Calcular y consultar comisiones por vendedor")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-28 · Facturación (PROPUESTO)
+
+#### HU-48 · _____ (título — ej. "Generar facturación automática del periodo")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____ (Automatic / Upload Layout / Histórico)
+
+---
+
+### EP-29 · Bancos extendido (PROPUESTO)
+
+#### HU-49 · _____ (título — ej. "Registrar egresos bancarios")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+#### HU-50 · _____ (título — ej. "Conciliar movimientos bancarios")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+## M11 · BI / Dashboards extendidos (PROPUESTO)
+
+> Bloque del diagrama: **WEB · 4 grupos de Dashboards** (Clientes,
+> Instalaciones, Rentabilidad, Productos y Servicios).
+
+### EP-30 · Dashboard Clientes (PROPUESTO)
+
+#### HU-51 · _____ (título — ej. "Dashboard de altas de clientes por período")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+> 📝 Sub-vistas del diagrama: Altas totales / x mes, Vehículos, Facturación,
+> Pagos, Estado de cuenta, Instalaciones y Soporte, Monitoreo. **Duplica la
+> plantilla por cada sub-vista que merezca su propia HDU.**
+
+---
+
+### EP-31 · Dashboard Instalaciones (PROPUESTO)
+
+#### HU-52 · _____ (título — ej. "Dashboard de instalaciones por técnico")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+> 📝 Sub-vistas: x Mes, x Técnico, x Cliente, Gastos de instalación, Viáticos,
+> Pagos a técnicos.
+
+---
+
+### EP-32 · Dashboard Rentabilidad (PROPUESTO)
+
+#### HU-53 · _____ (título — ej. "Dashboard de rentabilidad mensual")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+> 📝 Sub-vistas: Facturación mensual, Gastos operativos, Gastos
+> administrativos, Nómina, Viáticos, Inventario, CXC, CXP. _(Ojo: el bloque
+> del diagrama repite "Nómina"; revisar si son dos vistas distintas.)_
+
+---
+
+### EP-33 · Dashboard Productos y Servicios (PROPUESTO)
+
+#### HU-54 · _____ (título — ej. "Dashboard de ventas por tipo de servicio")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+> 📝 Sub-vistas: Tipo de servicio, Canal de venta, Vendedor, Proveedores,
+> Facturación.
+
+---
+
+## M12 · Integraciones externas (PROPUESTO)
+
+> Bloques del diagrama: **CMS externo** y **Plataforma de Ruteo**.
+
+### EP-34 · Integración con CMS externo (PROPUESTO)
+
+#### HU-55 · _____ (título — ej. "Sincronizar altas/cambios con el CMS externo")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+### EP-35 · Integración con Plataforma de Ruteo (PROPUESTO)
+
+#### HU-56 · _____ (título — ej. "Dar de alta un vehículo en la plataforma de ruteo")
+
+**Rol:** _____    **Prioridad:** _____
+
+**Historia:**
+> Como _____, quiero _____, para _____.
+
+**Criterios de aceptación:**
+- Dado que _____, cuando _____, entonces _____.
+
+**Notas técnicas:** _____
+
+---
+
+## Mejoras / ampliaciones a HDU existentes
+
+> Estas no son HDU nuevas sino sugerencias para **extender** HDU ya escritas,
+> porque el diagrama muestra más alcance que el actual.
+
+| HDU actual | Ampliación sugerida | Bloque del diagrama |
+|---|---|---|
+| HU-15 · Configurar horario | Extender a "Mantener el padrón completo de empleados" o crear HU-45 aparte | Empleados (puesto, categoría, sueldo, carga social) |
+| HU-17 · Crear/editar cliente | Confirmar que cubre "Config. Facturación" (datos fiscales) | Cliente · Config. Facturación |
+| HU-17 (contactos por cliente) | Considerar HDU aparte si Contactos es un módulo independiente del Cliente | Contactos · Alta |
+| HU-18, HU-19 · Ingresos | Extender el epic Bancos con egresos y conciliación → ver HU-49, HU-50 | Bancos · Egresos · Conciliación |
+| HU-21 · Estado de resultado | Detallar las sub-vistas de rentabilidad → ver EP-32 | Dashboards · Rentabilidad |
+
+---
+
+## Cómo continuar
+
+1. Recorre los apartados de M6 a M12 y rellena los blancos (`_____`).
+2. En los epics con sub-temas (📝), decide si los sub-temas necesitan HDU
+   separadas o se consolidan; duplica/elimina plantillas según el caso.
+3. Confirma o ajusta la numeración (M, EP, HU) si tu PM prefiere otra.
+4. Avísame cuando esté rellenado para:
+   - integrar las HDU nuevas a [`historias-usuario.md`](/index)
+   - actualizar la matriz general y la sección "Vista de Milestones"
+   - regenerar [`historias-usuario.html`](./historias-usuario.html) con todo
+
+---
+
+_Documento auxiliar · 2026-05-13 · `proyecto interno/`_

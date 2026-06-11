@@ -1,0 +1,622 @@
+---
+title: "AlegraPy · Plan de implementación"
+sidebarTitle: "Plan de implementación"
+description: "Plan de implementación paso a paso de la integración de AlegraPy, con fases, archivos afectados, tests y criterios de aceptación."
+icon: "list-check"
+keywords: ["alegrapy", "plan", "implementación", "tests", "facturación"]
+---
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Integrar AlegraPy como servicio independiente (contenedor propio) que sincroniza facturas de la API de Alegra a PostgreSQL a las 3:00 AM CDMX, sin tocar el runtime del backend principal.
+
+**Architecture:** AlegraPy vive en `services/alegrapy/` dentro del repo backend pero corre como contenedor separado en `dokploy-network`. Lee de la API de Alegra (no Mongo), escribe a la tabla `invoices` de la misma BD del backend. Scheduler interno mejorado con hora fija (`CRON_AT_HOUR=3` + timezone `America/Mexico_City`).
+
+**Tech Stack:** Python 3.12, httpx, asyncpg, pydantic v2, Docker, Dokploy. Spec: `docs/superpowers/specs/2026-06-05-integracion-alegrapy-design.md`.
+
+---
+
+## File Structure
+
+| Archivo | Responsabilidad |
+|---|---|
+| `services/alegrapy/alegrapy/` | Paquete copiado (cliente Alegra, pg_sync, models, pg_state, cli) |
+| `services/alegrapy/alegrapy/config.py` | **Modificar**: campos `cron_at_hour`, `tz_cron` |
+| `services/alegrapy/alegrapy/cli.py` | **Modificar**: scheduler con hora fija + helper `_next_run_at_fixed_hour` |
+| `services/alegrapy/tests/test_scheduler_fixed_hour.py` | **Crear**: test del cálculo de la próxima hora fija |
+| `services/alegrapy/.env.example` | **Crear**: config del servicio (solo PG, 3 AM CDMX) |
+| `services/alegrapy/Dockerfile` | **Crear**: imagen worker `python:3.12-slim` |
+| `services/alegrapy/docker-compose.yml` | **Crear**: servicio Dokploy (sin puerto, dokploy-network) |
+| `services/alegrapy/README.md` | **Crear**: cómo correr y desplegar |
+
+---
+
+## Task 1: Copiar el paquete AlegraPy a `services/alegrapy/`
+
+**Files:**
+- Create: `services/alegrapy/` (copia de `/home/ricardo/Descargas/alegrarust/alegrapy/`, sin caches)
+
+- [ ] **Step 1: Copiar el paquete excluyendo artefactos**
+
+```bash
+cd /home/ricardo/Documentos/appsinternas/finananzaspython
+mkdir -p services
+rsync -a --exclude='.venv' --exclude='__pycache__' --exclude='.pytest_cache' \
+  --exclude='.ruff_cache' --exclude='*.egg-info' --exclude='.git' \
+  /home/ricardo/Descargas/alegrarust/alegrapy/ services/alegrapy/
+```
+
+- [ ] **Step 2: Verificar la estructura copiada**
+
+Run: `ls services/alegrapy/alegrapy/ && ls services/alegrapy/tests/`
+Expected: ver `cli.py config.py pg_sync.py models.py pg_state.py alegra_client.py mongo_sync.py redis_sync.py logging_setup.py __main__.py __init__.py` y los tests.
+
+- [ ] **Step 3: Verificar que la suite original pasa**
+
+```bash
+cd services/alegrapy
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]" -q
+pytest -q
+```
+Expected: todos los tests PASS (suite original intacta).
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd /home/ricardo/Documentos/appsinternas/finananzaspython
+git add services/alegrapy
+git commit -m "feat(alegrapy): copiar paquete AlegraPy a services/alegrapy"
+```
+
+---
+
+## Task 2: Agregar config de hora fija (`cron_at_hour`, `tz_cron`)
+
+**Files:**
+- Modify: `services/alegrapy/alegrapy/config.py`
+
+- [ ] **Step 1: Agregar los campos al dataclass `AppConfig`**
+
+En `services/alegrapy/alegrapy/config.py`, dentro de `@dataclass class AppConfig`, después de `incremental_days: int` agregar:
+
+```python
+    incremental_days: int
+    cron_at_hour: int | None
+    tz_cron: str
+```
+
+- [ ] **Step 2: Poblar los campos en `from_env()`**
+
+En el `return cls(...)` de `from_env()`, después de `incremental_days=int(os.environ.get("INCREMENTAL_DAYS", "60")),` agregar:
+
+```python
+            incremental_days=int(os.environ.get("INCREMENTAL_DAYS", "60")),
+            cron_at_hour=(
+                int(os.environ["CRON_AT_HOUR"])
+                if os.environ.get("CRON_AT_HOUR")
+                else None
+            ),
+            tz_cron=os.environ.get("TZ_CRON", "America/Mexico_City"),
+```
+
+- [ ] **Step 3: Verificar que config sigue cargando**
+
+Run:
+```bash
+cd services/alegrapy && source .venv/bin/activate
+CRON_AT_HOUR=3 EMPRESA_1_NOMBRE=x ALEGRA_USER_1=x ALEGRA_KEY_1=x \
+EMPRESA_2_NOMBRE=y ALEGRA_USER_2=y ALEGRA_KEY_2=y \
+python -c "from alegrapy.config import AppConfig; c=AppConfig.from_env(); print(c.cron_at_hour, c.tz_cron)"
+```
+Expected: `3 America/Mexico_City`
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add services/alegrapy/alegrapy/config.py
+git commit -m "feat(alegrapy): config cron_at_hour + tz_cron para hora fija"
+```
+
+---
+
+## Task 3: Helper `_next_run_at_fixed_hour` + test (TDD)
+
+**Files:**
+- Create: `services/alegrapy/tests/test_scheduler_fixed_hour.py`
+- Modify: `services/alegrapy/alegrapy/cli.py`
+
+- [ ] **Step 1: Escribir el test que falla**
+
+Crear `services/alegrapy/tests/test_scheduler_fixed_hour.py`:
+
+```python
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
+
+from alegrapy.cli import _next_run_at_fixed_hour
+
+CDMX = ZoneInfo("America/Mexico_City")
+
+
+def test_next_run_today_if_before_target_hour():
+    # 01:00 CDMX (07:00 UTC) -> el proximo 3 AM es HOY
+    now = datetime(2026, 6, 5, 7, 0, tzinfo=UTC)
+    result = _next_run_at_fixed_hour(3, "America/Mexico_City", now)
+    local = result.astimezone(CDMX)
+    assert local.hour == 3
+    assert local.minute == 0
+    assert local.day == 5
+
+
+def test_next_run_tomorrow_if_after_target_hour():
+    # 05:00 CDMX (11:00 UTC) -> ya paso 3 AM -> manana
+    now = datetime(2026, 6, 5, 11, 0, tzinfo=UTC)
+    result = _next_run_at_fixed_hour(3, "America/Mexico_City", now)
+    local = result.astimezone(CDMX)
+    assert local.hour == 3
+    assert local.day == 6
+
+
+def test_next_run_returns_utc_aware():
+    now = datetime(2026, 6, 5, 7, 0, tzinfo=UTC)
+    result = _next_run_at_fixed_hour(3, "America/Mexico_City", now)
+    assert result.tzinfo == UTC
+```
+
+- [ ] **Step 2: Correr el test para verificar que falla**
+
+Run: `cd services/alegrapy && source .venv/bin/activate && pytest tests/test_scheduler_fixed_hour.py -v`
+Expected: FAIL con `ImportError: cannot import name '_next_run_at_fixed_hour'`
+
+- [ ] **Step 3: Implementar el helper**
+
+En `services/alegrapy/alegrapy/cli.py`, agregar al bloque de imports superior:
+
+```python
+from zoneinfo import ZoneInfo
+```
+
+Y agregar la función (después de los imports, antes de `_build_parser`):
+
+```python
+def _next_run_at_fixed_hour(
+    hour: int, tz_name: str, now: datetime | None = None
+) -> datetime:
+    """Devuelve el proximo instante (en UTC) cuando den las hour:00 en tz_name.
+
+    Si la hora objetivo ya paso hoy en esa timezone, devuelve la de manana.
+    """
+    tz = ZoneInfo(tz_name)
+    now_local = (now or datetime.now(UTC)).astimezone(tz)
+    target = now_local.replace(hour=hour, minute=0, second=0, microsecond=0)
+    if target <= now_local:
+        target = target + timedelta(days=1)
+    return target.astimezone(UTC)
+```
+
+- [ ] **Step 4: Correr el test para verificar que pasa**
+
+Run: `pytest tests/test_scheduler_fixed_hour.py -v`
+Expected: 3 passed.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add services/alegrapy/alegrapy/cli.py services/alegrapy/tests/test_scheduler_fixed_hour.py
+git commit -m "feat(alegrapy): helper _next_run_at_fixed_hour + tests (3 AM CDMX)"
+```
+
+---
+
+## Task 4: Usar la hora fija en `_run_scheduler`
+
+**Files:**
+- Modify: `services/alegrapy/alegrapy/cli.py:207-218` (bloque de cálculo del próximo run)
+
+- [ ] **Step 1: Reemplazar el cálculo del próximo run**
+
+En `_run_scheduler`, localizar el bloque que hoy dice:
+
+```python
+        next_at = datetime.now(UTC) + timedelta(hours=app_config.cron_interval_hours)
+        try:
+            await save_sync_state(app_config.pg_url, mode, next_at)
+        except Exception as e:
+            logger.error(
+                "Error guardando sync_state: %s. El sync se ejecuto pero el estado "
+                "no fue persistido.", e,
+            )
+
+        interval = app_config.cron_interval_hours * 3600
+        logger.info("Sync '%s' completado. Proximo en %ds", mode, interval)
+        await asyncio.sleep(interval)
+```
+
+y reemplazarlo por:
+
+```python
+        if app_config.cron_at_hour is not None:
+            next_at = _next_run_at_fixed_hour(
+                app_config.cron_at_hour, app_config.tz_cron
+            )
+        else:
+            next_at = datetime.now(UTC) + timedelta(
+                hours=app_config.cron_interval_hours
+            )
+        try:
+            await save_sync_state(app_config.pg_url, mode, next_at)
+        except Exception as e:
+            logger.error(
+                "Error guardando sync_state: %s. El sync se ejecuto pero el estado "
+                "no fue persistido.", e,
+            )
+
+        remaining = max(0.0, (next_at - datetime.now(UTC)).total_seconds())
+        logger.info(
+            "Sync '%s' completado. Proximo run: %s (en %.0fs)",
+            mode, next_at.isoformat(), remaining,
+        )
+        await asyncio.sleep(remaining)
+```
+
+- [ ] **Step 2: Verificar que el módulo compila y los tests pasan**
+
+Run: `cd services/alegrapy && source .venv/bin/activate && python -c "import alegrapy.cli" && pytest -q`
+Expected: import OK + todos los tests PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/alegrapy/alegrapy/cli.py
+git commit -m "feat(alegrapy): _run_scheduler usa hora fija si CRON_AT_HOUR esta definido"
+```
+
+---
+
+## Task 5: `.env.example` del servicio
+
+**Files:**
+- Create: `services/alegrapy/.env.example` (sobrescribe el copiado)
+
+- [ ] **Step 1: Escribir el `.env.example` adaptado**
+
+Sobrescribir `services/alegrapy/.env.example` con:
+
+```bash
+# ============================================================
+# AlegraPy — servicio de sync de facturación (integración backend)
+# ============================================================
+
+# ---- Empresas (company_code en minuscula, alineado con historico) ----
+EMPRESA_1_NOMBRE=soluciones
+ALEGRA_USER_1=usuario1@ejemplo.com
+ALEGRA_KEY_1=
+EMPRESA_2_NOMBRE=ramsa
+ALEGRA_USER_2=usuario2@ejemplo.com
+ALEGRA_KEY_2=
+
+# ---- PostgreSQL: la MISMA base del backend principal ----
+PG_URL=postgresql://user:pass@host:5432/finanzas
+
+# ---- Solo Postgres (no Mongo, no Redis) ----
+SKIP_MONGO=true
+SKIP_REDIS=true
+
+# ---- Scheduler: 3 AM hora CDMX ----
+CRON_ENABLED=true
+CRON_AT_HOUR=3
+TZ_CRON=America/Mexico_City
+INCREMENTAL_DAYS=60
+
+# ---- API Alegra ----
+API_DELAY_MS=500
+LOG_LEVEL=info
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add services/alegrapy/.env.example
+git commit -m "feat(alegrapy): .env.example del servicio (solo PG, 3 AM CDMX)"
+```
+
+---
+
+## Task 6: Dockerfile (worker)
+
+**Files:**
+- Create: `services/alegrapy/Dockerfile`
+
+- [ ] **Step 1: Escribir el Dockerfile**
+
+Crear `services/alegrapy/Dockerfile`:
+
+```dockerfile
+# syntax=docker/dockerfile:1.7
+# AlegraPy — worker de sync de facturación (no es API, no expone puerto).
+# Arranca en modo scheduler residente porque CRON_ENABLED=true.
+FROM python:3.12-slim
+
+# Timezone data para que ZoneInfo("America/Mexico_City") funcione.
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Instalar dependencias primero (cache de capa).
+COPY pyproject.toml ./
+COPY alegrapy ./alegrapy
+RUN pip install --no-cache-dir .
+
+# Usuario no-root.
+RUN useradd --create-home appuser
+USER appuser
+
+# Modo scheduler residente (CRON_ENABLED=true en el entorno).
+CMD ["python", "-m", "alegrapy"]
+```
+
+- [ ] **Step 2: Verificar que la imagen construye**
+
+Run:
+```bash
+cd services/alegrapy
+docker build -t alegrapy-sync:test .
+```
+Expected: build OK, sin errores.
+
+- [ ] **Step 3: Verificar que el `--help` corre dentro del contenedor**
+
+Run: `docker run --rm alegrapy-sync:test python -m alegrapy --help`
+Expected: imprime la ayuda del CLI sin crash.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add services/alegrapy/Dockerfile
+git commit -m "feat(alegrapy): Dockerfile worker python:3.12-slim con tzdata"
+```
+
+---
+
+## Task 7: docker-compose.yml (Dokploy)
+
+**Files:**
+- Create: `services/alegrapy/docker-compose.yml`
+
+- [ ] **Step 1: Escribir el docker-compose**
+
+Crear `services/alegrapy/docker-compose.yml` (patrón Dokploy: sin puerto, sin Traefik, `dokploy-network` external):
+
+```yaml
+# Servicio AlegraPy para Dokploy. Worker de sync (no recibe trafico HTTP).
+# Postgres lo provee Dokploy compartido; se conecta por PG_URL.
+#
+# Variables a configurar en la UI de Dokploy:
+#   EMPRESA_1_NOMBRE, ALEGRA_USER_1, ALEGRA_KEY_1
+#   EMPRESA_2_NOMBRE, ALEGRA_USER_2, ALEGRA_KEY_2
+#   PG_URL  (la MISMA base del backend principal)
+services:
+  alegra-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+    environment:
+      EMPRESA_1_NOMBRE: ${EMPRESA_1_NOMBRE}
+      ALEGRA_USER_1: ${ALEGRA_USER_1}
+      ALEGRA_KEY_1: ${ALEGRA_KEY_1}
+      EMPRESA_2_NOMBRE: ${EMPRESA_2_NOMBRE}
+      ALEGRA_USER_2: ${ALEGRA_USER_2}
+      ALEGRA_KEY_2: ${ALEGRA_KEY_2}
+      PG_URL: ${PG_URL}
+      SKIP_MONGO: ${SKIP_MONGO:-true}
+      SKIP_REDIS: ${SKIP_REDIS:-true}
+      CRON_ENABLED: ${CRON_ENABLED:-true}
+      CRON_AT_HOUR: ${CRON_AT_HOUR:-3}
+      TZ_CRON: ${TZ_CRON:-America/Mexico_City}
+      INCREMENTAL_DAYS: ${INCREMENTAL_DAYS:-60}
+      API_DELAY_MS: ${API_DELAY_MS:-500}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+networks:
+  dokploy-network:
+    external: true
+```
+
+- [ ] **Step 2: Validar el compose**
+
+Run: `cd services/alegrapy && docker compose config -q && echo "compose OK"`
+Expected: `compose OK` (sin errores de sintaxis).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/alegrapy/docker-compose.yml
+git commit -m "feat(alegrapy): docker-compose Dokploy (worker, dokploy-network)"
+```
+
+---
+
+## Task 8: README del servicio
+
+**Files:**
+- Create: `services/alegrapy/README.md` (sobrescribe el copiado)
+
+- [ ] **Step 1: Escribir el README de operación**
+
+Sobrescribir `services/alegrapy/README.md`:
+
+````markdown
+# AlegraPy — servicio de sync de facturación
+
+Worker independiente que sincroniza facturas de la **API de Alegra** a la tabla
+`invoices` de PostgreSQL (la misma BD del backend principal), a las **3:00 AM
+hora CDMX**. No expone API; corre como contenedor en `dokploy-network`.
+
+> Reemplaza el sync que antes leía de MongoDB (extraído del backend en
+> `fix/remove-alegra-mongo-sync`). Ya no se usa Mongo: lee directo de Alegra.
+
+## Variables (UI de Dokploy)
+
+| Variable | Ejemplo | Nota |
+|---|---|---|
+| `EMPRESA_1_NOMBRE` | `soluciones` | minúscula → `company_code` |
+| `ALEGRA_USER_1` / `ALEGRA_KEY_1` | — | credenciales API empresa 1 |
+| `EMPRESA_2_NOMBRE` | `ramsa` | |
+| `ALEGRA_USER_2` / `ALEGRA_KEY_2` | — | credenciales API empresa 2 |
+| `PG_URL` | `postgresql://…/finanzas` | misma BD del backend |
+| `CRON_ENABLED` | `true` | scheduler residente |
+| `CRON_AT_HOUR` | `3` | hora fija (CDMX) |
+| `TZ_CRON` | `America/Mexico_City` | |
+
+`SKIP_MONGO` y `SKIP_REDIS` quedan en `true` (solo Postgres).
+
+## Correr local
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env   # completar credenciales
+pytest -q
+
+# dry-run de un día contra la BD real
+python -m alegrapy --mode incremental --days 1 --empresa 1 --skip-mongo --skip-redis
+```
+
+## Deploy (Dokploy)
+
+1. Crear servicio apuntando a `services/alegrapy/` (compose).
+2. Configurar las variables de arriba en la UI.
+3. Desplegar. El contenedor queda residente y dispara el sync a las 3 AM CDMX.
+
+## Cómo se programa el 3 AM
+
+`CRON_ENABLED=true` + `CRON_AT_HOUR=3` + `TZ_CRON=America/Mexico_City`: el
+scheduler calcula el próximo `03:00` CDMX y duerme hasta ahí. Persiste el estado
+en la tabla `sync_state` (la crea automáticamente). Si el contenedor reinicia,
+recalcula el próximo 3 AM (no se desfasa).
+````
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add services/alegrapy/README.md
+git commit -m "docs(alegrapy): README de operación y deploy Dokploy"
+```
+
+---
+
+## Task 9: Documentación para el arquitecto (md + html)
+
+**Files:**
+- Create: `docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.md`
+- Create: `docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.html`
+- Create: `/home/ricardo/Documentos/appsinternas/proyecto interno/2026-06-05-alegrapy-arquitectura.{md,html}`
+
+- [ ] **Step 1: Escribir el documento de arquitectura para el arquitecto**
+
+Crear `docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.md` con: resumen de la integración, diagrama de arquitectura (el de la §3 del spec), tabla de compatibilidad de la BD (§6 del spec), variables de entorno, decisión del scheduler de hora fija, y el flujo de datos. Contenido derivado del spec `docs/superpowers/specs/2026-06-05-integracion-alegrapy-design.md`.
+
+- [ ] **Step 2: Generar el HTML con la plantilla Claude**
+
+```bash
+cd /home/ricardo/Documentos/appsinternas/finananzaspython
+.venv/bin/python /tmp/md2html_claude.py \
+  docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.md \
+  docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.html \
+  "AlegraPy · Integración (arquitecto)" \
+  "docs/superpowers/plans / alegrapy arquitectura"
+```
+Expected: `✓ …arquitecto.html (N bytes)`
+
+- [ ] **Step 3: Copiar a `proyecto interno` con fecha de hoy**
+
+```bash
+cp docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.md \
+   "/home/ricardo/Documentos/appsinternas/proyecto interno/2026-06-05-alegrapy-arquitectura.md"
+cp docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.html \
+   "/home/ricardo/Documentos/appsinternas/proyecto interno/2026-06-05-alegrapy-arquitectura.html"
+```
+
+- [ ] **Step 4: Commit (solo lo que va al repo; `proyecto interno` está fuera de git)**
+
+```bash
+git add docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.md \
+        docs/superpowers/plans/2026-06-05-alegrapy-integration-arquitecto.html
+git commit -m "docs(alegrapy): documentación de arquitectura (md + html)"
+```
+
+---
+
+## Task 10: Verificación end-to-end (dry-run) y cierre
+
+**Files:** ninguno (solo verificación).
+
+- [ ] **Step 1: Confirmar que toda la suite pasa**
+
+Run: `cd services/alegrapy && source .venv/bin/activate && pytest -q && ruff check .`
+Expected: tests PASS + ruff sin errores.
+
+- [ ] **Step 2: Dry-run de aceptación contra la BD real**
+
+> Requiere `.env` con credenciales reales de Alegra y `PG_URL` a la BD de
+> staging/real. Si no hay credenciales aún, marcar este paso como pendiente y
+> documentarlo.
+
+```bash
+cd services/alegrapy && source .venv/bin/activate
+python -m alegrapy --mode incremental --days 1 --empresa 1 --skip-mongo --skip-redis --log-level info
+```
+Expected: log "Sync PostgreSQL iniciado", inserciones/actualizaciones sin errores.
+
+- [ ] **Step 3: Verificar que las facturas aparecen en `invoices` con company_code correcto**
+
+```sql
+SELECT company_code, count(*) FROM invoices
+WHERE sync_timestamp > now() - interval '10 minutes'
+GROUP BY company_code;
+```
+Expected: filas con `company_code = soluciones`.
+
+- [ ] **Step 4: Verificar que la tabla `sync_state` se creó**
+
+```sql
+SELECT * FROM sync_state ORDER BY id DESC LIMIT 1;
+```
+Expected: una fila con `last_mode`, `last_sync_at`, `next_sync_at` (próximo 3 AM CDMX).
+
+- [ ] **Step 5: Commit final / tag (si aplica)**
+
+```bash
+cd /home/ricardo/Documentos/appsinternas/finananzaspython
+git log --oneline -10
+# crear PR de la rama hacia development
+```
+
+---
+
+## Self-review (cobertura del spec)
+
+| Requisito del spec | Task |
+|---|---|
+| D1/D2 Servicio separado en `services/alegrapy/` | Task 1, 6, 7 |
+| D3 Solo PostgreSQL (`SKIP_MONGO/REDIS=true`) | Task 5, 7 |
+| D4 Scheduler hora fija 3 AM CDMX | Task 2, 3, 4 |
+| D5 `company_code` normalizado (`soluciones`/`ramsa`) | Task 5 |
+| D6 `cliente_id` lo llena el backend (no AlegraPy) | sin cambio (documentado) |
+| D7 Docker + docker-compose Dokploy | Task 6, 7 |
+| Compatibilidad tabla `invoices` | verificada en spec §6 |
+| `sync_state` auto-creada | Task 10 step 4 |
+| Documentación arquitecto (md+html) | Task 9 |
+| Testing (suite + scheduler + dry-run) | Task 3, 10 |
+
+Sin placeholders. Tipos/nombres consistentes (`_next_run_at_fixed_hour`,
+`cron_at_hour`, `tz_cron` usados igual en Tasks 2-4).
+
+---
+
+_Plan · Integración AlegraPy · 2026-06-05 · `docs/superpowers/plans/`_

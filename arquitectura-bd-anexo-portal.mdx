@@ -1,0 +1,146 @@
+---
+title: "Anexo BD · Portal Cliente"
+sidebarTitle: "Anexo · Portal Cliente"
+description: "Las 3 tablas propias del Portal Cliente (Soporte GPS) y las tablas del ERP que reutiliza, sobre la misma base PostgreSQL."
+icon: "table"
+keywords: ["base de datos", "portal cliente", "soportecliente", "multi-tenant", "postgres"]
+---
+
+> Este anexo complementa la documentación principal de la base de datos
+> (`arquitectura-bd.html` / `arquitectura-bd-simple.md`).
+>
+> El backend del portal cliente (`soportecliente`) **comparte la misma base
+> de datos** que el ERP (`finananzaspython`) — todas las tablas
+> `iquo_cliente`, `cms_unidades`, `cms_hardware`, `inventory_items`,
+> `work_orders`, `service_requests`, `support_*` y `cliente_b2b_accounts`
+> ya están documentadas en el archivo principal.
+>
+> Lo único que el portal **agrega** son las 3 tablas que se describen aquí.
+
+---
+
+## Resumen
+
+| Tabla | Dominio | Filas/Función |
+|---|---|---|
+| `portal_users` | portal | Usuarios externos del portal (separados de `usuarios` del ERP) |
+| `portal_user_account_access` | portal | Qué cuentas B2B puede ver cada usuario del portal |
+| `monitoring_dedicate_vehicle_profiles` | shared | Perfil físico del vehículo (placas, VIN, marca, color) — referenciada desde el ERP también |
+
+---
+
+## 1. `portal_users`
+
+> Usuarios externos del cliente que entran al portal. No están en la tabla
+> `usuarios` del ERP (que es para usuarios internos del proveedor) — son
+> dos universos de usuarios separados con sus propios mecanismos de login.
+
+**Columnas:**
+
+| Columna | Tipo | Nulo | Default | Notas |
+|---|---|---|---|---|
+| `id` | INTEGER | NO | autoincrement | PK |
+| `cliente_id` | INTEGER | NO | — | FK lógica a `iquo_cliente.id`; el portal lo usa para filtrar por tenant. **Indexada**. |
+| `email` | VARCHAR(255) | NO | — | **UNIQUE** |
+| `password_hash` | VARCHAR(255) | NO | — | Hash bcrypt |
+| `full_name` | VARCHAR(255) | NO | — | Nombre completo |
+| `phone` | VARCHAR(50) | SÍ | — | Teléfono de contacto |
+| `role` | VARCHAR(50) | NO | `"operator"` | Rol del usuario en el portal (operator, admin_client, etc.) |
+| `activo` | BOOLEAN | — | `true` | Si está activo |
+| `intentos_fallidos` | INTEGER | — | `0` | Contador anti-fuerza-bruta |
+| `bloqueado_hasta` | TIMESTAMPTZ | SÍ | — | Bloqueo temporal por intentos fallidos |
+| `ultimo_acceso` | TIMESTAMPTZ | SÍ | — | Último login exitoso |
+| `created_at` | TIMESTAMPTZ | NO | `now()` | |
+| `updated_at` | TIMESTAMPTZ | NO | `now()` | Auto-update |
+
+**Relaciones:**
+- `portal_users.cliente_id` → `iquo_cliente.id` (FK lógica, mismo `tenant_id`)
+- `portal_users.id` ← `portal_user_account_access.portal_user_id` (1:N)
+
+---
+
+## 2. `portal_user_account_access`
+
+> Define qué cuentas B2B puede ver cada usuario del portal. Un usuario puede
+> ver más de una cuenta (las de su tenant, más las compartidas vía
+> `account_share`), y una cuenta puede ser vista por varios usuarios.
+
+**Columnas:**
+
+| Columna | Tipo | Nulo | Default | Notas |
+|---|---|---|---|---|
+| `id` | INTEGER | NO | autoincrement | PK |
+| `portal_user_id` | INTEGER | NO | — | FK → `portal_users.id` · `ON DELETE CASCADE` |
+| `b2b_account_id` | INTEGER | NO | — | FK lógica a `cliente_b2b_accounts.id` (id de la cuenta operativa) |
+| `created_at` | TIMESTAMPTZ | NO | `now()` | |
+
+**Constraint:**
+- `UNIQUE(portal_user_id, b2b_account_id)` — un usuario solo puede tener una entrada por cuenta. Implementado como índice único `ix_portal_access_user_account`.
+
+**Relaciones:**
+- N:1 con `portal_users`
+- N:1 con `cliente_b2b_accounts` (FK lógica; los IDs concuerdan con la tabla del ERP)
+
+---
+
+## 3. `monitoring_dedicate_vehicle_profiles`
+
+> Perfil físico del vehículo: placas, VIN, marca, color, año. El portal lo
+> usa para mostrar la ficha del vehículo en `VehicleDetailPage`. **También
+> es usada por el ERP** — el portal solo la lee, no la mantiene.
+
+**Columnas:**
+
+| Columna | Tipo | Nulo | Default | Notas |
+|---|---|---|---|---|
+| `id` | INTEGER | NO | autoincrement | PK |
+| `unit_id` | BIGINT | SÍ | — | FK lógica a la unidad (id de Wialon/Navixy) |
+| `vin` | VARCHAR(50) | SÍ | — | VIN del vehículo |
+| `plates` | VARCHAR(50) | SÍ | — | Placas |
+| `color` | VARCHAR(50) | SÍ | — | Color |
+| `brand` | VARCHAR(100) | SÍ | — | Marca |
+| `model_year` | VARCHAR(10) | SÍ | — | Año del modelo |
+| `unit_name` | VARCHAR(255) | SÍ | — | Nombre/alias de la unidad |
+
+**Relaciones:**
+- `unit_id` apunta lógicamente a la entidad `unit` (sin FK rígida porque las unidades viven mayormente en Wialon).
+
+---
+
+## Tablas compartidas con el ERP (ya documentadas)
+
+El portal usa estas tablas **del lado del lector**, no las define. Sus definiciones canónicas están en `arquitectura-bd.html`:
+
+| Tabla | De qué se ocupa el portal |
+|---|---|
+| `iquo_cliente` | El portal lee el cliente (tenant) del usuario logueado |
+| `cms_unidades` | Listado y detalle de la flota |
+| `cms_hardware` | Equipo GPS instalado en cada unidad |
+| `cliente_b2b_accounts` | Cuentas operativas del tenant (para el selector de cuenta) |
+| `work_orders` | Vista de solo lectura para el cliente |
+| `inventory_items` | Para resolver el equipo asociado a una instalación |
+| `service_requests` | El cliente las crea y consulta (escritura controlada por `tenant_id`) |
+| `support_request_types` | Catálogo de tipos de solicitud |
+| `support_stages` | Estados/etapas de una solicitud |
+| `support_comments` | Hilo de comentarios de la solicitud |
+| `support_evidence` | Adjuntos de la solicitud |
+| `support_audit_log` | Bitácora de cambios sobre solicitudes |
+| `notifications` | Notificaciones in-app del portal (el portal sí escribe aquí) |
+
+---
+
+## Cómo el portal aísla los datos por tenant
+
+1. Login devuelve un JWT con el `cliente_id` del `portal_user`.
+2. Cada endpoint depende de `get_current_user()` que lee el JWT.
+3. Todas las queries del backend **agregan automáticamente** el filtro
+   `WHERE iquo_cliente.id = :cliente_id` (directa o vía join).
+4. Si un endpoint recibe un `unit_id` u otro recurso que no pertenece al
+   tenant del usuario, retorna 404 (no 403, para no filtrar existencia).
+
+**Garantía multi-tenant:** ninguna fila de un cliente A se puede ver desde la
+sesión de un cliente B, aunque la base sea la misma.
+
+---
+
+_Anexo BD · Portal Cliente Soporte GPS · `proyecto interno/`_

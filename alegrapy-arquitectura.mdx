@@ -1,0 +1,168 @@
+---
+title: "AlegraPy · Arquitectura"
+sidebarTitle: "Arquitectura"
+description: "Servicio independiente que sincroniza facturas de la API de Alegra hacia PostgreSQL a las 3:00 AM CDMX. Reemplaza el sync por MongoDB."
+icon: "sitemap"
+keywords: ["alegrapy", "facturación", "alegra", "scheduler", "postgres", "docker"]
+---
+
+> **Fecha:** 2026-06-05
+> **Servicio:** AlegraPy — sync de facturación
+> **Repo:** `internal-apps-backend` · subcarpeta `services/alegrapy/`
+> **Audiencia:** arquitecto de sistema / DevOps / revisión técnica
+
+---
+
+## 1. Qué es y por qué
+
+**AlegraPy** es un **servicio independiente** que sincroniza las facturas de la
+**API de Alegra** hacia la tabla `invoices` de PostgreSQL, a las **3:00 AM hora
+CDMX**, todos los días.
+
+Reemplaza el sync anterior que leía las facturas desde **MongoDB**
+(`alegra_db.facturas`). Ese sync se **extrajo** del backend principal para no
+acoplar Mongo al servicio core. AlegraPy es su sustituto: **ya no usa Mongo**,
+consume directamente la API REST de Alegra.
+
+**Principio rector:** AlegraPy corre como **proceso/contenedor totalmente
+separado**. El backend principal (FastAPI) no lo importa, no lo agenda en su
+scheduler, ni depende de él en runtime. Comparten **solo** la base de datos
+PostgreSQL.
+
+---
+
+## 2. Arquitectura
+
+```
+┌────────────────────┐        HTTPS Basic auth        ┌──────────────────┐
+│  AlegraPy           │ ─────────────────────────────▶ │  API de Alegra   │
+│  (contenedor cron)  │   GET /api/v1/invoices         │  api.alegra.com  │
+│  3:00 AM CDMX       │   (por empresa, paginado)      └──────────────────┘
+└─────────┬──────────┘
+          │ asyncpg upsert (por alegra_id)
+          ▼
+┌────────────────────┐        lee (no escribe)        ┌──────────────────┐
+│  PostgreSQL         │ ◀───────────────────────────── │  Backend         │
+│  tabla `invoices`   │                                │  principal       │
+│  tabla `sync_state` │                                │  (FastAPI)       │
+└────────────────────┘                                └──────────────────┘
+          ▲
+          │ AUTO_BACKFILL_INVOICES (startup del backend)
+          └── backfill_invoices_cliente_id → llena cliente_id
+```
+
+- **AlegraPy** es la **única** escritura nueva a `invoices`.
+- **El backend** solo **lee** `invoices` (endpoints `/api/v1/invoices`,
+  dashboards) y mapea `cliente_id` en su arranque.
+- No hay imports cruzados ni dependencias de runtime entre ambos.
+
+---
+
+## 3. Decisiones arquitectónicas
+
+| # | Decisión | Implementación |
+|---|---|---|
+| Aislamiento | Servicio/proceso separado | Contenedor propio en `services/alegrapy/`, no en el APScheduler del backend |
+| Origen de datos | API de Alegra (no Mongo) | `httpx` Basic auth por empresa, paginado, filtro de fecha |
+| Destino | Solo PostgreSQL | `SKIP_MONGO=true`, `SKIP_REDIS=true` |
+| Scheduler | Hora fija 3 AM CDMX | `CRON_ENABLED=true` + `CRON_AT_HOUR=3` + `TZ_CRON=America/Mexico_City` |
+| `company_code` | Normalizado | `soluciones` / `ramsa` (minúscula, alineado con histórico) |
+| `cliente_id` | Lo llena el backend | `AUTO_BACKFILL_INVOICES` en `database.py` (no AlegraPy) |
+| Deploy | Docker + Dokploy | Worker sin puerto, `dokploy-network` |
+
+---
+
+## 4. Mejora del scheduler (hora fija)
+
+El scheduler nativo de AlegraPy corría **por intervalo** (`cron_interval_hours`:
+"cada N horas desde el último sync"). Para esta integración se agregó soporte de
+**hora fija**:
+
+- Nuevas variables: `CRON_AT_HOUR` (ej. `3`) y `TZ_CRON` (`America/Mexico_City`).
+- Nuevo helper `_next_run_at_fixed_hour(hour, tz, now)`: calcula el próximo
+  `hour:00` en la timezone indicada; si ya pasó hoy, devuelve el de mañana.
+- En el loop: si `CRON_AT_HOUR` está definido, duerme hasta el próximo 3 AM CDMX
+  en vez de `+N horas`. El comportamiento por intervalo se conserva si no se
+  define (compatibilidad hacia atrás).
+- **Resistente a reinicios:** al arrancar, recalcula el próximo 3 AM (no se
+  desfasa si el contenedor se reinicia a otra hora).
+- Cubierto por tests (`tests/test_scheduler_fixed_hour.py`): hora hoy vs mañana,
+  retorno UTC-aware.
+
+---
+
+## 5. Compatibilidad con la BD (verificada contra la base real)
+
+| Punto | Estado |
+|---|---|
+| Tabla `invoices` tiene todas las columnas que AlegraPy escribe (incl. `personalized`) | ✅ Compatible 100% |
+| Tabla `sync_state` | ⚠️ No existe aún → AlegraPy la crea automáticamente |
+| FK `company_code → legal_entities.code` | ℹ️ **No existe como constraint real** en la BD (solo el modelo SQLAlchemy la declara). `legal_entities` está vacía. `company_code` es consistencia de datos, no bloqueo. |
+| Histórico `company_code` | 16,169 filas `soluciones` (minúscula) → se normaliza a `soluciones` |
+| `cliente_id` | Lo mapea el backfill del backend, no AlegraPy |
+
+---
+
+## 6. Flujo de datos (corrida diaria)
+
+1. **3:00 AM CDMX** — el scheduler interno despierta.
+2. Por cada empresa (`soluciones`, `ramsa`): llama a la API de Alegra con auth
+   Basic, paginado, filtro de los últimos `INCREMENTAL_DAYS` días.
+3. Parsea las facturas con modelos Pydantic.
+4. **Upsert** a `invoices` por `alegra_id` (inserta nuevas / actualiza
+   existentes). `company_code` = nombre de empresa normalizado.
+5. Persiste estado en `sync_state` (`last_sync_at`, `next_sync_at`).
+6. Duerme hasta el próximo 3 AM CDMX.
+7. El backend principal, en su startup, mapea `cliente_id` de las facturas
+   nuevas si `AUTO_BACKFILL_INVOICES=true`.
+
+---
+
+## 7. Manejo de errores y resiliencia
+
+- **HTTP 402** de Alegra (empresa sin API contratada): se loguea, continúa con
+  la otra empresa. No es error de software.
+- **Rate limit**: respeta `API_DELAY_MS` entre páginas.
+- **Fallo de conexión a PG**: se loguea por lote, los lotes restantes continúan.
+- **Idempotencia**: el upsert por `alegra_id` hace el sync re-ejecutable sin
+  duplicar.
+- **Reinicio del contenedor**: recalcula el próximo 3 AM y persiste estado.
+
+---
+
+## 8. Despliegue (Dokploy)
+
+- **Imagen:** `python:3.12-slim` + `tzdata` (para que `ZoneInfo` resuelva CDMX).
+- **Sin puerto / sin Traefik:** es worker, no recibe tráfico HTTP.
+- **Red:** `dokploy-network` (external), igual que los demás servicios.
+- **Postgres:** lo provee Dokploy compartido; AlegraPy se conecta por `PG_URL`
+  apuntando a la **misma base** del backend.
+- **Variables sensibles** (credenciales Alegra, `PG_URL`): por la UI de Dokploy.
+
+Archivos: `services/alegrapy/Dockerfile`, `services/alegrapy/docker-compose.yml`,
+`services/alegrapy/.env.example`, `services/alegrapy/README.md`.
+
+---
+
+## 9. Precondiciones de la primera corrida
+
+1. Credenciales reales de la API de Alegra de ambas empresas.
+2. Decidir/poblar `legal_entities` con `soluciones` y `ramsa` (opcional: el FK no
+   está activo, pero conviene el catálogo).
+3. `PG_URL` apuntando a la misma base del backend.
+4. En el backend: `AUTO_BACKFILL_INVOICES=true` si el mapeo de `cliente_id` lo
+   hace el principal.
+
+---
+
+## 10. Lo que NO cambia
+
+- El runtime del backend principal (sin imports, sin job en su APScheduler).
+- El stack del backend no reintroduce Mongo ni Redis.
+- El contrato de la tabla `invoices` ni el modelo `AlegraInvoice`.
+- El `backfill_invoices_cliente_id` permanece en el backend
+  (`AUTO_BACKFILL_INVOICES`).
+
+---
+
+_Documento de arquitectura · AlegraPy · 2026-06-05 · `docs/superpowers/plans/`_

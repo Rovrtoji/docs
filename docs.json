@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "ERP/CRM · Documentación",
-  "description": "Documentación del ERP/CRM: roadmap, arquitectura de base de datos y referencia de API.",
+  "description": "Documentación del ERP/CRM: roadmap, arquitectura de base de datos, servicios y referencia de API.",
   "colors": {
     "primary": "#0F766E",
     "light": "#14B8A6",
@@ -20,7 +20,7 @@
         "groups": [
           {
             "group": "Roadmap",
-            "pages": ["index"]
+            "pages": ["index", "hdu-pendientes"]
           },
           {
             "group": "Diseño",
@@ -33,7 +33,12 @@
         "groups": [
           {
             "group": "Base de datos",
-            "pages": ["diagrama-bd", "arquitectura-bd"]
+            "pages": [
+              "diagrama-bd",
+              "arquitectura-bd",
+              "arquitectura-bd-anexo-portal",
+              "arquitectura-bd-anexo-monitoreo"
+            ]
           },
           {
             "group": "API ERP",
@@ -50,6 +55,28 @@
           {
             "group": "API Reference Portal",
             "openapi": "openapi-portal.json"
+          }
+        ]
+      },
+      {
+        "tab": "Servicios",
+        "groups": [
+          {
+            "group": "AlegraPy · Facturación",
+            "pages": [
+              "alegrapy-arquitectura",
+              "alegrapy-integracion",
+              "alegrapy-plan"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Operación",
+        "groups": [
+          {
+            "group": "Despliegue y cierres",
+            "pages": ["handoff-hub-backoffice"]
           }
         ]
       }

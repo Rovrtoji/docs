@@ -1,0 +1,387 @@
+---
+title: "Handoff · Hub + Backoffice v2.1"
+sidebarTitle: "Handoff Hub + Backoffice"
+description: "Cierre técnico del Plan v2.1: shell UX, notificaciones in-app reales, catálogos enlazados, auth cookie+CSRF, launcher tipo Odoo. Tickets IOS-98..130."
+icon: "rocket"
+keywords: ["handoff", "backoffice", "hub", "despliegue", "RBAC", "CSRF", "jira"]
+---
+
+> **Tipo de documento:** Handoff de cierre técnico
+> **Equipos receptores:** QA final, DevOps, soporte post-deploy
+> **Periodo cubierto:** 2026-04-22 (cierre v2.1) y posteriores correcciones
+> **Estado:** Todos los tickets en `To deploy` (15 cerrados) · pendiente despliegue final y QA de IOS-99
+>
+> Este documento resume todo lo realizado desde la planeación de cambios
+> solicitados para el **backoffice** y el **hub** (apps internas). Cubre
+> alcance, decisiones, ejecución, archivos clave, riesgos y próximos pasos.
+
+---
+
+## 1. Resumen ejecutivo
+
+Se cerraron dos planes paralelos:
+
+| Plan | Alcance | Tickets cerrados | Estado |
+|---|---|---|---|
+| **Backoffice v2.1** | 8 fases (A · B.1 · B.2 · C.1 · C.2 · C.3 · D) — shell UX, audit coverage extendido, contador de micrositios, notificaciones in-app reales, catálogos enlazados a usuario (puesto + jefe directo), UX roles con apps derivadas, 5 fixes visuales | IOS-98, IOS-105 → IOS-108, IOS-109 → IOS-118 | 14 en **To deploy** · IOS-99 (QA Fase A) **pendiente** |
+| **Hub v2** | Migración UX completa: login UUI + ThemeToggle + redirect dual, forgot/reset unificados, launcher tipo Odoo, audit del handoff entre apps | IOS-119 → IOS-124 | 6 en **To deploy** · duplicados IOS-125..130 cerrados como `Blocked` |
+
+**Adicionales post-cierre (no en plan original):**
+- Migración auth a **cookie httpOnly + CSRF double-submit** (Tricell F3-02b) — PR #6, #7, #9, #10
+- Limpieza masiva de typecheck/lint **DT-017** (~120 fixes)
+- Fix `super_admin` también accede al hub (Opción A) — corrigió que cualquier usuario con rol admin pudiera entrar
+- **Fix CSRF en handoff** (commit `8fb4874`, ya fuera del plan) — el launcher no enviaba `X-CSRF-Token` al `POST /api/v1/auth/handoff` por lo que el botón "abrir app" entraba al catch silencioso
+
+---
+
+## 2. Contexto y planeación
+
+### 2.1 Origen
+
+El plan v2.1 nace del cierre del backoffice tras adoptar **UUI v8** (Untitled UI) como kit de componentes oficial. Antes de tocar código, el usuario fijó **decisiones de diseño**:
+
+- Roles con `role_applications` plano (sin sub-aplicaciones)
+- Notificaciones backend reales mínimas (no placeholders)
+- Catálogos enlazados a usuarios vía FK `position_id` y `manager_user_id`
+
+El plan **Hub v2** es paralelo: el hub (apps internas, puerto 5173) había quedado atrás del patrón UUI y necesitaba migración visual y refactor del launcher.
+
+### 2.2 Documentos canónicos de planeación
+
+| Documento | Ubicación |
+|---|---|
+| Spec Backoffice v2.1 | `plan_v2/02_backoffice/SPEC_V2.1_CIERRE_BACKOFFICE.md` |
+| Checklist Backoffice | `plan_v2/02_backoffice/checklist.md` |
+| Spec Hub v2 | `plan_v2/01_hub/checklist.md` |
+| Progreso global | `plan_v2/progreso.md` |
+| Workflow agentes | `plan_v2/workflow.md` |
+| Plan local | `~/.claude/plans/happy-roaming-popcorn.md` |
+
+---
+
+## 3. Backoffice v2.1 — fases ejecutadas
+
+### Fase A · Shell topbar UX
+
+**Ticket:** IOS-98 (frontend-dev) · IOS-99 (QA, pendiente)
+
+**Qué hicimos:**
+- `user-menu.tsx` reescrito con Perfil / Ajustes / Logout
+- `notification-bell.tsx` **NUEVO** (badge + popover) — placeholder de ese momento, reemplazado en Fase C.1 por la versión real
+- Sidebar: rename "Aplicaciones" → "Micrositios" con icono `Globe01`
+- Eliminado el footer con tarjeta de usuario
+- `app.tsx` integra la Bell en el header
+- Smoke Playwright validado light + dark
+
+### Fase B.1 · Audit coverage extendido
+
+**Tickets:** IOS-105 (backend) · IOS-106 (QA backend)
+
+**Qué hicimos:**
+- `audit_service.log_action()` extendido a:
+  - `roles_v2`: create/update/delete/permissions_set/applications_set
+  - `users_contract`: roles_set/role_assign/role_revoke
+  - `catalogs`: dept/pos/area_manager
+  - `applications`: CRUD apps + menu views
+- **Excluido attendance** por decisión del usuario
+- Tests: 9/9 casos PASS contra DB real · suite completa 42/42
+
+### Fase B.2 · Contador de micrositios
+
+**Tickets:** IOS-107 (backend) · IOS-108 (frontend)
+
+**Qué hicimos:**
+- Backend: `rbac_service.count_users_per_application()` con query agregada (DISTINCT sobre `usuarios_roles`, sin N+1)
+- Campo `assigned_users_count` en `ApplicationOut` hidratado en `list_applications` y `get_application`
+- Frontend: `microsites/list.tsx` consume el campo; card footer muestra "N usuarios" con `Users01` + "Orden X"; modal de detalles agrega tile "Usuarios con acceso"
+
+### Fase C.1 · Notificaciones backend real
+
+**Tickets:** IOS-109 (padre) · IOS-110/111/112 (backend) · IOS-113 (frontend) · IOS-114 (QA)
+
+**Qué hicimos:**
+
+| Subtarea | Detalle |
+|---|---|
+| IOS-110 | Migración `user_notifications` + modelo `UserNotification` + `notification_service` (create / list / mark_read / mark_all_read / unread_count / list_admin_user_ids). `alembic upgrade head` aplicado. |
+| IOS-111 | 4 endpoints REST `/api/v1/notifications` + schemas. Ownership validado en el servicio (no `require_permission`). |
+| IOS-112 | `audit_service.log_action()` dispara `notification_service.create_for_users` a admins cuando `action in SECURITY_ACTIONS` (7 acciones): `user_delete`, `role_delete`, `role_permissions_set`, `role_applications_set`, `revoke_session`, `login_failed`, `application_delete`. Best-effort con `logger.exception`. |
+| IOS-113 | Hook `useNotifications` con polling 60s + `NotificationBell` real (lista, badge, mark-read, mark-all-read). `app.tsx` pasa `onNavigate` con react-router. |
+| IOS-114 | QA completo: service layer 8/8 + trigger audit→security 3/3 + smoke Playwright (Bell muestra "1 sin leer" tras `role_delete` HTTP). Footer "Marcar todas como leídas" OK. |
+
+### Fase C.2 · Catálogos ↔ usuario
+
+**Tickets:** IOS-115 (backend) · IOS-116 (frontend) · IOS-117 (QA)
+
+**Qué hicimos:**
+- Migración `usuarios.position_id` + `usuarios.manager_user_id` con backfill
+- Modelo `User` con relaciones `position` / `manager`
+- `GET /users/{id}` ahora devuelve `positionName`, `departmentName`, `managerName`, `managerEmail`
+- `PATCH /users/{id}` acepta `positionId` y `managerUserId`
+- `GET /catalogs/departments` y `/catalogs/positions` devuelven contadores sin N+1
+- Frontend: `users/detail` muestra Puesto + Jefe directo (con link al detalle del jefe). Modal editar tiene `Select` puesto + `Select` jefe (pobla desde `/catalogs/positions` y `/users`). Cards de catalogs muestran "N puestos · M usuarios" y "N usuarios" por puesto.
+
+**Fix descubierto durante QA (IOS-117):**
+- `catalogs.py` corregido: `svc.create/update/delete_position` retornaban `dict` (no objeto) → acceso `pos["id"]` en vez de `pos.id`.
+
+### Fase C.3 · UX roles
+
+**Ticket:** IOS-118 (frontend)
+
+**Qué hicimos:**
+- `users/detail` tab "Roles" muestra "Da acceso a: App1, App2…" por cada rol asignado
+- Cache por rol para no pegar al backend en cada render
+- Sin cambios de backend (reusa `GET /roles/{id}/applications`)
+
+**Fix detectado durante QA (registrado en IOS-117):**
+- `RoleOption` TS estaba `{id: string, name: string}` cuando el contrato real era `{id: int, nombre: string}` — nunca matcheaba y "Da acceso a:" no aparecía. Corregido y documentado en memoria como regla persistente.
+
+### Fase D · 5 fixes visuales (sin Jira aún)
+
+| # | Fix | Archivo |
+|---|---|---|
+| 1 | Dropdown users actions | `users/list.tsx` |
+| 2 | Crash de `Select` dentro de `Tabs` en catalogs | `catalogs/*.tsx` — `Select` fuera de `<Tabs>` |
+| 3 | Audit log: rango de fechas en una fila + username real (no id) | `audit/list.tsx` + endpoint |
+| 4 | Login con doble eye (botón manual sobre el nativo de UUI) | `login.tsx` |
+| 5 | Pantalla **`forgot-password.tsx` NUEVA** + ruta en `app.tsx` (branded backoffice, consume `/api/v1/auth/forgot-password`, estados idle/sent/error, link a login) | `apps/backoffice/src/pages/forgot-password.tsx` |
+
+> Estos 5 fixes están **mergeados** pero no tienen tickets Jira separados. Recomendable agruparlos en un ticket único `IOS-XXX · Fase D · 5 fixes visuales backoffice` para trazabilidad de despliegue.
+
+---
+
+## 4. Hub v2 — migración UX + audit del handoff
+
+### 4.1 HB.L (Login)
+
+| Ticket | Subtarea | Detalle |
+|---|---|---|
+| IOS-119 | HB.L-01 (frontend-dev) | Login hub migrado **v2 → UUI** + ThemeToggle + **redirect dual**: admin → backoffice vía handoff, empleado → `/launcher`. |
+| IOS-120 | HB.L-02 (frontend-dev) | `forgot-password` + `reset-password` del hub unificados al patrón UUI (Alert + iconos `Mail01`/`Lock01`/`Shield01` + ThemeToggle + Input password nativo). |
+| IOS-121 | HB.L-03 (qa-frontend) | Smoke Playwright: login `ricardo` (super_admin) redirige a backoffice; UI alineada; forgot/reset con patrón UUI. |
+
+### 4.2 HB.H (Launcher tipo Odoo + audit handoff)
+
+| Ticket | Subtarea | Detalle |
+|---|---|---|
+| IOS-122 | HB.H-01 (frontend-dev) | Pantalla `/launcher` **tipo Odoo**: `HubHeader` (saludo + theme + user menu) + `AppsGrid` responsive (5 / 3 / 2 cols) + `AppTile` (icono 80px con gradient + hover scale). Reusa `resolveIcon` del package `@finanzas/app-shell`. **Sin favoritos / recientes / búsqueda** por decisión explícita de scope (YAGNI). |
+| IOS-123 | HB.H-02 (backend-python) | Audit del handoff enriquecido: `details={target_app, ttl_seconds}` en `handoff_initiate` y `details={target_app, handoff_id}` en `handoff_exchange`. 42/42 tests pass. Audit consultable: `GET /api/v1/audit-log?resource=auth_handoff`. |
+| IOS-124 | HB.H-03 (qa-frontend) | QA smoke del launcher: 5 cols responsive + handoff end-to-end + audit visible en `audit_log`. |
+
+### 4.3 Validación 2026-04-27 (no hay trabajo nuevo)
+
+Al reabrir el plan `happy-roaming-popcorn.md` el 2026-04-27 se confirmó que el scope ya estaba **100% implementado** y registrado en IOS-119..124 (`to_deploy`). Los duplicados IOS-125..130 generados por error se cerraron con `Blocked` apuntando al ticket original.
+
+| HU | Ticket original | Duplicado (Blocked) | Estado |
+|---|---|---|---|
+| HB.L-01 | IOS-119 | IOS-125 | to_deploy |
+| HB.L-02 | IOS-120 | IOS-126 | to_deploy |
+| HB.L-03 | IOS-121 | IOS-127 | to_deploy |
+| HB.H-01 | IOS-122 | IOS-128 | to_deploy |
+| HB.H-02 | IOS-123 | IOS-129 | to_deploy |
+| HB.H-03 | IOS-124 | IOS-130 | to_deploy |
+
+---
+
+## 5. Cambios técnicos transversales (post-cierre)
+
+Estos cambios afectaron a hub **y** backoffice (y todas las apps del monorepo), no salen del plan v2.1 pero impactan el despliegue.
+
+### 5.1 Migración auth a cookie httpOnly + CSRF (Tricell F3-02b)
+
+**Commits clave:** `26311af`, `bf5f75b`, `c0afee4`, `6776cde` (Merge PR #6), `07b36b1` (Merge PR #7), `f50f5a5`
+
+- Cookies `token` y `csrf_token` como httpOnly por backend
+- Frontend usa `credentials: 'include'` + header `X-CSRF-Token` en métodos mutantes
+- `ApiClientOptions` ya no recibe `token?` (limpiado en `c0afee4`)
+- `localStorage.getItem('token')` eliminado de los callsites del backoffice y hub
+
+### 5.2 Limpieza DT-017 — typecheck + lint
+
+**Commits:** `7d2cd32`, `f1057f0` (Merge PR #9), `66d0ad2`, `027ec29` (Merge PR #10), `1c0efcd`, `383a20f`
+
+- Biome auto-fix masivo
+- Sanitization de `tsconfig.json` por app (rootDir, paths)
+- `SelectItemType` callbacks con tipado correcto (DT-017b)
+- `type="button"` agregado a 122 botones (`useButtonType`)
+- Residuales `noArrayIndexKey`, a11y modal, directivas tailwind
+
+### 5.3 Super_admin también accede al hub (Opción A)
+
+**Commit:** `9645df0`
+
+Decisión del usuario tras feedback: cualquier usuario, incluido `super_admin`, debe poder ingresar al `/launcher` del hub (antes era redirigido directo al backoffice). El backoffice sigue siendo el destino por default vía handoff, pero el launcher queda accesible.
+
+### 5.4 Fix CSRF en handoff (descubierto post-cierre)
+
+**Commit:** `8fb4874`
+
+Bug detectado durante prueba real con Chrome DevTools MCP: el botón "abrir app" del launcher **no enviaba `X-CSRF-Token`** al `POST /api/v1/auth/handoff`. El backend respondía **403 csrf token missing or mismatched** y el `catch` del hub caía al fallback silencioso `window.location.href = app.base_url`, dejando al usuario en bucle hub → app sin sesión → hub.
+
+**Solución:**
+- Import de `readCookie`, `CSRF_COOKIE_NAME`, `CSRF_HEADER_NAME` desde `@finanzas/api-client`
+- `credentials: 'include'` en el fetch
+- Header `X-CSRF-Token` leído de la cookie `csrf_token`
+
+Verificado end-to-end: login con `ricardo` → click Finanzas → llega a `localhost:5175` con sesión iniciada.
+
+---
+
+## 6. Matriz consolidada de tickets Jira
+
+### Backoffice v2.1
+
+| Fase | Ticket | Asignado | Estado | Resumen |
+|---|---|---|---|---|
+| A · Shell topbar | **IOS-98** | senior-frontend-dev | ✅ to_deploy | UserMenu + Bell + sidebar rename |
+| A · QA | **IOS-99** | qa-frontend | ⚠️ **pendiente** | Checklist 11 puntos sin ejecutar |
+| B.1 · Audit coverage | **IOS-105** | senior-backend-python | ✅ to_deploy | Log a roles_v2/users/catalogs/applications |
+| B.1 · QA | **IOS-106** | qa-backend | ✅ to_deploy | 9/9 + 42/42 suite |
+| B.2 · Conteo apps | **IOS-107** | senior-backend-python | ✅ to_deploy | `assigned_users_count` |
+| B.2 · UI | **IOS-108** | senior-frontend-dev | ✅ to_deploy | Cards micrositios con "N usuarios" |
+| C.1 · Padre | **IOS-109** | project-manager | en curso | Tarea padre notificaciones |
+| C.1 · DB+modelo | **IOS-110** | senior-backend-python | ✅ to_deploy | `user_notifications` + service |
+| C.1 · API | **IOS-111** | senior-backend-python | ✅ to_deploy | 4 endpoints REST |
+| C.1 · Trigger audit | **IOS-112** | senior-backend-python | ✅ to_deploy | SECURITY_ACTIONS dispara notif |
+| C.1 · Hook + Bell | **IOS-113** | senior-frontend-dev | ✅ to_deploy | useNotifications + Bell real |
+| C.1 · QA | **IOS-114** | qa-frontend | ✅ to_deploy | Service + trigger + smoke Playwright |
+| C.2 · Backend | **IOS-115** | senior-backend-python | ✅ to_deploy | FK position/manager + endpoints |
+| C.2 · UI | **IOS-116** | senior-frontend-dev | ✅ to_deploy | Puesto + Jefe en detail/edit |
+| C.2 · QA | **IOS-117** | qa-frontend | ✅ to_deploy | + fix catalogs dict + RoleOption |
+| C.3 · UX roles | **IOS-118** | senior-frontend-dev | ✅ to_deploy | "Da acceso a:" con cache |
+| D · 5 fixes | sin ticket | varios | ✅ deployed | dropdown/catalogs/audit/login/forgot |
+
+### Hub v2
+
+| Subtarea | Ticket | Asignado | Estado | Resumen |
+|---|---|---|---|---|
+| HB.L-01 | **IOS-119** | senior-frontend-dev | ✅ to_deploy | Login UUI + redirect dual |
+| HB.L-02 | **IOS-120** | senior-frontend-dev | ✅ to_deploy | Forgot/reset unificados UUI |
+| HB.L-03 | **IOS-121** | qa-frontend | ✅ to_deploy | Smoke Playwright login |
+| HB.H-01 | **IOS-122** | senior-frontend-dev | ✅ to_deploy | Launcher tipo Odoo |
+| HB.H-02 | **IOS-123** | senior-backend-python | ✅ to_deploy | Audit handoff enriquecido |
+| HB.H-03 | **IOS-124** | qa-frontend | ✅ to_deploy | QA smoke launcher |
+
+**Duplicados cerrados como `Blocked`:** IOS-125 → 119, IOS-126 → 120, IOS-127 → 121, IOS-128 → 122, IOS-129 → 123, IOS-130 → 124.
+
+---
+
+## 7. Archivos clave creados / modificados
+
+### Backend
+
+| Archivo | Origen | Fase |
+|---|---|---|
+| `alembic/versions/j1a2b3c4d5e6_user_notifications.py` | nuevo | C.1 |
+| `alembic/versions/j2b3c4d5e6f7_usuarios_position_manager_fk.py` | nuevo | C.2 |
+| `app/application/services/notification_service.py` | nuevo | C.1 |
+| `app/presentation/api/v1/notifications.py` | nuevo | C.1 |
+| `app/presentation/schemas/notification_schema.py` | nuevo | C.1 |
+| `app/application/services/audit_service.py` | extendido | B.1, C.1 |
+| `app/application/services/rbac_service.py` | `count_users_per_application` | B.2 |
+| `app/presentation/api/v1/users_contract.py` | + position/manager | C.2 |
+| `app/presentation/api/v1/catalogs.py` | counts + dict fix | C.2 |
+| `app/presentation/api/v1/auth.py` | audit handoff enriquecido | HB.H-02 |
+
+### Frontend (monorepo)
+
+| Archivo | Cambio | Fase / commit |
+|---|---|---|
+| `packages/app-shell/src/notification-bell.tsx` | placeholder → real | A → C.1 |
+| `packages/app-shell/src/hooks/use-notifications.ts` | nuevo | C.1 |
+| `packages/app-shell/src/user-menu.tsx` | Perfil/Ajustes/Logout | A |
+| `apps/backoffice/src/app.tsx` | Bell + onNavigate router | A, C.1 |
+| `apps/backoffice/src/pages/forgot-password.tsx` | nuevo | Fix D-5 |
+| `apps/backoffice/src/pages/users/detail.tsx` | Puesto + Jefe + Da acceso a: | C.2, C.3 |
+| `apps/backoffice/src/pages/microsites/list.tsx` | N usuarios | B.2 |
+| `apps/backoffice/src/pages/catalogs/*.tsx` | Select fuera de Tabs | Fix D-2 |
+| `apps/hub/src/pages/login.tsx` | UUI + redirect dual | HB.L-01 |
+| `apps/hub/src/pages/forgot-password.tsx`, `reset-password.tsx` | UUI patrón | HB.L-02 |
+| `apps/hub/src/pages/launcher.tsx` | Odoo-style + CSRF fix | HB.H-01 + commit 8fb4874 |
+| `apps/hub/src/components/hub-header.tsx`, `apps-grid.tsx`, `app-tile.tsx` | nuevos | HB.H-01 |
+
+---
+
+## 8. Decisiones técnicas que el equipo debe conocer
+
+Estas decisiones quedaron grabadas en memoria persistente y aplican a cualquier trabajo futuro sobre estas áreas:
+
+1. **Cookie httpOnly + CSRF double-submit (F3-02b)** es el patrón oficial de auth en todo el frontend. **No** usar Bearer token en frontend ni guardarlo en localStorage.
+2. **UUI Input `type="password"` ya trae toggle nativo de ojito.** No agregar botón manual (causa duplicación del Fix D-4).
+3. **`GET /api/v1/roles` devuelve `{id:int, nombre:str}`** (no `name`). Las interfaces TS deben coincidir o no matchean (causa del bug "Da acceso a:" que no aparecía).
+4. **`Select` de UUI dentro de `<Tabs>` crashea** con `selectionManager` al cambiar de panel. Mover el `Select` fuera del `Tabs` o dar `key` dinámica.
+5. **`catalog_service.{create,update,soft_delete}_position` y `{create,delete}_area_manager` retornan `dict`**, no objeto. Acceder con `pos["id"]`, no `pos.id`.
+6. **Backend en puerto 8090 debe reiniciarse manualmente** para cargar código nuevo (no tiene auto-reload). Esto fue causa de varios falsos negativos en QA.
+7. **Token de handoff:** SHA256 + TTL 60s + single-use + binding IP/UA. Audit con `resource=auth_handoff`.
+8. **`SECURITY_ACTIONS`** que disparan notificación a todos los super_admin + auditor (7): `user_delete`, `role_delete`, `role_permissions_set`, `role_applications_set`, `revoke_session`, `login_failed`, `application_delete`.
+
+---
+
+## 9. Riesgos y pendientes
+
+| # | Punto | Severidad | Recomendación |
+|---|---|---|---|
+| 1 | **IOS-99** (QA Fase A) sin ejecutar | Media | Cerrar con un QA visual de 11 puntos antes del deploy a prod |
+| 2 | **Fase D · 5 fixes sin ticket Jira** | Baja | Crear ticket consolidado para trazabilidad de despliegue |
+| 3 | Bug CSRF en handoff (`8fb4874`) | Resuelto | Verificar tras deploy con login real `ricardo / Jona050311` → click Finanzas |
+| 4 | Backend 8090 sin auto-reload | Operativa | Documentar en runbook de despliegue (reiniciar uvicorn tras cada deploy) |
+| 5 | `super_admin` accede al hub (Opción A) | Decidida | Mantener; cualquier rollback debe revisar `9645df0` |
+
+---
+
+## 10. Cómo desplegar y probar
+
+### 10.1 Pre-deploy
+
+```bash
+# Backend
+cd finananzaspython
+source .venv/bin/activate
+alembic upgrade head           # aplica j1a2…user_notifications y j2b3…position_manager
+pytest tests/ -q               # debe dar 42/42 PASS
+```
+
+### 10.2 Despliegue
+
+1. Detener y reiniciar `uvicorn main:app --port 8090` (sin `--reload` en prod).
+2. Rebuildear apps frontend: `pnpm build:hub` y `pnpm build:backoffice`.
+3. Servir los bundles con nginx (config ya documentada).
+
+### 10.3 Smoke test post-deploy (10 minutos)
+
+1. **Hub login** — abrir `/login`, ingresar `ricardo / <pass>`, confirmar redirect a backoffice.
+2. **Empleado** — usuario sin rol admin → debe aterrizar en `/launcher` con sus apps.
+3. **Launcher** — click en Finanzas → debe abrir Finanzas con sesión (sin pasar por login).
+4. **Forgot password** (hub y backoffice) — flujo idle → sent.
+5. **Backoffice notificaciones** — disparar `role_delete` vía API → ver badge en la campanita del header.
+6. **Backoffice users** — abrir un usuario, ver Puesto + Jefe directo, abrir modal editar, confirmar Selects pueblan.
+7. **Backoffice roles** — verificar "Da acceso a: App1, App2" en tab Roles del detail.
+8. **Backoffice catalogs** — abrir departamentos, confirmar contador "N puestos · M usuarios".
+9. **Audit log** — `GET /api/v1/audit-log?resource=auth_handoff` debe mostrar actividad del handoff.
+
+---
+
+## 11. Próximos pasos sugeridos
+
+1. **Ejecutar QA de IOS-99** (Fase A) y mover a `to_deploy`.
+2. **Crear ticket consolidado** para los 5 fixes de Fase D.
+3. **Documentar el reinicio de uvicorn** en el runbook operativo.
+4. **Validar el fix CSRF** (commit `8fb4874`) end-to-end en staging.
+5. Transicionar todos los tickets `to_deploy` → `deployed` tras el rollout.
+
+---
+
+## 12. Referencias
+
+- **Plan global:** `plan_v2/progreso.md` (líneas 67–162 contienen el detalle de v2.1 y Hub v2)
+- **Spec Backoffice:** `plan_v2/02_backoffice/SPEC_V2.1_CIERRE_BACKOFFICE.md`
+- **Plan local Hub:** `~/.claude/plans/happy-roaming-popcorn.md`
+- **Memoria de cierre:** `~/.claude/projects/-home-ricardo-Documentos-appsinternas/memory/session_2026_04_22_cierre_backoffice.md`
+- **Workflow agentes:** `plan_v2/workflow.md`
+- **Doc de arquitectura BD:** `proyecto interno/arquitectura-bd.html`
+- **Catálogo de endpoints:** `proyecto interno/endpoints-api.html`
+- **Roadmap M→E→HDU:** `proyecto interno/historias-usuario.html` (M1 cubre login + RBAC, M4 notificaciones)
+
+---
+
+_Handoff document · Plan v2.1 cierre Backoffice + Hub v2 · 2026-05-29 · `proyecto interno/`_
