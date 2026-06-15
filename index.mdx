@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 8 Milestones · 20 Epics · 55 HDU · 4 perfiles de usuario.
+  **Totales:** 8 Milestones · 20 Epics · 58 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -97,7 +97,7 @@ Login al hub, descubrimiento de aplicaciones disponibles según permisos, paso s
     - Dado que el handoff falla, cuando intento abrir, entonces recibo un mensaje claro y me quedo en el hub.
     - Dado que el token expiró, cuando llega a la app destino, entonces esa app me regresa al hub.
 
-    <Tip>**Notas técnicas:** Token handoff con hash SHA256, TTL 60s, single-use, IP/UA binding. Audit log de `handoff_initiate`/`handoff_consumed`. Requiere `X-CSRF-Token`.</Tip>
+    <Tip>**Notas técnicas:** Token handoff con hash SHA256, TTL 60s, single-use, IP/UA binding. Endpoints `POST /api/v1/auth/handoff` y `POST /api/v1/auth/handoff/exchange`. Audit log con acciones `handoff_initiate` y `handoff_exchange`. Requiere `X-CSRF-Token` en métodos mutantes.</Tip>
   </Accordion>
 
   <Accordion title="HU-04 · Cerrar sesión" icon="log-out">
@@ -129,7 +129,7 @@ Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales medi
     - Dado que tengo permiso `usuarios_write`, cuando creo un usuario con datos válidos, entonces queda activo y recibe correo de bienvenida.
     - Dado que el username o email ya existen, cuando intento crearlo, entonces veo un error claro.
 
-    <Tip>**Notas técnicas:** Password con hash bcrypt. Email y username únicos a nivel DB.</Tip>
+    <Tip>**Notas técnicas:** Endpoint oficial `POST /api/v1/users` (tag `users_contract`). El `POST /api/v1/usuarios` queda como legacy. Password con hash bcrypt. Email y username únicos a nivel DB. Correo de bienvenida vía `send_welcome_email()` non-blocking (si falla, solo se logea, no aborta la creación).</Tip>
   </Accordion>
 
   <Accordion title="HU-06 · Asignar roles a un usuario" icon="shield-check">
@@ -314,7 +314,11 @@ Consulta consolidada del estado de un cliente y mantenimiento del padrón.
     - Dado que cambio a Métricas, cuando selecciono, entonces veo la gráfica facturado vs pagado de los últimos 6 meses.
     - Dado que agrego una nota interna, cuando guardo, entonces queda visible para todo el equipo.
 
-    <Tip>**Notas técnicas:** `/api/v1/dashboard/cliente-360/{id}`. Gráfica con Recharts.</Tip>
+    <Warning>
+      **Migración a app BI:** esta funcionalidad se consolidará en la nueva **app BI** (mockup en [Diseño → Mockups](/mockups#bi-platform--facturaci%C3%B3n)). Los endpoints actuales `/api/v1/dashboard/clientes/{id}/...` (resumen, facturacion, depositos, facturas, pagos, comparativo, comportamiento-pagos, cms, contactos, notas) se mantienen vigentes hasta que la app BI absorba la funcionalidad.
+    </Warning>
+
+    <Tip>**Notas técnicas:** Hoy son **13 endpoints** bajo `/api/v1/dashboard/clientes/{cliente_id}/...` (resumen, facturacion, depositos, facturas, pagos, comparativo, comportamiento-pagos, cms, cms/unidades, contactos, notas). Gráficas con Recharts.</Tip>
   </Accordion>
 
   <Accordion title="HU-17 · Crear o editar un cliente" icon="user-pen">
@@ -380,7 +384,11 @@ Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio
     - Dado que cambio el filtro de fecha, cuando aplico, entonces KPIs y tablas se actualizan.
     - Dado que reviso el detalle, cuando bajo en la página, entonces veo desglose por dispositivo y por factura.
 
-    <Tip>**Notas técnicas:** `/api/v1/dashboard/equipment-purchases/summary`. Gráfica de barras mensual con Recharts.</Tip>
+    <Warning>
+      **Migración a app BI:** este dashboard se consolidará en la nueva **app BI**. El endpoint actual sigue disponible hasta la migración.
+    </Warning>
+
+    <Tip>**Notas técnicas:** Endpoint real: `GET /api/v1/equipmentpurchases_dashboard/resumen`. Gráfica de barras mensual con Recharts.</Tip>
   </Accordion>
 
   <Accordion title="HU-21 · Consultar el estado de resultado" icon="chart-line">
@@ -392,7 +400,11 @@ Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio
     **Criterios de aceptación:**
     - Dado que selecciono un periodo, cuando carga, entonces veo ingresos, costos, utilidad y márgenes.
 
-    <Tip>**Notas técnicas:** Requiere `finanzas_view` o `finanzas_manage`.</Tip>
+    <Warning>
+      **Migración a app BI:** los dashboards financieros (`/api/v1/dashboard/financial/*`) se consolidarán en la nueva **app BI**. Backend actual sigue vigente hasta la migración.
+    </Warning>
+
+    <Tip>**Notas técnicas:** `GET /api/v1/dashboard/financial/estado-resultado`. Otros endpoints relacionados: `inventario-unidades`, `gps-historial`, `resumen-global`. Requiere `finanzas_view` o `finanzas_manage`.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -520,6 +532,18 @@ Mantenimiento del catálogo de equipos y consumibles bajo tres ventanas operativ
 
     <Tip>**Notas técnicas:** Sección `inventory/simPlans`. Permisos `sim_plans_read/write/edit/delete`.</Tip>
   </Accordion>
+
+  <Accordion title="HU-58 · Ver historial de un ítem de inventario" icon="history">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de operaciones, quiero ver el historial de movimientos y cambios de un ítem de inventario, para entender por qué un equipo cambió de estado, técnico o cliente.
+
+    **Criterios de aceptación:**
+    - Dado que abro el detalle de un ítem, cuando reviso la pestaña Historial, entonces veo todos los cambios registrados (asignaciones, traslados, cambios de estado) con fecha y usuario.
+
+    <Tip>**Notas técnicas:** `GET /api/v1/inventory/items/{item_id}/history`. Cada cambio queda en `inventory_item_history`.</Tip>
+  </Accordion>
 </AccordionGroup>
 
 ### EP-11 · Instalaciones y técnicos
@@ -577,7 +601,32 @@ Gestión del ciclo de instalación: catálogo de técnicos (locales y foráneos)
     - Dado que tengo permiso para ver instalaciones, cuando abro Instalaciones → Calendario, entonces veo la vista mensual con las instalaciones programadas.
     - Dado que selecciono una instalación, cuando hago clic, entonces veo su detalle (cliente, técnico, equipo).
 
-    <Tip>**Notas técnicas:** Sección `installations/calendario`.</Tip>
+    <Tip>**Notas técnicas:** Sección `installations/calendario`. **No hay endpoint dedicado de calendario** — el frontend renderiza la vista mensual consumiendo `GET /api/v1/installation-consolidations` con filtros de fecha.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-56 · Refrescar costos de instalación" icon="refresh-cw">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administración de operaciones, quiero recalcular los costos de las instalaciones a demanda, para reflejar correctamente los pagos pendientes después de cambios en tarifas o catálogos.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso de pagos, cuando ejecuto "Refrescar costos", entonces el sistema recalcula los costos de instalación con las tarifas vigentes.
+    - Dado que termina el refresh, cuando reviso un lote pendiente, entonces los montos reflejan el cálculo actualizado.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/installation-payments/refresh`. Útil tras cambios en `technicians.cost` o ajustes de catálogo.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-57 · Reconciliar costos contra CMS" icon="git-compare">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como administración de operaciones, quiero reconciliar los costos de instalación contra el sistema CMS externo, para asegurar que lo que pagamos coincide con lo que el CMS registra para esa unidad/cliente.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso de pagos, cuando ejecuto "Reconciliar con CMS", entonces el sistema cruza los costos locales con los del CMS y reporta diferencias.
+
+    <Tip>**Notas técnicas:** `POST /api/v1/installation-payments/refresh/reconcile-cms`. Llama al servicio externo CMS para validar.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -596,7 +645,11 @@ Tableros operativos para entender el comportamiento de las unidades instaladas.
     - Dado que tengo permiso de reportes, cuando abro Reportes → Actividad de vehículos, entonces veo las métricas y gráficos de actividad.
     - Dado que aplico filtros de fecha o cliente, cuando ejecuto, entonces el dashboard se actualiza.
 
-    <Tip>**Notas técnicas:** Componente `ActividadVehiculosDashboard`. Servicio `operationsDashboardService`.</Tip>
+    <Warning>
+      **Migración a app BI:** este reporte operativo se consolidará en la nueva **app BI** junto con los demás dashboards. Backend actual (`/dashboard/operations/*`) sigue vigente hasta la migración.
+    </Warning>
+
+    <Tip>**Notas técnicas:** Componente `ActividadVehiculosDashboard`. Servicio `operationsDashboardService`. Endpoints actuales: `GET /api/v1/dashboard/operations/resumen-flota`, `/cliente/{cliente_id}`, `/criticos`.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -637,7 +690,7 @@ Vista global del personal y captura de novedades que no son entrada/salida (falt
     - Dado que registro una falta, cuando indico tipo (justificada / injustificada) y motivo, entonces queda asociada al empleado y al día.
     - Dado que un empleado tiene falta marcada, cuando reviso su dashboard de asistencia, entonces ese día aparece como falta y no como ausente.
 
-    <Tip>**Notas técnicas:** Sección `employees/faltas`.</Tip>
+    <Tip>**Notas técnicas:** Sección `employees/faltas`. Las **ausencias se generan automáticamente** por el job `attendance_automation_task.py` (función `_ensure_absence_records`) basándose en el horario del empleado y un cutoff. El admin de RH solo **edita** el registro existente para justificar/agregar motivo vía `PATCH /api/v1/attendance/{id}` (campo `attendance_state`).</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -750,7 +803,7 @@ Login propio del portal (separado del hub interno), registro auto-gestionado, co
     - Dado que mi usuario tiene varias cuentas asignadas, cuando abro el selector, entonces veo todas (propias y compartidas) con su nombre.
     - Dado que selecciono otra cuenta, cuando cambio, entonces todo el portal (dashboard, vehículos, solicitudes) se filtra a esa cuenta.
 
-    <Tip>**Notas técnicas:** Tablas `portal_user_account_access` (acceso del usuario) y `account_share` (cuentas compartidas entre tenants). El `account_id` activo se persiste por sesión.</Tip>
+    <Tip>**Notas técnicas:** Tablas `portal_user_account_access` (acceso del usuario) y `account_share` (cuentas compartidas entre tenants). El listado de cuentas accesibles se obtiene desde `GET /api/v1/auth/me` (no hay endpoint dedicado de switch); el `account_id` activo se persiste en localStorage/sesión del frontend y se envía como filtro en los requests subsecuentes.</Tip>
   </Accordion>
 
   <Accordion title="HU-42 · Administrar usuarios de mi tenant" icon="users-cog">
@@ -764,7 +817,11 @@ Login propio del portal (separado del hub interno), registro auto-gestionado, co
     - Dado que doy de alta un usuario, cuando guardo, entonces recibe correo con instrucciones para activar su cuenta.
     - Dado que desactivo a un usuario, cuando guardo, entonces ese usuario ya no puede iniciar sesión.
 
-    <Tip>**Notas técnicas:** Pantalla `AdminUsersPage`. CRUD sobre `portal_users` filtrado por `tenant_id`. Es **estrictamente multi-tenant**: nunca expone usuarios de otros tenants.</Tip>
+    <Warning>
+      **Pendiente backend:** los endpoints CRUD multi-tenant sobre `portal_users` **aún no existen** en el spec OpenAPI del portal (`soportecliente`). Sin ellos, la pantalla `AdminUsersPage` no puede operar. Crear endpoints `GET/POST/PATCH/DELETE /api/v1/admin/users` (o similar) filtrados por `tenant_id` derivado del JWT.
+    </Warning>
+
+    <Tip>**Notas técnicas:** Pantalla `AdminUsersPage`. CRUD sobre `portal_users` filtrado por `tenant_id`. Es **estrictamente multi-tenant**: nunca expone usuarios de otros tenants. **Estado: HDU diseñada, backend pendiente.**</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -1005,6 +1062,9 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 |  |  | HU-29 Catálogo de técnicos | ADM | Alta |
 |  |  | HU-30 Pagos a técnicos | ADM | Media |
 |  |  | HU-31 Calendario | ADM | Media |
+|  |  | HU-56 Refrescar costos | ADM | Media |
+|  |  | HU-57 Reconciliar costos CMS | ADM | Media |
+|  | EP-10 Inventario | HU-58 Historial de un ítem | ADM | Media |
 |  | EP-12 Reportes operativos | HU-32 Actividad de vehículos | ADM | Media |
 | **M7** Recursos Humanos | EP-13 Dashboard y novedades | HU-33 Dashboard de empleados | ADM | Alta |
 |  |  | HU-34 Registrar faltas | ADM | Media |
