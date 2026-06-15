@@ -16,7 +16,7 @@ keywords: ["base de datos", "tablas", "SQLAlchemy", "PostgreSQL", "esquema", "ar
 
 | # | Dominio | Tablas |
 |---|---|---|
-| 1 | Autenticación y usuarios | 17 |
+| 1 | Autenticación y usuarios | 20 |
 | 2 | Clientes (CRM) | 7 |
 | 3 | Finanzas | 7 |
 | 4 | Inventario | 4 |
@@ -332,6 +332,70 @@ Tablas que sostienen el login, la sesión, el modelo RBAC (roles, permisos, apli
 
     **Se relaciona con:**
     - Tabla `usuarios`
+  </Accordion>
+</AccordionGroup>
+
+### Multi-compañía y productos
+
+<Info>
+  Tres tablas nuevas que permiten separar la operación por **compañía facturadora** (Soluciones, Ramsa) y **producto comercial** (B2B Tracking, Centraly, etc.). Cubren HU-59, HU-60 y HU-61 del roadmap.
+</Info>
+
+<AccordionGroup>
+  <Accordion title="productos" icon="tag">
+    **Para qué sirve:** catálogo de marcas/productos comerciales que cada compañía vende y factura. Un mismo producto (ej. "B2B Tracking") puede tener una fila por cada compañía que lo factura (Soluciones, Ramsa).
+
+    **Campos:**
+    - `id` — identificador único (UUID, generado automáticamente)
+    - `code` — código corto único (ej. `b2b_tracking_soluciones`, `centraly_ramsa`)
+    - `name` — nombre visible del producto (ej. "B2B Tracking", "Centraly")
+    - `legal_entity_id` — FK → `legal_entities.id` (qué compañía factura este producto)
+    - `description` — descripción larga (opcional)
+    - `is_active` — sí/no
+    - `display_order` — orden de aparición
+    - `created_at`, `updated_at` — fechas
+
+    **Se relaciona con:**
+    - Tabla `legal_entities` (FK obligatoria — un producto siempre pertenece a una compañía)
+    - Tabla `usuarios_productos` (qué usuarios operan este producto)
+    - Tabla `cliente_productos` (qué clientes consumen este producto)
+    - `code` debe ser único en toda la tabla
+  </Accordion>
+
+  <Accordion title="usuarios_productos" icon="user-tag">
+    **Para qué sirve:** une usuarios con productos. Un usuario puede ver y operar solo los productos a los que está asignado. Es **multi-compañía**: un usuario puede tener productos de Soluciones y de Ramsa simultáneamente.
+
+    **Campos:**
+    - `id` — número único de la asignación
+    - `usuario_id` — referencia al usuario
+    - `producto_id` — referencia al producto (UUID)
+    - `asignado_por` — qué usuario hizo la asignación (opcional)
+    - `asignado_en` — fecha y hora en que se asignó
+
+    **Se relaciona con:**
+    - Tabla `usuarios`
+    - Tabla `productos`
+    - `UNIQUE(usuario_id, producto_id)` — un usuario no se duplica para el mismo producto
+
+    **Uso operativo:** el backend deriva del JWT/cookie el `user_id` y hace JOIN automático contra esta tabla para filtrar consultas de clientes, facturas e ingresos. Los usuarios con rol `super_admin` hacen bypass del filtro.
+  </Accordion>
+
+  <Accordion title="cliente_productos" icon="building-2">
+    **Para qué sirve:** une clientes con productos. Define **desde qué compañía + producto se factura** a cada cliente. Un cliente puede tener varios productos (de la misma o de distintas compañías).
+
+    **Campos:**
+    - `id` — número único de la asignación
+    - `cliente_id` — referencia a `iquo_cliente.id`
+    - `producto_id` — referencia a `productos.id` (UUID)
+    - `is_active` — sí/no (permite desactivar sin perder historial)
+    - `created_at` — fecha y hora
+
+    **Se relaciona con:**
+    - Tabla `iquo_cliente`
+    - Tabla `productos`
+    - `UNIQUE(cliente_id, producto_id)`
+
+    **Uso operativo:** al emitir una factura el sistema permite elegir desde qué producto facturar; el `legal_entity_id` de la factura se toma del producto seleccionado.
   </Accordion>
 </AccordionGroup>
 

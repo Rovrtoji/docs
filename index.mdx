@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 8 Milestones · 20 Epics · 58 HDU · 4 perfiles de usuario.
+  **Totales:** 8 Milestones · 20 Epics · 61 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -157,6 +157,45 @@ Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales medi
     - Dado que quiero revocar un permiso que viene del rol, cuando creo una negación directa, entonces el usuario pierde ese permiso.
 
     <Tip>**Notas técnicas:** Tabla `usuarios_permisos_directos` con `tipo=grant|deny`. Cálculo efectivo: `(roles ∪ grants) − denies`.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-59 · Mantener catálogo de productos/marcas" icon="tag">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero crear, editar y desactivar productos (marcas comerciales) asociados a una entidad fiscal (Soluciones, Ramsa), para reflejar la oferta facturable real de cada compañía y poder separar lo que vendemos por cada una.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso `productos_write`, cuando creo un producto con nombre y entidad fiscal, entonces queda disponible en el catálogo.
+    - Dado que el mismo producto (ej. "B2B Tracking") aplica a varias compañías, cuando lo creo, entonces tengo una fila por (producto, entidad fiscal) — el código es único.
+    - Dado que un producto está asignado a clientes o usuarios, cuando intento eliminarlo, entonces el sistema lo impide y sugiere desactivarlo.
+    - Dado que cambio la entidad fiscal de un producto existente, cuando guardo, entonces las facturas futuras se emiten desde la nueva entidad (las históricas no se reescriben).
+
+    <Info>
+      **Ejemplos de productos:** `b2b_tracking_soluciones`, `b2b_tracking_ramsa` (mismo producto, dos compañías), `centraly_soluciones`, `centraly_ramsa` (viajes monitoreados).
+    </Info>
+
+    <Tip>**Notas técnicas:** Tabla `productos` con FK a `legal_entities` (UUID). Endpoints `CRUD /api/v1/productos`. **Backfill al deploy**: se crean los productos iniciales (B2B Tracking · Soluciones/Ramsa, Centraly · Soluciones/Ramsa). Reutiliza `legal_entities.code` (`soluciones`, `ramsa`) ya existente.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-60 · Asignar productos a un usuario" icon="user-tag">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como administrador, quiero asignar uno o más productos (marca + compañía) a cada usuario, para que solo vea los clientes y la facturación de las compañías/productos que le corresponden — sin que un usuario de Soluciones vea operación de Ramsa.
+
+    **Criterios de aceptación:**
+    - Dado que abro un usuario, cuando agrego productos y guardo, entonces queda vinculado en `usuarios_productos` (M:N).
+    - Dado que el usuario tiene productos asignados, cuando lista clientes/facturas/ingresos, entonces el backend filtra automáticamente por sus productos (**RBAC duro a nivel query**).
+    - Dado que un usuario no tiene productos asignados, cuando lista clientes/facturas, entonces ve la lista vacía (a menos que sea `super_admin`).
+    - Dado que el usuario es `super_admin`, cuando lista, entonces ve todo sin filtro (bypass del RBAC de productos).
+    - Dado que quito un producto de un usuario, cuando guardo, entonces deja de ver los clientes/facturas de ese producto en la próxima petición.
+
+    <Warning>
+      **Implica trabajo backend grande:** todos los endpoints de listado de `clientes`, `invoices`, `ingresos`, `installation_payments`, etc. deben hacer `JOIN` contra `usuarios_productos` del usuario actual (derivado del JWT/cookie). El filtro vive en una dependencia compartida (ej. `get_user_productos_filter()`).
+    </Warning>
+
+    <Tip>**Notas técnicas:** Tabla `usuarios_productos` (M:N) con `UNIQUE(usuario_id, producto_id)`. Endpoints `GET /api/v1/users/{id}/productos`, `PUT /api/v1/users/{id}/productos`. Cambios registrados en `audit_log` (`product_assigned`/`product_revoked`).</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -333,6 +372,28 @@ Consulta consolidada del estado de un cliente y mantenimiento del padrón.
     - Dado que estoy en la lista, cuando hago clic en "Editar" de una fila, entonces entro directo a editar sin pasar por el detalle.
 
     <Tip>**Notas técnicas:** Formulario multi-tab con UUI. Edit hace diff contra snapshot inicial.</Tip>
+  </Accordion>
+
+  <Accordion title="HU-61 · Asignar productos a un cliente (para facturación)" icon="building-2">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas con permiso, quiero indicar qué productos (marca + compañía) consume cada cliente, para que las facturas se emitan desde la entidad fiscal correcta y los reportes/dashboards separen ingresos por producto y por compañía.
+
+    **Criterios de aceptación:**
+    - Dado que abro un cliente, cuando agrego productos y guardo, entonces queda vinculado en `cliente_productos` (M:N).
+    - Dado que un cliente tiene varios productos (ej. B2B Tracking · Soluciones + Centraly · Soluciones), cuando se va a emitir una factura, entonces el sistema permite elegir desde qué producto/entidad se factura.
+    - Dado que desactivo un producto del cliente (sin borrar), cuando se intenta facturar, entonces ese producto ya no aparece en el selector — pero las facturas históricas se conservan.
+    - Dado que un producto tiene la entidad fiscal X, cuando se factura desde ese producto, entonces el `legal_entity_id` de la factura toma X.
+
+    <Info>
+      **Ejemplo de cliente con varios productos:**
+      - Cliente A → B2B Tracking · Soluciones + Centraly · Soluciones (todo Soluciones)
+      - Cliente B → B2B Tracking · Ramsa (solo Ramsa)
+      - Cliente C → B2B Tracking · Soluciones + B2B Tracking · Ramsa (factura desde Soluciones unas unidades, desde Ramsa otras)
+    </Info>
+
+    <Tip>**Notas técnicas:** Tabla `cliente_productos` (M:N) con `is_active` y `UNIQUE(cliente_id, producto_id)`. Endpoints `GET /api/v1/clientes/{id}/productos`, `PUT /api/v1/clientes/{id}/productos`. **Backfill al deploy**: cada cliente actual se asigna al producto correspondiente a su `legal_entity` actual (derivado de `cliente_client_identifications.legal_entity_code`).</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -1038,6 +1099,8 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 |  | EP-02 Usuarios y RBAC | HU-05 Crear usuario | ADM | Alta |
 |  |  | HU-06 Asignar roles | ADM | Alta |
 |  |  | HU-07 Permisos directos | ADM | Media |
+|  |  | HU-59 Catálogo de productos/marcas | ADM | Alta |
+|  |  | HU-60 Asignar productos a usuario | ADM | Alta |
 | **M2** Attendance | EP-03 Registro (móvil) | HU-08 Registrar entrada | EMP | Alta |
 |  |  | HU-09 Registrar salida | EMP | Alta |
 |  |  | HU-10 Validación facial | EMP | Media |
@@ -1048,6 +1111,7 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 |  |  | HU-15 Configurar horario | ADM | Media |
 | **M3** Finanzas | EP-05 Clientes | HU-16 Cliente 360 | ADM | Alta |
 |  |  | HU-17 Crear/editar cliente | ADM | Alta |
+|  |  | HU-61 Asignar productos al cliente | ADM | Alta |
 |  | EP-06 Ingresos | HU-18 Ingreso manual | ADM | Alta |
 |  |  | HU-19 Ingresos por Excel | ADM | Media |
 |  | EP-07 Dashboards | HU-20 Compras de equipo | ADM | Media |

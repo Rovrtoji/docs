@@ -80,6 +80,20 @@ erDiagram
     USUARIOS ||--o{ AUDIT_LOG : "ejecuta acciones"
 ```
 
+### Sub-dominio: Multi-compañía y productos
+
+Tres tablas que permiten separar la operación por **compañía facturadora** (Soluciones, Ramsa) y **producto comercial** (B2B Tracking, Centraly). Cubre HU-59, HU-60 y HU-61.
+
+```mermaid
+erDiagram
+    LEGAL_ENTITIES ||--o{ PRODUCTOS : "factura"
+    PRODUCTOS ||--o{ USUARIOS_PRODUCTOS : "operado por"
+    USUARIOS ||--o{ USUARIOS_PRODUCTOS : "puede ver"
+    PRODUCTOS ||--o{ CLIENTE_PRODUCTOS : "vendido a"
+    IQUO_CLIENTE ||--o{ CLIENTE_PRODUCTOS : "consume"
+    PRODUCTOS ||..o{ INVOICES : "determina legal_entity"
+```
+
 ---
 
 ## Dominio 2 · Clientes (CRM)
