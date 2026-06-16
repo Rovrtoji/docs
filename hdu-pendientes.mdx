@@ -22,7 +22,7 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 |---|---|---|
 | ✅ Cubierto | Checador de asistencia (registro + admin), Cliente (alta básica) | 2 |
 | ⚠️ Parcial | Bancos (solo ingresos), Empleados (solo horario), Contactos, Estado de resultado | 4 |
-| ❌ Falta | Altas/catálogos, Comercial, Órdenes de servicio, Inventario, Compras, Proveedores, Central de Monitoreo, Soporte (Cliente/Operación), Fleetmanager, Técnicos, Gastos, Comisiones, Facturación, CXC/CXP, Nómina, Bancos (egresos/conciliación), Dashboards WEB (4 grupos), Integraciones (CMS externo, Plataforma de Ruteo) | ~25 |
+| ❌ Falta | Altas/catálogos, Comercial, Órdenes de servicio, Inventario, Compras, Proveedores, Soporte (Cliente/Operación), Fleetmanager, Técnicos, Gastos, Comisiones, Facturación, CXC/CXP, Nómina, Bancos (egresos/conciliación), Dashboards WEB (4 grupos), Integraciones (CMS externo, Plataforma de Ruteo) | ~25 |
 
 **Numeración nueva:** las HDU pendientes empezarán en **HU-25**.
 **Milestones nuevos:** **M6 a M12**.
@@ -34,7 +34,7 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 
 | Bloque del diagrama | Elementos | Estado | HDU que lo cubre |
 |---|---|---|---|
-| WEB · Dashboards Clientes | Altas, vehículos, facturación, pagos, estado cta, instalaciones/soporte, monitoreo | ⚠️ Parcial | HU-16 (Cliente 360 solo individual) |
+| WEB · Dashboards Clientes | Altas, vehículos, facturación, pagos, estado cta, instalaciones/soporte | ⚠️ Parcial | HU-16 (Cliente 360 solo individual) |
 | WEB · Dashboards Instalaciones | x mes / x técnico / x cliente, gastos, viáticos, pagos a técnicos | ❌ Falta | — |
 | WEB · Dashboards Rentabilidad | Facturación mensual, gastos op/adm, nómina, viáticos, inventario, CXC, CXP | ⚠️ Parcial | HU-21 (Estado de resultado básico) |
 | WEB · Dashboards Productos y Servicios | Tipo de servicio, canal de venta, vendedor, proveedor, facturación | ❌ Falta | — |
@@ -55,13 +55,12 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 | EC2 · Proveedores | Alta y gestión | ❌ Falta | — |
 | EC2 · Compras | OC, autorización | ❌ Falta | — |
 | EC2 · Surtido de Stock + Panel Reabastecimiento | Reposición | ❌ Falta | — |
-| EC2 · Central de Monitoreo | Dedicado, reactivo, cámara, centinela | ❌ Falta | — |
 | EC2 · Contactos · Alta | Captura de contactos | ⚠️ Parcial | HU-17 (contactos por cliente) |
 | EC2 · Cliente · Config. Facturación | Datos fiscales | ⚠️ Parcial | HU-17 |
 | EC2 · Bancos | Ingresos, egresos, conciliación | ⚠️ Parcial | HU-18, HU-19 (solo ingresos) |
 | EC2 · Soporte Operación | Seguimiento a tickets, histórico | ❌ Falta | — |
 | EC2 · Soporte Cliente | Tickets, histórico | ❌ Falta | — |
-| EC2 · Fleetmanager | Historial de instalaciones, tickets, monitoreos | ❌ Falta | — |
+| EC2 · Fleetmanager | Historial de instalaciones, tickets | ❌ Falta | — |
 | EC2 · Empleados | Nombre, puesto, categoría, sueldo, carga social, horario | ⚠️ Parcial | HU-15 (solo horario) |
 | EC2 · Checador de Asistencia | Registro | ✅ Cubierto | HU-08..HU-14 |
 | Integración · CMS externo | Sincronización | ❌ Falta | — |
@@ -212,7 +211,7 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 ## M8 · Operaciones e Instalaciones (PROPUESTO)
 
 > Bloques del diagrama: **EC2 · Técnicos · Instalaciones · Soporte Cliente ·
-> Soporte Operación · Central de Monitoreo · Fleetmanager**.
+> Soporte Operación · Fleetmanager**.
 
 ### EP-14 · Gestión de técnicos (PROPUESTO)
 
@@ -276,28 +275,9 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 
 ---
 
-### EP-17 · Central de Monitoreo (PROPUESTO)
+### EP-17 · Fleetmanager (PROPUESTO)
 
-#### HU-35 · _____ (título — ej. "Atender un evento de monitoreo dedicado")
-
-**Rol:** _____    **Prioridad:** _____
-
-**Historia:**
-> Como _____, quiero _____, para _____.
-
-**Criterios de aceptación:**
-- Dado que _____, cuando _____, entonces _____.
-
-**Notas técnicas:** _____ (modos: dedicado / reactivo / cámara / centinela)
-
-> 📝 Considerar si los 4 modos (Dedicado, Reactivo, Cámara, Centinela) merecen
-> HDU separadas o una sola con criterios por modo.
-
----
-
-### EP-18 · Fleetmanager (PROPUESTO)
-
-#### HU-36 · _____ (título — ej. "Consultar el historial unificado de una unidad")
+#### HU-35 · _____ (título — ej. "Consultar el historial unificado de una unidad")
 
 **Rol:** _____    **Prioridad:** _____
 
@@ -307,7 +287,7 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 **Criterios de aceptación:**
 - Dado que _____, cuando _____, entonces _____.
 
-**Notas técnicas:** _____ (historial de instalaciones + tickets + monitoreos)
+**Notas técnicas:** _____ (historial de instalaciones + tickets)
 
 ---
 
@@ -560,7 +540,7 @@ keywords: ["backlog", "historias de usuario", "roadmap", "milestones", "pendient
 **Notas técnicas:** _____
 
 > 📝 Sub-vistas del diagrama: Altas totales / x mes, Vehículos, Facturación,
-> Pagos, Estado de cuenta, Instalaciones y Soporte, Monitoreo. **Duplica la
+> Pagos, Estado de cuenta, Instalaciones y Soporte. **Duplica la
 > plantilla por cada sub-vista que merezca su propia HDU.**
 
 ---

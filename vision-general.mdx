@@ -14,20 +14,20 @@ keywords: ["visión general", "arquitectura", "ERP", "CRM", "GPS", "B2B", "intro
 
 ## Qué es el sistema
 
-Plataforma interna **ERP/CRM** de una empresa de **rastreo y soluciones GPS B2B**. Reemplaza progresivamente el ERP legacy **Odoo 17** por código propio. Cubre la operación completa: clientes, instalaciones, soporte, inventario, finanzas, asistencia del personal y monitoreo GPS.
+Plataforma interna **ERP/CRM** de una empresa de **rastreo y soluciones GPS B2B**. Reemplaza progresivamente el ERP legacy **Odoo 17** por código propio. Cubre la operación completa: clientes, instalaciones, soporte, inventario, finanzas y asistencia del personal.
 
 **Idioma del proyecto:** español (código, comentarios y documentación).
 
 ## Arquitectura en una frase
 
-Varias **apps web React** consumen un **backend FastAPI asíncrono** sobre **PostgreSQL**, con **Redis** (cache) y **S3** (archivos). Tres **servicios independientes** (facturación, asistencia, monitoreo) comparten la misma base de datos pero corren como procesos separados.
+Varias **apps web React** consumen un **backend FastAPI asíncrono** sobre **PostgreSQL**, con **Redis** (cache) y **S3** (archivos). Dos **servicios independientes** (facturación, asistencia) comparten la misma base de datos pero corren como procesos separados.
 
 ```
 Apps web (React+Vite)  ──HTTPS, cookie httpOnly + CSRF──▶  Backend FastAPI
                                                               │
                           PostgreSQL ◀── Redis ── S3 ─────────┘
                               ▲
-            AlegraPy · Checador · Central de Monitoreo  (servicios satélite)
+                  AlegraPy · Checador  (servicios satélite)
 ```
 
 ## Apps del frontend
@@ -89,20 +89,13 @@ Apps en `monorepositroriofinanzas/apps/` (puertos dev típicos 5173–5178):
     - El CORS del backend debe permitir `Idempotency-Key` en `allow_headers` (fix PR #30).
   </Accordion>
 
-  <Accordion title="Central de Monitoreo — GPS B2B" icon="radar">
-    - Migración del legacy Odoo `monitoreocompleto` a React + FastAPI.
-    - 15 tablas propias (preventivo, reactivo, historial, alertas Centinela, cámaras, contactos, catálogos). Reutiliza `cms_unidades`, `cliente_b2b_accounts`, `iquo_cliente`, `usuarios` del ERP.
-    - Integra **Centinela/ANERPV** vía `wialon-bridge` (webhook idempotente `wialon_bridge_inbox`). Sync de catálogo de unidades por cron 05:00 CDMX.
-
-    Ver: [Anexo BD · Central de Monitoreo](/arquitectura-bd-anexo-monitoreo).
-  </Accordion>
 </AccordionGroup>
 
 ## Base de datos
 
 - **Motor:** PostgreSQL (una sola base compartida por backend, portal y servicios).
 - **Migraciones:** Alembic (`AUTO_MIGRATE=true` aplica en startup).
-- **Dominios documentados:** Auth/RBAC, Catálogos, Clientes, CMS (unidades/hardware), Finanzas (invoices, ingresos, pagos), Operaciones (work orders, inventario), Attendance, Soporte, Portal Cliente, Central de Monitoreo.
+- **Dominios documentados:** Auth/RBAC, Catálogos, Clientes, CMS (unidades/hardware), Finanzas (invoices, ingresos, pagos), Operaciones (work orders, inventario), Attendance, Soporte, Portal Cliente.
 
 **Aislamiento multi-tenant del portal:** el JWT lleva `cliente_id`; todas las queries filtran por tenant; recurso de otro tenant devuelve **404 (no 403)**.
 

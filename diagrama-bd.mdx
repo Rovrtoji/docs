@@ -12,7 +12,7 @@ keywords: ["diagrama", "ER", "entidad-relación", "base de datos", "mermaid", "e
 
 ## Vista general de dominios
 
-Cómo se relacionan los 10 dominios a alto nivel.
+Cómo se relacionan los 9 dominios a alto nivel.
 
 ```mermaid
 flowchart LR
@@ -25,19 +25,16 @@ flowchart LR
     SUP[Soporte GPS<br/>portal cliente]
     ATT[Asistencias<br/>checador]
     PORT[Portal Cliente<br/>soportecliente]
-    MON[Central de<br/>Monitoreo GPS B2B]
 
     AUTH --> CRM
     AUTH --> FIN
     AUTH --> INV
     AUTH --> OPS
     AUTH --> ATT
-    AUTH --> MON
     CRM --> FIN
     CRM --> OPS
     CMS --> OPS
     CMS --> FIN
-    CMS --> MON
     INV --> OPS
     INV --> FIN
     OPS --> FIN
@@ -47,7 +44,6 @@ flowchart LR
     PORT -.->|lee| SUP
     PORT -.->|lee| OPS
     PORT -.->|lee| CMS
-    MON --> CRM
 ```
 
 ---
@@ -243,40 +239,6 @@ erDiagram
     CMS_UNIDADES ||--o| MONITORING_DEDICATE_VEHICLE_PROFILES : "perfil físico"
     PORTAL_USERS ||..o{ SERVICE_REQUESTS : "crea (multi-tenant)"
     PORTAL_USERS ||..o{ NOTIFICATIONS : "recibe"
-```
-
----
-
-## Dominio 10 · Central de Monitoreo (GPS B2B)
-
-15 tablas nuevas del servicio de monitoreo (migración del legacy Odoo `monitoreocompleto`). Organizadas en 4 grupos: operativos, emergencias (Centinela), bitácora de cámaras y catálogos auxiliares. Reutiliza `cms_unidades`, `cliente_b2b_accounts`, `iquo_cliente` y `usuarios` del ERP.
-
-```mermaid
-erDiagram
-    USUARIOS ||--o{ MONITOREO_PREVENTIVO : "monitorista"
-    IQUO_CLIENTE ||--o{ MONITOREO_PREVENTIVO : "cliente"
-    CLIENTE_B2B_ACCOUNTS ||--o{ MONITOREO_PREVENTIVO : "cuenta"
-    CMS_UNIDADES ||--o{ MONITOREO_PREVENTIVO : "unidad"
-    MONITOREO_UBICACIONES ||--o{ MONITOREO_PREVENTIVO : "origen/destino"
-    MONITOREO_VEHICULOS ||--o{ MONITOREO_PREVENTIVO : "tracto/remolque"
-    MONITOREO_OPERADORES ||--o{ MONITOREO_PREVENTIVO : "chofer"
-    MONITOREO_STAGE ||--o{ MONITOREO_PREVENTIVO : "etapa"
-    MONITOREO_PREVENTIVO ||--o{ MONITOREO_HISTORIAL : "bitácora"
-
-    REACTIVO_STAGE ||--o{ MONITOREO_REACTIVO : "etapa"
-    IQUO_CLIENTE ||--o{ MONITOREO_REACTIVO : "cliente"
-    CMS_UNIDADES ||--o{ MONITOREO_REACTIVO : "unidad"
-    MONITOREO_REACTIVO ||--o{ MONITOREO_HISTORIAL : "bitácora"
-
-    CMS_UNIDADES ||--o{ ANEM_ALERTA : "alerta sobre"
-    ANEM_ALERTA ||--o{ ANEM_ESTATUS_LOG : "cambios"
-    WIALON_BRIDGE_INBOX }o..|| ANEM_ALERTA : "webhook origen"
-
-    CMS_UNIDADES ||--o{ MONITOREO_CAMARA : "cámaras instaladas"
-    MONITOREO_CAMARA ||--o{ BITACORA_CAMARA : "registros"
-    BITACORA_CAMARA ||--o{ BITACORA_SEGUIMIENTO : "seguimiento"
-    BITACORA_CAMARA ||--o{ BITACORA_CONTACTO : "contactos"
-    MONITOREO_CONTACTOS ||--o{ BITACORA_CONTACTO : "datos"
 ```
 
 ---
