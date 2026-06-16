@@ -36,12 +36,15 @@ Apps en `monorepositroriofinanzas/apps/` (puertos dev típicos 5173–5178):
 
 | App | Rol |
 |---|---|
-| `hub` | Acceso unificado: login, launcher tipo Odoo, handoff de sesión. |
 | `backoffice` | Administración: RBAC, usuarios, roles, catálogos, micrositios, auditoría, notificaciones. |
 | `finanzas-web` | Ingresos, facturación, cuentas, proveedores, reportes, dashboards financieros. |
 | `operations-web` | Órdenes de trabajo, instalaciones, inventario, evidencias. |
 | `crm-web` | Clientes, contactos, relación comercial. |
 | `rh-web` | Empleados, horarios, Recursos Humanos. |
+
+<Info>
+  **Sin hub/launcher central (2026-06):** se eliminó el hub. El login redirige directo a la app que le corresponde a cada usuario según `roles_applications` ordenado por `display_order`. Ver [HU-01](/index#hu-01-iniciar-sesi%C3%B3n-con-redirect-inteligente). El handoff app-a-app se conserva para casos puntuales (no para el flujo principal).
+</Info>
 
 **Frontends fuera del monorepo:**
 - **Checador** (`internal-apps-attendance`): registro de asistencia con geolocalización.

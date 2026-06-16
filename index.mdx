@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 8 Milestones · 20 Epics · 61 HDU · 4 perfiles de usuario.
+  **Totales:** 8 Milestones · 20 Epics · 59 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -52,53 +52,34 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
   **2 epics · 7 HDU.** La base sobre la que se sostiene todo lo demás: cómo entra el usuario al sistema y qué puede ver/hacer. Sin esto, ningún otro milestone funciona.
 </Info>
 
-### EP-01 · Autenticación y navegación entre apps
+### EP-01 · Autenticación y acceso a las apps
 
-Login al hub, descubrimiento de aplicaciones disponibles según permisos, paso seguro de sesión entre apps (handoff) y cierre de sesión.
+Login con **redirect inteligente** a la app que le corresponde a cada usuario según su rol, transferencia de sesión opcional entre apps (handoff) y cierre de sesión.
+
+<Info>
+  **Cambio de arquitectura (2026-06):** se eliminó el **hub/launcher central**. Cada aplicación tiene su propia área y permisos. El login redirige directo a la app del usuario; ya no existe una pantalla intermedia de "Ver mis apps". El handoff entre apps se conserva para casos en los que una app necesita abrir otra preservando la sesión.
+</Info>
 
 <AccordionGroup>
-  <Accordion title="HU-01 · Iniciar sesión en el hub" icon="log-in">
+  <Accordion title="HU-01 · Iniciar sesión con redirect inteligente" icon="log-in">
     **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como usuario del sistema, quiero iniciar sesión con mi usuario y contraseña, para acceder al hub y a las aplicaciones a las que tengo permiso.
+    > Como usuario del sistema, quiero iniciar sesión una sola vez y que el sistema me lleve directo a la aplicación que me corresponde según mi rol, para entrar al trabajo sin pasos intermedios.
 
     **Criterios de aceptación:**
-    - Dado que estoy en `/login`, cuando ingreso credenciales válidas, entonces soy redirigido al launcher con mis aplicaciones.
-    - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro.
-    - Dado que mi sesión está activa, cuando vuelvo más tarde, entonces entro directo al launcher.
-    - Dado que olvido mi contraseña, cuando uso "¿Olvidaste tu contraseña?", entonces recibo un correo para reestablecerla.
+    - Dado que estoy en `/login`, cuando ingreso credenciales válidas, entonces soy redirigido **automáticamente** a la app que me corresponde (la primera asignada a mi rol según `display_order`).
+    - Dado que mi rol tiene varias apps asignadas, cuando ingreso, entonces voy a la primera por `display_order` y desde la app puedo cambiar a otra si la necesito (sin volver a loguear).
+    - Dado que mi rol **no tiene apps asignadas**, cuando ingreso, entonces veo un mensaje claro: "Tu usuario no tiene aplicaciones asignadas, contacta a tu administrador."
+    - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro (sin filtrar si el usuario existe).
+    - Dado que mi sesión está activa, cuando vuelvo más tarde, entonces entro directo a mi app sin volver a loguear.
+    - Dado que olvido mi contraseña, cuando uso "¿Olvidaste tu contraseña?", entonces recibo un correo para restablecerla.
 
-    <Tip>**Notas técnicas:** Cookie httpOnly + CSRF double-submit (F3-02b). JWT 24h (8h para super_admin). Sin localStorage.</Tip>
+    <Tip>**Notas técnicas:** Cookie httpOnly + CSRF double-submit (F3-02b). JWT dentro de la cookie (24h, 8h para `super_admin`). Sin `localStorage`. Tras login exitoso, el backend resuelve la app destino consultando `roles_applications` ↔ `applications` y devuelve `redirect_url` ordenando por `display_order` ASC. El frontend hace `window.location = redirect_url`.</Tip>
   </Accordion>
 
-  <Accordion title="HU-02 · Ver mis aplicaciones disponibles" icon="layout-grid">
-    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
-
-    **Historia:**
-    > Como usuario autenticado, quiero ver en el launcher solo las apps a las que tengo acceso, para entrar rápido a lo que uso sin ver opciones que no me corresponden.
-
-    **Criterios de aceptación:**
-    - Dado que abro el hub, cuando el launcher carga, entonces veo un saludo personalizado y la cuadrícula de mis apps.
-    - Dado que mi rol no tiene acceso a una app, cuando veo el launcher, entonces esa app no aparece.
-    - Dado que no tengo apps asignadas, cuando entro, entonces veo un mensaje pidiendo asignación.
-
-    <Tip>**Notas técnicas:** `GET /api/v1/apps/available`. Apps calculadas por `roles_applications`. Responsive 5/3/2 cols.</Tip>
-  </Accordion>
-
-  <Accordion title="HU-03 · Abrir una aplicación desde el hub" icon="arrow-up-right-from-square">
-    **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
-
-    **Historia:**
-    > Como usuario en el launcher, quiero hacer clic en una app y entrar sin volver a loguear, para moverme rápido entre módulos.
-
-    **Criterios de aceptación:**
-    - Dado que tengo permiso, cuando hago clic en su tile, entonces se abre la app con sesión iniciada.
-    - Dado que el handoff falla, cuando intento abrir, entonces recibo un mensaje claro y me quedo en el hub.
-    - Dado que el token expiró, cuando llega a la app destino, entonces esa app me regresa al hub.
-
-    <Tip>**Notas técnicas:** Token handoff con hash SHA256, TTL 60s, single-use, IP/UA binding. Endpoints `POST /api/v1/auth/handoff` y `POST /api/v1/auth/handoff/exchange`. Audit log con acciones `handoff_initiate` y `handoff_exchange`. Requiere `X-CSRF-Token` en métodos mutantes.</Tip>
-  </Accordion>
+  {/* HU-02 (Ver mis apps) eliminada en 2026-06 al quitar el hub. */}
+  {/* HU-03 (Abrir app desde hub) eliminada en 2026-06. El handoff entre apps se conserva en HU-04 nota técnica y endpoints /auth/handoff. */}
 
   <Accordion title="HU-04 · Cerrar sesión" icon="log-out">
     **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
@@ -107,10 +88,10 @@ Login al hub, descubrimiento de aplicaciones disponibles según permisos, paso s
     > Como usuario autenticado, quiero cerrar mi sesión cuando termine de usar el sistema, para que nadie más pueda usar la cuenta desde ese dispositivo.
 
     **Criterios de aceptación:**
-    - Dado que hago clic en "Cerrar sesión", cuando confirmo, entonces mi sesión queda invalidada y soy redirigido al login.
-    - Dado que cerré sesión, cuando intento volver a una app, entonces me redirige al hub a iniciar sesión otra vez.
+    - Dado que hago clic en "Cerrar sesión" desde cualquier app, cuando confirmo, entonces mi sesión queda invalidada y soy redirigido al `/login`.
+    - Dado que cerré sesión, cuando intento volver a cualquier app del ecosistema, entonces me redirige al `/login` a iniciar sesión otra vez.
 
-    <Tip>**Notas técnicas:** `POST /api/v1/auth/logout` invalida cookie httpOnly. Limpieza defensiva de storage en cliente.</Tip>
+    <Tip>**Notas técnicas:** `POST /api/v1/auth/logout` invalida la cookie httpOnly. Limpieza defensiva de storage en cliente. El handoff app-a-app (endpoints `POST /api/v1/auth/handoff` y `/auth/handoff/exchange`) se conserva para casos puntuales (token SHA-256, TTL 60s, single-use, IP/UA binding; audit log `handoff_initiate`/`handoff_exchange`).</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -1092,9 +1073,7 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 
 | Milestone | Epic | HDU | Rol | Prioridad |
 |---|---|---|---|---|
-| **M1** Plataforma y acceso | EP-01 Autenticación | HU-01 Iniciar sesión | EMP · ADM | Alta |
-|  |  | HU-02 Ver mis apps | EMP · ADM | Alta |
-|  |  | HU-03 Abrir una app | EMP · ADM | Alta |
+| **M1** Plataforma y acceso | EP-01 Autenticación | HU-01 Login con redirect inteligente | EMP · ADM | Alta |
 |  |  | HU-04 Cerrar sesión | EMP · ADM | Media |
 |  | EP-02 Usuarios y RBAC | HU-05 Crear usuario | ADM | Alta |
 |  |  | HU-06 Asignar roles | ADM | Alta |
