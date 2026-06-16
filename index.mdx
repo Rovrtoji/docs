@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 9 Milestones · 25 Epics · 69 HDU · 4 perfiles de usuario.
+  **Totales:** 9 Milestones · 26 Epics · 72 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -280,7 +280,7 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
 ## M3 · Finanzas
 
 <Info>
-  **4 epics · 10 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos, registro de gastos/pagos con centros de costo, módulo de transacciones bancarias para trazabilidad de movimientos entre cuentas y cuentas por cobrar con estado de cuenta por cliente. Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
+  **5 epics · 13 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos, registro de gastos/pagos con centros de costo, transacciones bancarias, cuentas por cobrar (estado de cuenta del cliente) y cuentas por pagar (proveedores con sus facturas y pagos). Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
 </Info>
 
 ### EP-05 · Gestión de clientes
@@ -389,11 +389,12 @@ Registro de pagos recibidos (ingresos) y pagos efectuados (gastos), incluyendo c
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como usuario de finanzas, quiero capturar un gasto seleccionando el centro de costo, el banco y la compañía, y opcionalmente marcarlo como pago alternativo capturando método, motivo y lugar, para tener trazabilidad completa de en qué se gastó, quién pagó y desde dónde.
+    > Como usuario de finanzas, quiero capturar un gasto seleccionando el centro de costo, el banco y la compañía, opcionalmente asociarlo a un proveedor y a su factura abierta para abonar, y opcionalmente marcarlo como pago alternativo capturando método, motivo y lugar, para tener trazabilidad completa de en qué se gastó, quién pagó, desde dónde y a qué adeudo del proveedor se aplicó.
 
     **Criterios de aceptación:**
     - Dado que tengo permiso para gestionar finanzas, cuando creo un nuevo gasto, entonces el formulario me pide centro de costo, banco, monto y fecha.
     - Dado que selecciono un centro de costo, cuando se carga el formulario, entonces la compañía facturadora se completa automáticamente (porque el centro de costo ya está asociado a una compañía).
+    - Dado que selecciono un proveedor en el formulario, cuando abro la sección de facturas del proveedor, entonces puedo elegir una factura abierta de ese proveedor para abonar — y el pago se descuenta del adeudo correspondiente.
     - Dado que el pago se hizo por canal bancario normal, cuando guardo, entonces el gasto queda registrado contra ese banco y centro de costo.
     - Dado que marco el gasto como "alternativo" (no bancario), cuando activo la opción, entonces se habilitan tres campos adicionales: método de pago alternativo, motivo y lugar/proveedor.
     - Dado que llené los campos alternativos, cuando guardo, entonces el gasto queda registrado con la información completa de cómo, por qué y dónde se pagó.
@@ -468,6 +469,58 @@ Vista por cliente que muestra sus facturas (cargos) y sus pagos (abonos) en form
     - Dado que un pago se elimina o se modifica, cuando guardo el cambio, entonces los estatus de las facturas afectadas se recalculan automáticamente.
     - Dado que abro la pantalla de facturación o el listado de facturas en BI, cuando reviso una factura, entonces veo su estatus actual como una etiqueta visible con color distinto para cada estado.
     - Dado que filtro las facturas del cliente por estatus, cuando aplico, entonces el listado se acota a las que tienen el estatus seleccionado (útil para ver "todas las que tienen adeudo").
+  </Accordion>
+</AccordionGroup>
+
+### EP-09 · Cuentas por pagar
+
+Catálogo de proveedores, registro de las facturas que nos emiten y vista por proveedor con sus facturas y los pagos que les hemos hecho — formato T contable y estatus automático de cada factura del proveedor.
+
+<AccordionGroup>
+  <Accordion title="HU-72 · Mantener catálogo de proveedores" icon="store">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero mantener un catálogo de proveedores con su información fiscal y bancaria, para poder asociar cada factura de gasto y cada pago al proveedor correcto y tener trazabilidad de lo que le debemos a cada uno.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando abro el catálogo de proveedores, entonces veo el listado con nombre, RFC, contacto y datos bancarios.
+    - Dado que registro un proveedor nuevo, cuando guardo, entonces queda disponible para asociar a facturas y pagos.
+    - Dado que el RFC del proveedor ya existe en el catálogo, cuando intento crearlo de nuevo, entonces veo un error claro.
+    - Dado que un proveedor tiene facturas o pagos asociados, cuando intento eliminarlo, entonces el sistema lo impide y sugiere desactivarlo.
+    - Dado que desactivo un proveedor, cuando voy a registrar una nueva factura o gasto, entonces ese proveedor ya no aparece en el selector — pero los registros históricos lo conservan.
+  </Accordion>
+
+  <Accordion title="HU-73 · Registrar una factura recibida de un proveedor" icon="file-text">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero capturar las facturas que mis proveedores me emiten (folio, fecha, monto, IVA, conceptos), para tener registro de todo lo que le debo a cada proveedor y poder cruzarlo contra los pagos que les hago.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando registro una factura de proveedor, entonces el formulario me pide proveedor, folio, fecha, monto, IVA, fecha de vencimiento y conceptos.
+    - Dado que la factura tiene un folio que ya existe para ese proveedor, cuando intento guardar, entonces el sistema me lo advierte para evitar duplicados.
+    - Dado que guardo la factura, cuando la reviso en el listado, entonces aparece con estatus inicial "Con adeudo" hasta que se le asocie algún pago.
+    - Dado que asocio la factura a un centro de costo, cuando guardo, entonces la factura queda ligada a ese centro de costo para reportes.
+    - Dado que tengo varias facturas que llegaron juntas, cuando uso una opción de carga masiva, entonces puedo subirlas todas a partir de un archivo y revisar errores fila por fila (igual que con ingresos).
+  </Accordion>
+
+  <Accordion title="HU-74 · Estado de cuenta del proveedor y estatus automático de sus facturas" icon="scale">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero seleccionar un proveedor y ver en formato T contable todas sus facturas y todos los pagos que le hemos hecho lado a lado para saber cuánto le debo, y que el sistema marque automáticamente cada factura suya con su estatus (pagado, parcial o con adeudo), para gestionar la deuda con proveedores sin cruzar números a mano.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono un proveedor, cuando abro su estado de cuenta, entonces veo en formato de T contable: columna izquierda con sus facturas (cargo: lo que me cobra) y columna derecha con los pagos que le he hecho (abono), ordenadas por fecha.
+    - Dado que la vista termina de cargar, cuando reviso el pie, entonces veo el saldo total con ese proveedor (suma de facturas menos suma de pagos): si es cero estamos al corriente, si es positivo le debemos.
+    - Dado que registro un gasto/pago asociado a una factura de proveedor (vía HU-67), cuando guardo, entonces el estatus de esa factura se actualiza automáticamente:
+      - **Pagado**: los pagos asociados cubren el total de la factura.
+      - **Parcial**: hay al menos un pago pero la suma aún no cubre el total.
+      - **Con adeudo**: no hay pagos asociados o la suma es cero.
+    - Dado que un pago a proveedor se elimina o se modifica, cuando guardo el cambio, entonces los estatus de las facturas afectadas se recalculan automáticamente.
+    - Dado que abro el listado de facturas de proveedor (o el equivalente en BI), cuando reviso una factura, entonces veo su estatus actual como etiqueta visible con color distinto para cada estado.
+    - Dado que filtro las facturas del proveedor por estatus, cuando aplico, entonces el listado se acota a las que tienen el estatus seleccionado (útil para ver "todo lo que aún le debo a este proveedor").
   </Accordion>
 </AccordionGroup>
 
@@ -1149,6 +1202,9 @@ Comportamientos que aplican a todos los dashboards: filtros globales y opciones 
 |  |  | HU-69 Registrar transacción bancaria | ADM | Alta |
 |  |  | HU-70 Estado de cuenta bancario | ADM | Alta |
 |  | EP-08 Cuentas por cobrar | HU-71 Estado de cuenta del cliente y estatus de facturas | ADM | Alta |
+|  | EP-09 Cuentas por pagar | HU-72 Catálogo de proveedores | ADM | Alta |
+|  |  | HU-73 Registrar factura de proveedor | ADM | Alta |
+|  |  | HU-74 Estado de cuenta del proveedor y estatus de facturas | ADM | Alta |
 | **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
 | **M5** Operaciones y DevOps | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
 |  |  | HU-24 Verificar migración | OPS | Alta |
