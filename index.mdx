@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 9 Milestones · 24 Epics · 68 HDU · 4 perfiles de usuario.
+  **Totales:** 9 Milestones · 25 Epics · 69 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -280,7 +280,7 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
 ## M3 · Finanzas
 
 <Info>
-  **3 epics · 9 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos, registro de gastos/pagos con centros de costo (incluye opción de pago alternativo) y módulo de transacciones bancarias para dar trazabilidad a transferencias y movimientos entre cuentas. Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
+  **4 epics · 10 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos, registro de gastos/pagos con centros de costo, módulo de transacciones bancarias para trazabilidad de movimientos entre cuentas y cuentas por cobrar con estado de cuenta por cliente. Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
 </Info>
 
 ### EP-05 · Gestión de clientes
@@ -444,6 +444,30 @@ Registro y consulta de movimientos entre cuentas bancarias: transferencias entre
     - Dado que estoy viendo el estado de cuenta, cuando reviso cada movimiento, entonces veo fecha, descripción, tipo (ingreso, gasto, transferencia), monto y si es cargo o abono.
     - Dado que aplico un filtro de rango de fechas, cuando ejecuto, entonces el listado se acota a ese periodo y muestra el saldo inicial y final del rango.
     - Dado que quiero compartir o respaldar la vista, cuando uso "Exportar", entonces se descarga un archivo Excel con los mismos movimientos visibles.
+  </Accordion>
+</AccordionGroup>
+
+### EP-08 · Cuentas por cobrar
+
+Vista por cliente que muestra sus facturas (cargos) y sus pagos (abonos) en formato de T contable, con cálculo automático del saldo y mantenimiento del estatus de cada factura.
+
+<AccordionGroup>
+  <Accordion title="HU-71 · Estado de cuenta del cliente y estatus automático de facturas" icon="scale">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero seleccionar un cliente y ver en formato T contable todas sus facturas y todos sus pagos lado a lado para saber si su cuenta está saldada, y que el sistema marque automáticamente cada factura con su estatus (pagado, parcial o con adeudo), para tener trazabilidad financiera sin cruzar números a mano.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono un cliente, cuando abro su estado de cuenta, entonces veo en formato de T contable: columna izquierda con sus facturas (cargo) y columna derecha con sus pagos (abono), ordenadas por fecha.
+    - Dado que la vista termina de cargar, cuando reviso el pie, entonces veo el saldo total del cliente (suma de facturas menos suma de pagos): si es cero la cuenta está saldada, si es positivo hay adeudo.
+    - Dado que se registra un pago nuevo y se asocia a una o más facturas, cuando guardo, entonces el estatus de cada factura afectada se actualiza automáticamente sin intervención manual:
+      - **Pagado**: los pagos asociados cubren el total de la factura.
+      - **Parcial**: hay al menos un pago pero la suma aún no cubre el total.
+      - **Con adeudo**: no hay pagos asociados o la suma es cero.
+    - Dado que un pago se elimina o se modifica, cuando guardo el cambio, entonces los estatus de las facturas afectadas se recalculan automáticamente.
+    - Dado que abro la pantalla de facturación o el listado de facturas en BI, cuando reviso una factura, entonces veo su estatus actual como una etiqueta visible con color distinto para cada estado.
+    - Dado que filtro las facturas del cliente por estatus, cuando aplico, entonces el listado se acota a las que tienen el estatus seleccionado (útil para ver "todas las que tienen adeudo").
   </Accordion>
 </AccordionGroup>
 
@@ -1124,6 +1148,7 @@ Comportamientos que aplican a todos los dashboards: filtros globales y opciones 
 |  | EP-07 Transacciones bancarias | HU-68 Catálogo de cuentas bancarias propias | ADM | Alta |
 |  |  | HU-69 Registrar transacción bancaria | ADM | Alta |
 |  |  | HU-70 Estado de cuenta bancario | ADM | Alta |
+|  | EP-08 Cuentas por cobrar | HU-71 Estado de cuenta del cliente y estatus de facturas | ADM | Alta |
 | **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
 | **M5** Operaciones y DevOps | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
 |  |  | HU-24 Verificar migración | OPS | Alta |
