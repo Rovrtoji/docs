@@ -31,7 +31,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
     para [beneficio].
     ```
 
-    Describe **qué** hace alguien y **por qué**. Nunca describe cómo se implementa — eso va en notas técnicas.
+    Describe **qué** hace alguien y **por qué**. Las HDU no incluyen detalles de implementación — esos viven en la documentación de arquitectura y de API.
   </Tab>
   <Tab title="Criterios de aceptación">
     ```
@@ -54,10 +54,10 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 
 ### EP-01 · Autenticación y acceso a las apps
 
-Login con **redirect inteligente** a la app que le corresponde a cada usuario según su rol, transferencia de sesión opcional entre apps (handoff) y cierre de sesión.
+Login con redirect inteligente a la app que le corresponde a cada usuario según su rol, transferencia de sesión opcional entre apps y cierre de sesión.
 
 <Info>
-  **Cambio de arquitectura (2026-06):** se eliminó el **hub/launcher central**. Cada aplicación tiene su propia área y permisos. El login redirige directo a la app del usuario; ya no existe una pantalla intermedia de "Ver mis apps". El handoff entre apps se conserva para casos en los que una app necesita abrir otra preservando la sesión.
+  **Cambio de arquitectura (2026-06):** se eliminó el hub/launcher central. Cada aplicación tiene su propia área y permisos. El login redirige directo a la app del usuario; ya no existe una pantalla intermedia para "ver mis apps".
 </Info>
 
 <AccordionGroup>
@@ -68,18 +68,13 @@ Login con **redirect inteligente** a la app que le corresponde a cada usuario se
     > Como usuario del sistema, quiero iniciar sesión una sola vez y que el sistema me lleve directo a la aplicación que me corresponde según mi rol, para entrar al trabajo sin pasos intermedios.
 
     **Criterios de aceptación:**
-    - Dado que estoy en `/login`, cuando ingreso credenciales válidas, entonces soy redirigido **automáticamente** a la app que me corresponde (la primera asignada a mi rol según `display_order`).
-    - Dado que mi rol tiene varias apps asignadas, cuando ingreso, entonces voy a la primera por `display_order` y desde la app puedo cambiar a otra si la necesito (sin volver a loguear).
-    - Dado que mi rol **no tiene apps asignadas**, cuando ingreso, entonces veo un mensaje claro: "Tu usuario no tiene aplicaciones asignadas, contacta a tu administrador."
-    - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro (sin filtrar si el usuario existe).
-    - Dado que mi sesión está activa, cuando vuelvo más tarde, entonces entro directo a mi app sin volver a loguear.
-    - Dado que olvido mi contraseña, cuando uso "¿Olvidaste tu contraseña?", entonces recibo un correo para restablecerla.
-
-    <Tip>**Notas técnicas:** Cookie httpOnly + CSRF double-submit (F3-02b). JWT dentro de la cookie (24h, 8h para `super_admin`). Sin `localStorage`. Tras login exitoso, el backend resuelve la app destino consultando `roles_applications` ↔ `applications` y devuelve `redirect_url` ordenando por `display_order` ASC. El frontend hace `window.location = redirect_url`.</Tip>
+    - Dado que estoy en la pantalla de login, cuando ingreso credenciales válidas, entonces soy redirigido automáticamente a la aplicación que me corresponde según mi rol.
+    - Dado que mi rol tiene varias apps asignadas, cuando ingreso, entonces voy a la app de mayor prioridad y desde ahí puedo cambiar a otra si la necesito sin volver a iniciar sesión.
+    - Dado que mi rol no tiene apps asignadas, cuando ingreso, entonces veo un mensaje claro indicando que contacte a su administrador.
+    - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro sin que el sistema revele si el usuario existe o no.
+    - Dado que mi sesión está activa, cuando vuelvo más tarde, entonces entro directo a mi app sin volver a iniciar sesión.
+    - Dado que olvidé mi contraseña, cuando uso "¿Olvidaste tu contraseña?", entonces recibo un correo para restablecerla.
   </Accordion>
-
-  {/* HU-02 (Ver mis apps) eliminada en 2026-06 al quitar el hub. */}
-  {/* HU-03 (Abrir app desde hub) eliminada en 2026-06. El handoff entre apps se conserva en HU-04 nota técnica y endpoints /auth/handoff. */}
 
   <Accordion title="HU-04 · Cerrar sesión" icon="log-out">
     **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
@@ -88,10 +83,8 @@ Login con **redirect inteligente** a la app que le corresponde a cada usuario se
     > Como usuario autenticado, quiero cerrar mi sesión cuando termine de usar el sistema, para que nadie más pueda usar la cuenta desde ese dispositivo.
 
     **Criterios de aceptación:**
-    - Dado que hago clic en "Cerrar sesión" desde cualquier app, cuando confirmo, entonces mi sesión queda invalidada y soy redirigido al `/login`.
-    - Dado que cerré sesión, cuando intento volver a cualquier app del ecosistema, entonces me redirige al `/login` a iniciar sesión otra vez.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/auth/logout` invalida la cookie httpOnly. Limpieza defensiva de storage en cliente. El handoff app-a-app (endpoints `POST /api/v1/auth/handoff` y `/auth/handoff/exchange`) se conserva para casos puntuales (token SHA-256, TTL 60s, single-use, IP/UA binding; audit log `handoff_initiate`/`handoff_exchange`).</Tip>
+    - Dado que hago clic en "Cerrar sesión" desde cualquier app, cuando confirmo, entonces mi sesión queda invalidada y soy redirigido a la pantalla de login.
+    - Dado que cerré sesión, cuando intento volver a cualquier app del ecosistema, entonces me redirige a la pantalla de login para iniciar sesión otra vez.
   </Accordion>
 </AccordionGroup>
 
@@ -107,10 +100,9 @@ Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales medi
     > Como administrador, quiero dar de alta a un colaborador nuevo, para que pueda acceder al sistema con sus credenciales.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `usuarios_write`, cuando creo un usuario con datos válidos, entonces queda activo y recibe correo de bienvenida.
-    - Dado que el username o email ya existen, cuando intento crearlo, entonces veo un error claro.
-
-    <Tip>**Notas técnicas:** Endpoint oficial `POST /api/v1/users` (tag `users_contract`). El `POST /api/v1/usuarios` queda como legacy. Password con hash bcrypt. Email y username únicos a nivel DB. Correo de bienvenida vía `send_welcome_email()` non-blocking (si falla, solo se logea, no aborta la creación).</Tip>
+    - Dado que tengo permiso para gestionar usuarios, cuando creo un usuario con datos válidos, entonces queda activo y recibe correo de bienvenida con sus credenciales iniciales.
+    - Dado que el nombre de usuario o el correo ya existen, cuando intento crearlo, entonces veo un error claro.
+    - Dado que el envío del correo de bienvenida falla, cuando reviso el usuario, entonces queda creado igualmente (el correo no bloquea la creación).
   </Accordion>
 
   <Accordion title="HU-06 · Asignar roles a un usuario" icon="shield-check">
@@ -120,11 +112,9 @@ Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales medi
     > Como administrador, quiero asignar o quitar roles a un usuario, para controlar qué módulos y acciones puede usar.
 
     **Criterios de aceptación:**
-    - Dado que edito un usuario, cuando agrego un rol y guardo, entonces gana los permisos derivados de inmediato.
-    - Dado que quito un rol, cuando guardo, entonces el usuario pierde esos permisos en su próxima petición.
-    - Dado que un usuario es `super_admin`, cuando intento quitarle ese rol, entonces el sistema me advierte.
-
-    <Tip>**Notas técnicas:** Tablas `usuarios_roles` y `roles_permisos`. Cambios en `audit_log` (`role_assigned`/`role_revoked`).</Tip>
+    - Dado que edito un usuario, cuando agrego un rol y guardo, entonces el usuario gana los permisos del rol de inmediato.
+    - Dado que quito un rol, cuando guardo, entonces el usuario pierde esos permisos en su próxima acción.
+    - Dado que un usuario es super administrador, cuando intento quitarle ese rol, entonces el sistema me advierte.
   </Accordion>
 
   <Accordion title="HU-07 · Otorgar o revocar permisos directos" icon="key">
@@ -135,48 +125,38 @@ Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales medi
 
     **Criterios de aceptación:**
     - Dado que un usuario necesita un permiso fuera de su rol, cuando uso "permisos directos" para concederlo, entonces el usuario lo tiene.
-    - Dado que quiero revocar un permiso que viene del rol, cuando creo una negación directa, entonces el usuario pierde ese permiso.
-
-    <Tip>**Notas técnicas:** Tabla `usuarios_permisos_directos` con `tipo=grant|deny`. Cálculo efectivo: `(roles ∪ grants) − denies`.</Tip>
+    - Dado que quiero revocar un permiso que viene del rol, cuando lo niego de forma directa, entonces el usuario pierde ese permiso.
   </Accordion>
 
   <Accordion title="HU-59 · Mantener catálogo de productos/marcas" icon="tag">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como administrador, quiero crear, editar y desactivar productos (marcas comerciales) asociados a una entidad fiscal (Soluciones, Ramsa), para reflejar la oferta facturable real de cada compañía y poder separar lo que vendemos por cada una.
+    > Como administrador, quiero crear, editar y desactivar productos (marcas comerciales) asociados a una entidad fiscal, para reflejar la oferta facturable real de cada compañía y poder separar lo que vendemos por cada una.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `productos_write`, cuando creo un producto con nombre y entidad fiscal, entonces queda disponible en el catálogo.
-    - Dado que el mismo producto (ej. "B2B Tracking") aplica a varias compañías, cuando lo creo, entonces tengo una fila por (producto, entidad fiscal) — el código es único.
+    - Dado que tengo permiso para gestionar productos, cuando creo un producto con nombre y entidad fiscal, entonces queda disponible en el catálogo.
+    - Dado que el mismo producto aplica a varias compañías, cuando lo creo para cada una, entonces queda una entrada por la combinación producto + compañía.
     - Dado que un producto está asignado a clientes o usuarios, cuando intento eliminarlo, entonces el sistema lo impide y sugiere desactivarlo.
-    - Dado que cambio la entidad fiscal de un producto existente, cuando guardo, entonces las facturas futuras se emiten desde la nueva entidad (las históricas no se reescriben).
+    - Dado que cambio la entidad fiscal de un producto existente, cuando guardo, entonces las facturas futuras se emiten desde la nueva entidad y las históricas se conservan intactas.
 
     <Info>
-      **Ejemplos de productos:** `b2b_tracking_soluciones`, `b2b_tracking_ramsa` (mismo producto, dos compañías), `centraly_soluciones`, `centraly_ramsa` (viajes monitoreados).
+      **Ejemplos de productos:** B2B Tracking (facturado por Soluciones), B2B Tracking (facturado por Ramsa), Centraly viajes monitoreados (facturado por Soluciones), Centraly viajes monitoreados (facturado por Ramsa).
     </Info>
-
-    <Tip>**Notas técnicas:** Tabla `productos` con FK a `legal_entities` (UUID). Endpoints `CRUD /api/v1/productos`. **Backfill al deploy**: se crean los productos iniciales (B2B Tracking · Soluciones/Ramsa, Centraly · Soluciones/Ramsa). Reutiliza `legal_entities.code` (`soluciones`, `ramsa`) ya existente.</Tip>
   </Accordion>
 
   <Accordion title="HU-60 · Asignar productos a un usuario" icon="user-tag">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como administrador, quiero asignar uno o más productos (marca + compañía) a cada usuario, para que solo vea los clientes y la facturación de las compañías/productos que le corresponden — sin que un usuario de Soluciones vea operación de Ramsa.
+    > Como administrador, quiero asignar uno o más productos a cada usuario, para que solo vea los clientes y la facturación de las compañías y productos que le corresponden, sin que un usuario de Soluciones vea operación de Ramsa.
 
     **Criterios de aceptación:**
-    - Dado que abro un usuario, cuando agrego productos y guardo, entonces queda vinculado en `usuarios_productos` (M:N).
-    - Dado que el usuario tiene productos asignados, cuando lista clientes/facturas/ingresos, entonces el backend filtra automáticamente por sus productos (**RBAC duro a nivel query**).
-    - Dado que un usuario no tiene productos asignados, cuando lista clientes/facturas, entonces ve la lista vacía (a menos que sea `super_admin`).
-    - Dado que el usuario es `super_admin`, cuando lista, entonces ve todo sin filtro (bypass del RBAC de productos).
-    - Dado que quito un producto de un usuario, cuando guardo, entonces deja de ver los clientes/facturas de ese producto en la próxima petición.
-
-    <Warning>
-      **Implica trabajo backend grande:** todos los endpoints de listado de `clientes`, `invoices`, `ingresos`, `installation_payments`, etc. deben hacer `JOIN` contra `usuarios_productos` del usuario actual (derivado del JWT/cookie). El filtro vive en una dependencia compartida (ej. `get_user_productos_filter()`).
-    </Warning>
-
-    <Tip>**Notas técnicas:** Tabla `usuarios_productos` (M:N) con `UNIQUE(usuario_id, producto_id)`. Endpoints `GET /api/v1/users/{id}/productos`, `PUT /api/v1/users/{id}/productos`. Cambios registrados en `audit_log` (`product_assigned`/`product_revoked`).</Tip>
+    - Dado que abro un usuario, cuando agrego productos y guardo, entonces queda vinculado a esos productos.
+    - Dado que el usuario tiene productos asignados, cuando lista clientes, facturas o ingresos, entonces solo ve los que corresponden a sus productos.
+    - Dado que un usuario no tiene productos asignados, cuando lista clientes o facturas, entonces ve la lista vacía, salvo que sea super administrador.
+    - Dado que el usuario es super administrador, cuando lista cualquier información, entonces ve todo sin filtro.
+    - Dado que quito un producto de un usuario, cuando guardo, entonces deja de ver la información de ese producto en su próxima petición.
   </Accordion>
 </AccordionGroup>
 
@@ -190,7 +170,7 @@ Alta y mantenimiento de usuarios, gestión de roles y excepciones puntuales medi
 
 ### EP-03 · Registro de asistencia (móvil)
 
-Flujo de captura del empleado: entrada, salida, validación de la foto, horas extra e instalación de la app como PWA.
+Flujo de captura del empleado: entrada, salida, validación de la foto, horas extra e instalación de la app como aplicación móvil.
 
 <AccordionGroup>
   <Accordion title="HU-08 · Registrar entrada con foto y ubicación" icon="camera">
@@ -201,11 +181,9 @@ Flujo de captura del empleado: entrada, salida, validación de la foto, horas ex
 
     **Criterios de aceptación:**
     - Dado que es mi primera marca del día, cuando presiono "ENTRADA", entonces se abre el formulario que pide foto y captura ubicación automáticamente.
-    - Dado que confirmo el envío, cuando termina, entonces el registro se guarda y veo que la entrada está marcada.
+    - Dado que confirmo el envío, cuando termina, entonces el registro queda guardado y veo que la entrada está marcada.
     - Dado que ya marqué entrada hoy, cuando abro la app, entonces solo veo el botón SALIDA.
-    - Dado que no doy permiso de cámara/ubicación, cuando intento marcar, entonces veo por qué son necesarios.
-
-    <Tip>**Notas técnicas:** Foto sube a S3 con URL prefirmada. `attendance_records`: `hora_ingreso`, `foto_ingreso_url`, `geo_ingreso`. UNIQUE en `(employee_id, work_date)`.</Tip>
+    - Dado que no doy permiso de cámara o ubicación, cuando intento marcar, entonces veo por qué son necesarios.
   </Accordion>
 
   <Accordion title="HU-09 · Registrar salida" icon="log-out">
@@ -218,8 +196,6 @@ Flujo de captura del empleado: entrada, salida, validación de la foto, horas ex
     - Dado que ya marqué entrada, cuando presiono "SALIDA", entonces se abre el formulario igual que en la entrada.
     - Dado que confirmo, cuando termina, entonces el día queda completo y veo el resumen.
     - Dado que no marqué entrada aún, cuando abro la app, entonces SALIDA no está disponible.
-
-    <Tip>**Notas técnicas:** Actualiza `hora_salida`, `foto_salida_url`, `geo_salida`. Cada evento queda en `attendance_event_logs` con `idempotency_key`.</Tip>
   </Accordion>
 
   <Accordion title="HU-10 · Validar que la foto contiene una cara" icon="scan-face">
@@ -230,9 +206,8 @@ Flujo de captura del empleado: entrada, salida, validación de la foto, horas ex
 
     **Criterios de aceptación:**
     - Dado que la foto tiene una cara detectable, cuando presiono "Enviar", entonces el envío procede.
-    - Dado que la foto no muestra una cara clara, cuando intento enviarla, entonces veo un mensaje pidiéndome retomar.
-
-    <Tip>**Notas técnicas:** `@vladmandic/face-api` (TinyFaceDetector) corre en el navegador. Modelos en `public/models/`. No se envía imagen a IA externa.</Tip>
+    - Dado que la foto no muestra una cara clara, cuando intento enviarla, entonces veo un mensaje pidiéndome retomar la foto.
+    - Dado que la verificación es privada, cuando se valida la foto, entonces no se envía la imagen a ningún servicio externo.
   </Accordion>
 
   <Accordion title="HU-11 · Registrar horas extra" icon="clock-plus">
@@ -242,25 +217,21 @@ Flujo de captura del empleado: entrada, salida, validación de la foto, horas ex
     > Como empleado que ya cerró su jornada regular, quiero marcar entrada y salida de horas extra, para que mis horas adicionales queden contabilizadas por separado.
 
     **Criterios de aceptación:**
-    - Dado que ya tengo salida marcada, cuando abro la app, entonces aparece la opción HORA EXTRA.
-    - Dado que marco entrada de HE, cuando termino, entonces puedo marcar la salida correspondiente.
-    - Dado que veo el resumen del día con HE, cuando reviso, entonces se muestran aparte de la jornada regular.
-
-    <Tip>**Notas técnicas:** Campos `hora_he_ingreso`/`hora_he_salida` + `foto_he_*`. Backend valida que solo se marquen después de la salida regular.</Tip>
+    - Dado que ya tengo salida marcada, cuando abro la app, entonces aparece la opción de hora extra.
+    - Dado que marco entrada de horas extra, cuando termino la jornada extra, entonces puedo marcar la salida correspondiente.
+    - Dado que veo el resumen del día con horas extra, cuando reviso, entonces se muestran aparte de la jornada regular.
   </Accordion>
 
-  <Accordion title="HU-12 · Instalar la app como PWA" icon="smartphone">
+  <Accordion title="HU-12 · Instalar la app como aplicación móvil" icon="smartphone">
     **Rol:** EMP &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Baja
 
     **Historia:**
     > Como empleado que usa el checador todos los días, quiero instalar la app en mi celular, para abrirla rápido desde la pantalla de inicio.
 
     **Criterios de aceptación:**
-    - Dado que abro en Chrome (Android), cuando uso el menú del navegador, entonces aparece "Instalar app".
-    - Dado que abro en Safari (iOS), cuando uso el botón compartir, entonces puedo elegir "Agregar a pantalla de inicio".
+    - Dado que abro en Android, cuando uso el menú del navegador, entonces aparece la opción "Instalar app".
+    - Dado que abro en iOS, cuando uso el botón compartir, entonces puedo elegir "Agregar a pantalla de inicio".
     - Dado que abro la app instalada, cuando arranca, entonces se ve a pantalla completa sin barra de URL.
-
-    <Tip>**Notas técnicas:** `@vite-pwa/nuxt`, manifest, iconos 192/512 maskable, SW NetworkFirst para el API. Requiere HTTPS.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -276,24 +247,20 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
     > Como administrador, quiero ver el resumen de asistencias por rango de fechas, para supervisar la operación y detectar ausencias o retardos a tiempo.
 
     **Criterios de aceptación:**
-    - Dado que abro el dashboard, cuando selecciono un rango, entonces veo cada empleado con estado (a tiempo, retardo, ausente) y horas.
-    - Dado que hay un retardo, cuando veo la fila, entonces se distingue visualmente.
-    - Dado que quiero el detalle, cuando hago clic en una fila, entonces veo fotos de entrada/salida y la ubicación.
-
-    <Tip>**Notas técnicas:** `GET /api/v1/attendance/dashboard`. Fotos servidas con URL prefirmada (TTL 15 min).</Tip>
+    - Dado que abro el dashboard, cuando selecciono un rango, entonces veo cada empleado con su estado (a tiempo, retardo, ausente) y horas trabajadas.
+    - Dado que hay un retardo, cuando veo la fila del empleado, entonces se distingue visualmente del resto.
+    - Dado que quiero el detalle, cuando hago clic en una fila, entonces veo las fotos de entrada y salida y la ubicación.
   </Accordion>
 
   <Accordion title="HU-14 · Exportar el dashboard a Excel" icon="file-spreadsheet">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como administrador, quiero exportar el dashboard a Excel, para reportes externos o compartirlo con nómina.
+    > Como administrador, quiero exportar el dashboard a Excel, para generar reportes externos o compartirlo con nómina.
 
     **Criterios de aceptación:**
-    - Dado que tengo un rango filtrado, cuando hago clic en "Exportar", entonces se descarga un `.xlsx` con los datos visibles.
-    - Dado que abro el Excel, cuando reviso, entonces incluye nombre, fecha, entrada/salida, estado y horas trabajadas.
-
-    <Tip>**Notas técnicas:** `GET /api/v1/attendance/dashboard/export` → `attendance_dashboard_<desde>_<hasta>.xlsx`.</Tip>
+    - Dado que tengo un rango filtrado, cuando hago clic en "Exportar", entonces se descarga un archivo Excel con los datos visibles.
+    - Dado que abro el Excel, cuando reviso, entonces incluye nombre, fecha, entrada, salida, estado y horas trabajadas.
   </Accordion>
 
   <Accordion title="HU-15 · Configurar el horario semanal de un empleado" icon="calendar-clock">
@@ -303,10 +270,8 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
     > Como administrador, quiero definir el horario semanal de cada empleado, para que el sistema sepa cuándo se considera retardo.
 
     **Criterios de aceptación:**
-    - Dado que abro el perfil de horario, cuando defino días y horas y guardo, entonces queda almacenado en zona `America/Mexico_City`.
-    - Dado que un empleado marca tarde, cuando reviso el dashboard, entonces aparece como retardo.
-
-    <Tip>**Notas técnicas:** `attendance_work_schedules` con `weekly_schedule` en JSONB. UNIQUE en `user_id`.</Tip>
+    - Dado que abro el perfil de horario, cuando defino días y horas y guardo, entonces queda almacenado en la zona horaria de la operación.
+    - Dado que un empleado marca tarde respecto a su horario, cuando reviso el dashboard, entonces aparece como retardo.
   </Accordion>
 </AccordionGroup>
 
@@ -331,14 +296,12 @@ Consulta consolidada del estado de un cliente y mantenimiento del padrón.
 
     **Criterios de aceptación:**
     - Dado que abro un cliente, cuando carga el detalle, entonces veo métricas clave (saldo, vencido, último pago, facturado).
-    - Dado que cambio a Métricas, cuando selecciono, entonces veo la gráfica facturado vs pagado de los últimos 6 meses.
+    - Dado que cambio a la vista de métricas, cuando selecciono, entonces veo la gráfica de facturado vs pagado de los últimos 6 meses.
     - Dado que agrego una nota interna, cuando guardo, entonces queda visible para todo el equipo.
 
     <Warning>
-      **Migración a app BI:** esta funcionalidad se consolidará en la nueva **app BI** (mockup en [Diseño → Mockups](/mockups#bi-platform--facturaci%C3%B3n)). Los endpoints actuales `/api/v1/dashboard/clientes/{id}/...` (resumen, facturacion, depositos, facturas, pagos, comparativo, comportamiento-pagos, cms, contactos, notas) se mantienen vigentes hasta que la app BI absorba la funcionalidad.
+      **Migración a app BI:** esta vista del cliente 360 se consolidará en la nueva app BI. Hasta entonces sigue disponible en su ubicación actual.
     </Warning>
-
-    <Tip>**Notas técnicas:** Hoy son **13 endpoints** bajo `/api/v1/dashboard/clientes/{cliente_id}/...` (resumen, facturacion, depositos, facturas, pagos, comparativo, comportamiento-pagos, cms, cms/unidades, contactos, notas). Gráficas con Recharts.</Tip>
   </Accordion>
 
   <Accordion title="HU-17 · Crear o editar un cliente" icon="user-pen">
@@ -348,33 +311,29 @@ Consulta consolidada del estado de un cliente y mantenimiento del padrón.
     > Como usuario de finanzas con permiso de escritura, quiero crear clientes nuevos y editar los existentes, para mantener el padrón al día.
 
     **Criterios de aceptación:**
-    - Dado que abro "Nuevo cliente", cuando completo el formulario multi-pestaña y guardo, entonces el cliente queda creado.
-    - Dado que edito un cliente existente, cuando guardo, entonces solo se aplican los cambios (diff de contactos/identificaciones/cuentas).
+    - Dado que abro "Nuevo cliente", cuando completo el formulario y guardo, entonces el cliente queda creado.
+    - Dado que edito un cliente existente, cuando guardo, entonces solo se aplican los cambios reales (no se reescribe lo que no tocó).
     - Dado que estoy en la lista, cuando hago clic en "Editar" de una fila, entonces entro directo a editar sin pasar por el detalle.
-
-    <Tip>**Notas técnicas:** Formulario multi-tab con UUI. Edit hace diff contra snapshot inicial.</Tip>
   </Accordion>
 
   <Accordion title="HU-61 · Asignar productos a un cliente (para facturación)" icon="building-2">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como usuario de finanzas con permiso, quiero indicar qué productos (marca + compañía) consume cada cliente, para que las facturas se emitan desde la entidad fiscal correcta y los reportes/dashboards separen ingresos por producto y por compañía.
+    > Como usuario de finanzas con permiso, quiero indicar qué productos (marca + compañía) consume cada cliente, para que las facturas se emitan desde la compañía correcta y los reportes separen ingresos por producto y por compañía.
 
     **Criterios de aceptación:**
-    - Dado que abro un cliente, cuando agrego productos y guardo, entonces queda vinculado en `cliente_productos` (M:N).
-    - Dado que un cliente tiene varios productos (ej. B2B Tracking · Soluciones + Centraly · Soluciones), cuando se va a emitir una factura, entonces el sistema permite elegir desde qué producto/entidad se factura.
-    - Dado que desactivo un producto del cliente (sin borrar), cuando se intenta facturar, entonces ese producto ya no aparece en el selector — pero las facturas históricas se conservan.
-    - Dado que un producto tiene la entidad fiscal X, cuando se factura desde ese producto, entonces el `legal_entity_id` de la factura toma X.
+    - Dado que abro un cliente, cuando agrego productos y guardo, entonces queda vinculado a esos productos.
+    - Dado que un cliente tiene varios productos, cuando voy a emitir una factura, entonces el sistema permite elegir desde qué producto y compañía facturarla.
+    - Dado que desactivo un producto del cliente sin borrarlo, cuando se intenta facturar, entonces ese producto ya no aparece en el selector — pero las facturas históricas se conservan.
+    - Dado que un producto está asociado a una compañía determinada, cuando se factura desde ese producto, entonces la factura sale a nombre de esa compañía.
 
     <Info>
-      **Ejemplo de cliente con varios productos:**
-      - Cliente A → B2B Tracking · Soluciones + Centraly · Soluciones (todo Soluciones)
-      - Cliente B → B2B Tracking · Ramsa (solo Ramsa)
-      - Cliente C → B2B Tracking · Soluciones + B2B Tracking · Ramsa (factura desde Soluciones unas unidades, desde Ramsa otras)
+      **Ejemplos de clientes con varios productos:**
+      - Un cliente puede tener B2B Tracking y Centraly facturados desde Soluciones.
+      - Otro cliente puede tener B2B Tracking facturado desde Ramsa.
+      - Un cliente grande puede tener una parte de su flota facturada desde Soluciones y otra desde Ramsa.
     </Info>
-
-    <Tip>**Notas técnicas:** Tabla `cliente_productos` (M:N) con `is_active` y `UNIQUE(cliente_id, producto_id)`. Endpoints `GET /api/v1/clientes/{id}/productos`, `PUT /api/v1/clientes/{id}/productos`. **Backfill al deploy**: cada cliente actual se asigna al producto correspondiente a su `legal_entity` actual (derivado de `cliente_client_identifications.legal_entity_code`).</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -390,10 +349,8 @@ Registro de pagos recibidos: captura manual y carga masiva desde Excel del banco
     > Como usuario de finanzas, quiero capturar un ingreso con su fecha, monto, banco y cliente, para tener el registro de pagos recibidos.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `finanzas_manage`, cuando creo un ingreso, entonces aparece en la lista.
-    - Dado que selecciono un cliente, cuando abro la sección de facturas, entonces puedo ligar el ingreso a una factura abierta.
-
-    <Tip>**Notas técnicas:** Tabla `ingresos`. `finanzas_manage` para crear/editar; `finanzas_view` para listar.</Tip>
+    - Dado que tengo permiso para gestionar finanzas, cuando creo un ingreso, entonces aparece en la lista.
+    - Dado que selecciono un cliente, cuando abro la sección de facturas, entonces puedo ligar el ingreso a una factura abierta de ese cliente.
   </Accordion>
 
   <Accordion title="HU-19 · Cargar ingresos desde un Excel" icon="file-up">
@@ -404,9 +361,7 @@ Registro de pagos recibidos: captura manual y carga masiva desde Excel del banco
 
     **Criterios de aceptación:**
     - Dado que tengo el Excel con el formato esperado, cuando uso "Cargar Excel", entonces importa todas las filas y reporta cuántas se cargaron.
-    - Dado que una fila tiene datos inválidos, cuando proceso, entonces esa fila no se carga y se reporta el error con la fila exacta.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/ingresos/upload-excel` con validación por fila y reporte de errores.</Tip>
+    - Dado que una fila tiene datos inválidos, cuando proceso el archivo, entonces esa fila no se carga y se reporta el error con la fila exacta.
   </Accordion>
 </AccordionGroup>
 
@@ -422,15 +377,13 @@ Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio
     > Como usuario de finanzas, quiero ver el dashboard de compras de equipo con filtros, para entender en qué se está invirtiendo y cuánto.
 
     **Criterios de aceptación:**
-    - Dado que abro el dashboard, cuando carga, entonces veo KPIs (total compras, inversión, dispositivos únicos, precio promedio).
-    - Dado que cambio el filtro de fecha, cuando aplico, entonces KPIs y tablas se actualizan.
-    - Dado que reviso el detalle, cuando bajo en la página, entonces veo desglose por dispositivo y por factura.
+    - Dado que abro el dashboard, cuando carga, entonces veo indicadores clave (total de compras, inversión, dispositivos únicos, precio promedio).
+    - Dado que cambio el filtro de fecha, cuando aplico, entonces los indicadores y las tablas se actualizan.
+    - Dado que reviso el detalle, cuando bajo en la página, entonces veo el desglose por dispositivo y por factura.
 
     <Warning>
-      **Migración a app BI:** este dashboard se consolidará en la nueva **app BI**. El endpoint actual sigue disponible hasta la migración.
+      **Migración a app BI:** este dashboard se consolidará en la nueva app BI.
     </Warning>
-
-    <Tip>**Notas técnicas:** Endpoint real: `GET /api/v1/equipmentpurchases_dashboard/resumen`. Gráfica de barras mensual con Recharts.</Tip>
   </Accordion>
 
   <Accordion title="HU-21 · Consultar el estado de resultado" icon="chart-line">
@@ -443,10 +396,8 @@ Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio
     - Dado que selecciono un periodo, cuando carga, entonces veo ingresos, costos, utilidad y márgenes.
 
     <Warning>
-      **Migración a app BI:** los dashboards financieros (`/api/v1/dashboard/financial/*`) se consolidarán en la nueva **app BI**. Backend actual sigue vigente hasta la migración.
+      **Migración a app BI:** los dashboards financieros se consolidarán en la nueva app BI.
     </Warning>
-
-    <Tip>**Notas técnicas:** `GET /api/v1/dashboard/financial/estado-resultado`. Otros endpoints relacionados: `inventario-unidades`, `gps-historial`, `resumen-global`. Requiere `finanzas_view` o `finanzas_manage`.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -467,14 +418,12 @@ Canal centralizado de avisos para que el usuario se entere de cambios relevantes
     **Rol:** EMP · ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como usuario del sistema, quiero ver una campanita con avisos importantes (seguridad, roles, sistema, info), para enterarme rápido de cambios que me afecten.
+    > Como usuario del sistema, quiero ver una campanita con avisos importantes (seguridad, roles, sistema, información general), para enterarme rápido de cambios que me afecten.
 
     **Criterios de aceptación:**
-    - Dado que tengo notificaciones sin leer, cuando miro la campanita del header, entonces veo un badge rojo con la cantidad.
-    - Dado que abro el dropdown, cuando hago clic en una notificación, entonces queda marcada como leída y, si tiene enlace, me lleva al lugar relacionado.
-    - Dado que tengo varias notificaciones sin leer, cuando uso "Marcar todas como leídas", entonces el badge desaparece.
-
-    <Tip>**Notas técnicas:** Componente `NotificationBell` en `@finanzas/app-shell`. Polling cada 60s a `/api/v1/notifications`. Tipos: `security`, `role`, `system`, `info`.</Tip>
+    - Dado que tengo notificaciones sin leer, cuando miro la campanita del encabezado, entonces veo un contador con la cantidad.
+    - Dado que abro el menú de notificaciones, cuando hago clic en una, entonces queda marcada como leída y, si tiene enlace, me lleva al lugar relacionado.
+    - Dado que tengo varias notificaciones sin leer, cuando uso "Marcar todas como leídas", entonces el contador desaparece.
   </Accordion>
 </AccordionGroup>
 
@@ -483,27 +432,25 @@ Canal centralizado de avisos para que el usuario se entere de cambios relevantes
 ## M5 · Operaciones y DevOps
 
 <Info>
-  **1 epic · 2 HDU.** Capacidades de despliegue y mantenimiento orientadas al equipo de DevOps/operaciones, no a usuarios finales.
+  **1 epic · 2 HDU.** Capacidades de despliegue y mantenimiento orientadas al equipo de operaciones / DevOps, no a usuarios finales.
 </Info>
 
 ### EP-09 · Migración entre entornos
 
-Mover el módulo de attendance (DB + S3) entre instancias con un solo comando, idempotente, atómico y verificable.
+Mover el módulo de attendance entre instancias con un solo comando, idempotente, atómico y verificable.
 
 <AccordionGroup>
   <Accordion title="HU-23 · Migrar el módulo de attendance entre entornos" icon="database">
     **Rol:** OPS &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como operador de infraestructura, quiero mover los datos y las fotos de attendance de un entorno a otro con un solo comando, para levantar un entorno nuevo sin escribir queries a mano.
+    > Como operador de infraestructura, quiero mover los datos y las fotos de attendance de un entorno a otro con un solo comando, para levantar un entorno nuevo sin escribir consultas a mano.
 
     **Criterios de aceptación:**
-    - Dado que tengo el `.env` configurado y la base destino vacía, cuando ejecuto el script, entonces las 11 tablas (RBAC + attendance) se cargan preservando IDs y secuencias.
-    - Dado que ejecuto el script, cuando termina la fase de S3, entonces todas las fotos del prefijo `attendance/` están en el bucket destino.
-    - Dado que terminó la migración, cuando reviso la base destino, entonces ninguna `foto_*_url` apunta al host viejo.
-    - Dado que la migración falla a la mitad, cuando re-ejecuto el script, entonces queda íntegra (idempotente, `TRUNCATE…RESTART IDENTITY` al inicio).
-
-    <Tip>**Notas técnicas:** Script `scripts/migrate_attendance/migrate_attendance.sh`. 5 fases (preflight → DB → S3 → URLs → verificación). Requiere `pg_dump`, `psql`, `aws` CLI.</Tip>
+    - Dado que tengo la configuración lista y la base destino vacía, cuando ejecuto el script, entonces las tablas de RBAC y attendance se cargan preservando identificadores y secuencias.
+    - Dado que ejecuto el script, cuando termina la fase de archivos, entonces todas las fotos del módulo de attendance están en el almacenamiento destino.
+    - Dado que terminó la migración, cuando reviso la base destino, entonces ninguna foto de attendance apunta al host viejo.
+    - Dado que la migración falla a la mitad, cuando re-ejecuto el script, entonces queda íntegra (no se duplican datos).
   </Accordion>
 
   <Accordion title="HU-24 · Verificar y validar una migración antes de promover" icon="circle-check">
@@ -513,11 +460,9 @@ Mover el módulo de attendance (DB + S3) entre instancias con un solo comando, i
     > Como operador, quiero validar la migración antes de aceptarla, para no promover datos incompletos o corruptos al entorno destino.
 
     **Criterios de aceptación:**
-    - Dado que quiero validar sin tocar el destino, cuando ejecuto `./migrate_attendance.sh --dry-run`, entonces se simulan las 4 fases sin escribir nada.
-    - Dado que terminó la migración real, cuando corre la fase de verificación, entonces compara `count(*)` origen vs destino de las 11 tablas y verifica 3 fotos de muestra en S3.
-    - Dado que algo no cuadra, cuando termina la verificación, entonces el script sale con código distinto de 0 e indica qué tabla falló.
-
-    <Tip>**Notas técnicas:** Runbook en `docs/superpowers/plans/2026-05-13-attendance-migration-runbook.md` con 5 tareas y checkpoints obligatorios.</Tip>
+    - Dado que quiero validar sin tocar el destino, cuando ejecuto el script en modo de simulación, entonces se simulan todas las fases sin escribir nada.
+    - Dado que terminó la migración real, cuando corre la fase de verificación, entonces compara conteos origen vs destino de todas las tablas y verifica una muestra de fotos en el almacenamiento.
+    - Dado que algo no cuadra, cuando termina la verificación, entonces el script falla con un código de error e indica qué tabla o archivo falló.
   </Accordion>
 </AccordionGroup>
 
@@ -526,7 +471,7 @@ Mover el módulo de attendance (DB + S3) entre instancias con un solo comando, i
 ## M6 · Operaciones de campo
 
 <Info>
-  **3 epics · 8 HDU.** App `operations-web` (puerto 5176). Gestión operativa de inventario (SIMs, GPS, dispositivos), instalaciones físicas y los técnicos que las ejecutan, más reportes de actividad de las unidades.
+  **3 epics · 11 HDU.** Gestión operativa de inventario (SIMs, GPS, dispositivos), instalaciones físicas y los técnicos que las ejecutan, más reportes de actividad de las unidades.
 </Info>
 
 ### EP-10 · Inventario
@@ -541,11 +486,9 @@ Mantenimiento del catálogo de equipos y consumibles bajo tres ventanas operativ
     > Como usuario de operaciones, quiero dar de alta, consultar y actualizar el inventario de ítems (consumibles, accesorios, etc.), para conocer en todo momento qué hay disponible para instalar.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `inventory_items_read`, cuando abro la sección Inventario → Ítems, entonces veo el listado con stock actual.
-    - Dado que tengo permiso `inventory_items_write`, cuando creo o edito un ítem, entonces los cambios se reflejan al instante.
-    - Dado que un ítem llega a stock mínimo, cuando lo veo en la lista, entonces se distingue visualmente del resto.
-
-    <Tip>**Notas técnicas:** App `operations-web`, sección `inventory/items`. Permisos `inventory_items_read`/`inventory_items_write`/`inventory_items_edit`/`inventory_items_delete`.</Tip>
+    - Dado que tengo permiso para ver inventario, cuando abro la sección de ítems, entonces veo el listado con stock actual.
+    - Dado que tengo permiso para gestionar inventario, cuando creo o edito un ítem, entonces los cambios se reflejan al instante.
+    - Dado que un ítem llega al stock mínimo, cuando lo veo en la lista, entonces se distingue visualmente del resto.
   </Accordion>
 
   <Accordion title="HU-26 · Gestionar dispositivos" icon="cpu">
@@ -555,11 +498,9 @@ Mantenimiento del catálogo de equipos y consumibles bajo tres ventanas operativ
     > Como usuario de operaciones, quiero mantener el catálogo de dispositivos (GPS, cámaras, sensores) con su identificador y estado, para poder rastrear cada unidad física que se instala.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `devices_read`, cuando abro Inventario → Dispositivos, entonces veo el listado.
-    - Dado que tengo permiso `devices_write`, cuando registro un nuevo dispositivo con su IMEI/serie, entonces queda disponible para asignar.
-    - Dado que un dispositivo ya está asignado a una instalación, cuando lo consulto, entonces veo a qué cliente/unidad pertenece.
-
-    <Tip>**Notas técnicas:** Sección `inventory/devices`. Permisos `devices_read/write/edit/delete`.</Tip>
+    - Dado que tengo permiso para ver dispositivos, cuando abro la sección, entonces veo el listado de dispositivos.
+    - Dado que tengo permiso para gestionar dispositivos, cuando registro un nuevo dispositivo con su identificador único (IMEI o serie), entonces queda disponible para asignar.
+    - Dado que un dispositivo ya está asignado a una instalación, cuando lo consulto, entonces veo a qué cliente y unidad pertenece.
   </Accordion>
 
   <Accordion title="HU-27 · Administrar planes SIM" icon="signal">
@@ -569,10 +510,8 @@ Mantenimiento del catálogo de equipos y consumibles bajo tres ventanas operativ
     > Como usuario de operaciones, quiero administrar el catálogo de planes SIM (proveedor, costo, vigencia), para asociar el plan correcto a cada dispositivo conectado.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `sim_plans_read`, cuando abro Inventario → Planes SIM, entonces veo todos los planes disponibles.
-    - Dado que tengo permiso `sim_plans_write`, cuando creo o edito un plan, entonces queda activo en el catálogo.
-
-    <Tip>**Notas técnicas:** Sección `inventory/simPlans`. Permisos `sim_plans_read/write/edit/delete`.</Tip>
+    - Dado que tengo permiso para ver planes SIM, cuando abro la sección, entonces veo todos los planes disponibles.
+    - Dado que tengo permiso para gestionar planes SIM, cuando creo o edito un plan, entonces queda activo en el catálogo.
   </Accordion>
 
   <Accordion title="HU-58 · Ver historial de un ítem de inventario" icon="history">
@@ -582,9 +521,7 @@ Mantenimiento del catálogo de equipos y consumibles bajo tres ventanas operativ
     > Como usuario de operaciones, quiero ver el historial de movimientos y cambios de un ítem de inventario, para entender por qué un equipo cambió de estado, técnico o cliente.
 
     **Criterios de aceptación:**
-    - Dado que abro el detalle de un ítem, cuando reviso la pestaña Historial, entonces veo todos los cambios registrados (asignaciones, traslados, cambios de estado) con fecha y usuario.
-
-    <Tip>**Notas técnicas:** `GET /api/v1/inventory/items/{item_id}/history`. Cada cambio queda en `inventory_item_history`.</Tip>
+    - Dado que abro el detalle de un ítem, cuando reviso la pestaña de historial, entonces veo todos los cambios registrados (asignaciones, traslados, cambios de estado) con fecha y usuario que lo hizo.
   </Accordion>
 </AccordionGroup>
 
@@ -600,11 +537,9 @@ Gestión del ciclo de instalación: catálogo de técnicos (locales y foráneos)
     > Como coordinador de operaciones, quiero asignar instalaciones a los técnicos disponibles, para organizar el trabajo del día y ver qué tiene cada uno.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso para ver asignaciones, cuando abro Instalaciones → Asignaciones, entonces veo el tablero con instalaciones pendientes y asignadas.
+    - Dado que tengo permiso para ver asignaciones, cuando abro el tablero de asignaciones, entonces veo las instalaciones pendientes y las asignadas.
     - Dado que hay una instalación sin asignar, cuando la asigno a un técnico, entonces queda registrada para él.
     - Dado que quiero reasignar, cuando muevo la instalación a otro técnico, entonces se actualiza la asignación.
-
-    <Tip>**Notas técnicas:** Sección `installations/asignaciones`. Servicio `installationConsolidationsService`.</Tip>
   </Accordion>
 
   <Accordion title="HU-29 · Mantener catálogo de técnicos" icon="hard-hat">
@@ -614,36 +549,30 @@ Gestión del ciclo de instalación: catálogo de técnicos (locales y foráneos)
     > Como coordinador de operaciones, quiero mantener el catálogo de técnicos diferenciando locales de foráneos, para saber quién está disponible y dónde.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `technicians_read`, cuando abro Instalaciones → Técnicos, entonces veo el listado.
-    - Dado que tengo permiso `technicians_write`, cuando registro un técnico nuevo (local/foráneo), entonces queda disponible para asignarle instalaciones.
-
-    <Tip>**Notas técnicas:** Sección `installations/tecnicos`. Permisos `technicians_read/write/edit/delete`. El diagrama distingue locales vs foráneos.</Tip>
+    - Dado que tengo permiso para ver técnicos, cuando abro la sección, entonces veo el listado.
+    - Dado que tengo permiso para gestionar técnicos, cuando registro un técnico nuevo (local o foráneo), entonces queda disponible para asignarle instalaciones.
   </Accordion>
 
   <Accordion title="HU-30 · Registrar pagos a técnicos" icon="hand-coins">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como administración de operaciones, quiero registrar y consultar los pagos efectuados a cada técnico por sus instalaciones, para llevar control de lo que se les debe y se les ha cubierto.
+    > Como administración de operaciones, quiero registrar y consultar los pagos efectuados a cada técnico por sus instalaciones, para llevar control de lo que se les debe y lo que ya se les cubrió.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso de pagos, cuando abro Instalaciones → Pagos, entonces veo los pagos por técnico y periodo.
+    - Dado que tengo permiso de pagos, cuando abro la sección de pagos a técnicos, entonces veo los pagos por técnico y periodo.
     - Dado que registro un pago a un técnico, cuando guardo, entonces queda asociado a las instalaciones que cubre.
-
-    <Tip>**Notas técnicas:** Sección `installations/pagos`. Servicio `installationPaymentsService`.</Tip>
   </Accordion>
 
   <Accordion title="HU-31 · Consultar el calendario de instalaciones" icon="calendar-days">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como coordinador, quiero ver un calendario con las instalaciones agendadas, para planear la carga semanal/mensual.
+    > Como coordinador, quiero ver un calendario con las instalaciones agendadas, para planear la carga semanal y mensual.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso para ver instalaciones, cuando abro Instalaciones → Calendario, entonces veo la vista mensual con las instalaciones programadas.
+    - Dado que tengo permiso para ver instalaciones, cuando abro el calendario, entonces veo la vista mensual con las instalaciones programadas.
     - Dado que selecciono una instalación, cuando hago clic, entonces veo su detalle (cliente, técnico, equipo).
-
-    <Tip>**Notas técnicas:** Sección `installations/calendario`. **No hay endpoint dedicado de calendario** — el frontend renderiza la vista mensual consumiendo `GET /api/v1/installation-consolidations` con filtros de fecha.</Tip>
   </Accordion>
 
   <Accordion title="HU-56 · Refrescar costos de instalación" icon="refresh-cw">
@@ -655,20 +584,16 @@ Gestión del ciclo de instalación: catálogo de técnicos (locales y foráneos)
     **Criterios de aceptación:**
     - Dado que tengo permiso de pagos, cuando ejecuto "Refrescar costos", entonces el sistema recalcula los costos de instalación con las tarifas vigentes.
     - Dado que termina el refresh, cuando reviso un lote pendiente, entonces los montos reflejan el cálculo actualizado.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/installation-payments/refresh`. Útil tras cambios en `technicians.cost` o ajustes de catálogo.</Tip>
   </Accordion>
 
-  <Accordion title="HU-57 · Reconciliar costos contra CMS" icon="git-compare">
+  <Accordion title="HU-57 · Reconciliar costos contra el sistema GPS externo" icon="git-compare">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como administración de operaciones, quiero reconciliar los costos de instalación contra el sistema CMS externo, para asegurar que lo que pagamos coincide con lo que el CMS registra para esa unidad/cliente.
+    > Como administración de operaciones, quiero reconciliar los costos de instalación contra el sistema GPS externo, para asegurar que lo que pagamos coincide con lo que ese sistema registra para esa unidad o cliente.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso de pagos, cuando ejecuto "Reconciliar con CMS", entonces el sistema cruza los costos locales con los del CMS y reporta diferencias.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/installation-payments/refresh/reconcile-cms`. Llama al servicio externo CMS para validar.</Tip>
+    - Dado que tengo permiso de pagos, cuando ejecuto "Reconciliar", entonces el sistema cruza los costos locales con los del sistema externo y reporta diferencias.
   </Accordion>
 </AccordionGroup>
 
@@ -681,17 +606,15 @@ Tableros operativos para entender el comportamiento de las unidades instaladas.
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como supervisor de operaciones, quiero ver el dashboard de actividad de vehículos, para identificar unidades activas/inactivas y detectar anomalías a tiempo.
+    > Como supervisor de operaciones, quiero ver el dashboard de actividad de vehículos, para identificar unidades activas o inactivas y detectar anomalías a tiempo.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso de reportes, cuando abro Reportes → Actividad de vehículos, entonces veo las métricas y gráficos de actividad.
+    - Dado que tengo permiso de reportes, cuando abro el dashboard de actividad de vehículos, entonces veo las métricas y gráficos.
     - Dado que aplico filtros de fecha o cliente, cuando ejecuto, entonces el dashboard se actualiza.
 
     <Warning>
-      **Migración a app BI:** este reporte operativo se consolidará en la nueva **app BI** junto con los demás dashboards. Backend actual (`/dashboard/operations/*`) sigue vigente hasta la migración.
+      **Migración a app BI:** este reporte operativo se consolidará en la nueva app BI junto con los demás dashboards.
     </Warning>
-
-    <Tip>**Notas técnicas:** Componente `ActividadVehiculosDashboard`. Servicio `operationsDashboardService`. Endpoints actuales: `GET /api/v1/dashboard/operations/resumen-flota`, `/cliente/{cliente_id}`, `/criticos`.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -700,12 +623,12 @@ Tableros operativos para entender el comportamiento de las unidades instaladas.
 ## M7 · Recursos Humanos
 
 <Info>
-  **2 epics · 6 HDU.** App `rh-web` (puerto 5178). RH centraliza la administración del personal (faltas, dashboard) y la **consola de configuración** que mantiene roles, permisos y aplicaciones del sistema RBAC.
+  **2 epics · 6 HDU.** RH centraliza la administración del personal (faltas, dashboard) y la consola de configuración que mantiene roles, permisos y aplicaciones del sistema.
 </Info>
 
 ### EP-13 · Dashboard y novedades de empleados
 
-Vista global del personal y captura de novedades que no son entrada/salida (faltas, permisos, etc.).
+Vista global del personal y captura de novedades que no son entrada o salida (faltas, permisos, etc.).
 
 <AccordionGroup>
   <Accordion title="HU-33 · Ver el dashboard de empleados" icon="users">
@@ -715,24 +638,21 @@ Vista global del personal y captura de novedades que no son entrada/salida (falt
     > Como administrador de RH, quiero ver un dashboard con el estado general del personal (presentes, ausentes, retardos, horas trabajadas), para tomar decisiones operativas del día.
 
     **Criterios de aceptación:**
-    - Dado que abro la app de RH, cuando entra al dashboard de empleados, entonces veo el resumen del día con totales y métricas.
+    - Dado que abro la app de RH, cuando entro al dashboard de empleados, entonces veo el resumen del día con totales y métricas.
     - Dado que cambio el rango de fechas, cuando aplico, entonces el dashboard se actualiza.
-
-    <Tip>**Notas técnicas:** App `rh-web`, sección `employees/dashboard`. Reusa `AttendanceDashboardScreen`.</Tip>
   </Accordion>
 
-  <Accordion title="HU-34 · Registrar faltas de empleados" icon="user-x">
+  <Accordion title="HU-34 · Registrar y justificar faltas de empleados" icon="user-x">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como administrador de RH, quiero registrar las faltas justificadas e injustificadas de un empleado, para que el cálculo de asistencia refleje correctamente los días no trabajados.
+    > Como administrador de RH, quiero registrar y justificar las faltas de un empleado (justificadas o injustificadas, con motivo), para que el cálculo de asistencia refleje correctamente los días no trabajados.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso de RH, cuando abro Empleados → Faltas, entonces veo el listado por empleado y fecha.
-    - Dado que registro una falta, cuando indico tipo (justificada / injustificada) y motivo, entonces queda asociada al empleado y al día.
-    - Dado que un empleado tiene falta marcada, cuando reviso su dashboard de asistencia, entonces ese día aparece como falta y no como ausente.
-
-    <Tip>**Notas técnicas:** Sección `employees/faltas`. Las **ausencias se generan automáticamente** por el job `attendance_automation_task.py` (función `_ensure_absence_records`) basándose en el horario del empleado y un cutoff. El admin de RH solo **edita** el registro existente para justificar/agregar motivo vía `PATCH /api/v1/attendance/{id}` (campo `attendance_state`).</Tip>
+    - Dado que tengo permiso de RH, cuando abro la sección de faltas, entonces veo el listado por empleado y fecha.
+    - Dado que un empleado no marcó entrada dentro de su horario, cuando reviso la lista al día siguiente, entonces aparece automáticamente como falta (sin tener que registrarla a mano).
+    - Dado que abro una falta automática, cuando indico tipo (justificada o injustificada) y motivo, entonces queda actualizada para ese empleado y ese día.
+    - Dado que un empleado tiene falta justificada, cuando reviso su dashboard de asistencia, entonces ese día aparece como falta justificada y no como ausencia.
   </Accordion>
 </AccordionGroup>
 
@@ -748,24 +668,20 @@ Mantenimiento del modelo de control de acceso: roles, permisos y el mapeo de apl
     > Como administrador, quiero crear, editar y desactivar roles, para reflejar la estructura organizacional sin tener que tocar la base de datos.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso `usuarios_write`, cuando abro Configuración → Roles, entonces veo el catálogo de roles activos.
+    - Dado que tengo permiso para gestionar usuarios, cuando abro la sección de roles, entonces veo el catálogo de roles activos.
     - Dado que creo un rol nuevo con nombre y descripción, cuando guardo, entonces queda disponible para asignarse a usuarios.
-    - Dado que un rol está protegido (`super_admin`, `admin`, `manager`, `usuario`, `auditor`), cuando intento eliminarlo, entonces el sistema lo impide.
-
-    <Tip>**Notas técnicas:** App `rh-web`, sección `employees/roles`. Roles protegidos definidos en `PROTECTED_ROLES`. Servicio `rbacService`.</Tip>
+    - Dado que un rol está protegido (los roles básicos del sistema), cuando intento eliminarlo, entonces el sistema lo impide.
   </Accordion>
 
   <Accordion title="HU-36 · Mantener el catálogo de permisos" icon="lock-keyhole">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como administrador, quiero ver y mantener el catálogo de permisos del sistema, para entender qué acciones son controlables vía RBAC.
+    > Como administrador, quiero ver y mantener el catálogo de permisos del sistema, para entender qué acciones son controlables por rol.
 
     **Criterios de aceptación:**
-    - Dado que tengo permiso, cuando abro Configuración → Permisos, entonces veo todos los permisos con su recurso y acción (read/write/execute/delete).
+    - Dado que tengo permiso, cuando abro la sección de permisos, entonces veo todos los permisos con su recurso y acción (leer, escribir, ejecutar, eliminar).
     - Dado que creo un permiso nuevo, cuando guardo, entonces queda disponible para asignarse a roles.
-
-    <Tip>**Notas técnicas:** Sección `employees/permisos`. Servicio `rbacService`.</Tip>
   </Accordion>
 
   <Accordion title="HU-37 · Asignar permisos a un rol" icon="shield-plus">
@@ -776,22 +692,19 @@ Mantenimiento del modelo de control de acceso: roles, permisos y el mapeo de apl
 
     **Criterios de aceptación:**
     - Dado que abro un rol, cuando agrego un permiso y guardo, entonces todos los usuarios con ese rol ganan ese permiso de inmediato.
-    - Dado que quito un permiso a un rol, cuando guardo, entonces los usuarios pierden ese permiso (salvo que lo tengan otorgado de forma directa).
-
-    <Tip>**Notas técnicas:** Tabla `roles_permisos`. Cambios en `audit_log`.</Tip>
+    - Dado que quito un permiso a un rol, cuando guardo, entonces los usuarios pierden ese permiso (a menos que lo tengan otorgado de forma directa).
   </Accordion>
 
   <Accordion title="HU-38 · Configurar aplicaciones disponibles por rol" icon="app-window">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
     **Historia:**
-    > Como administrador, quiero indicar qué aplicaciones (hub, finanzas, operaciones, RH, etc.) puede abrir cada rol, para que en el launcher solo aparezcan las apps que le corresponden.
+    > Como administrador, quiero indicar qué aplicaciones puede abrir cada rol y en qué orden de prioridad, para que el login redirija al usuario a la app correcta y solo vea las apps que le corresponden.
 
     **Criterios de aceptación:**
-    - Dado que abro Configuración → Aplicaciones, cuando reviso un rol, entonces veo qué apps tiene asignadas.
-    - Dado que activo una aplicación para un rol, cuando un usuario con ese rol vuelve al launcher, entonces esa app ya aparece en su grid.
-
-    <Tip>**Notas técnicas:** Tabla `roles_applications`. Esta es la fuente de verdad que alimenta HU-02 (Ver mis aplicaciones).</Tip>
+    - Dado que abro la configuración de aplicaciones de un rol, cuando reviso, entonces veo qué apps tiene asignadas y en qué orden.
+    - Dado que activo una aplicación para un rol, cuando un usuario con ese rol inicia sesión, entonces es redirigido a esa app si es la primera por prioridad.
+    - Dado que cambio el orden de prioridad de las apps de un rol, cuando guardo, entonces el siguiente login del usuario respeta el nuevo orden.
   </Accordion>
 </AccordionGroup>
 
@@ -800,12 +713,12 @@ Mantenimiento del modelo de control de acceso: roles, permisos y el mapeo de apl
 ## M8 · Portal Cliente (Soporte GPS)
 
 <Info>
-  **6 epics · 17 HDU.** Proyecto `soportecliente` — portal externo que las **empresas cliente** usan para visualizar su flota GPS, consultar órdenes de trabajo, levantar solicitudes de servicio y subir cargas masivas de instalaciones. Multi-tenant con jerarquía estricta `tenant → account → unit → device`. **Comparte base de datos con el ERP** (`finananzaspython`) y agrega 3 tablas propias (`portal_users`, `portal_user_account_access`, `monitoring_dedicate_vehicle_profiles`). Integra datos GPS de Wialon/Navixy y gestión de tickets de Odoo.
+  **6 epics · 17 HDU.** Portal externo que las **empresas cliente** usan para visualizar su flota GPS, consultar órdenes de trabajo, levantar solicitudes de servicio y subir cargas masivas de instalaciones. Multi-tenant: cada cliente ve únicamente la información de su propia empresa.
 </Info>
 
 ### EP-15 · Acceso y administración del portal
 
-Login propio del portal (separado del hub interno), registro auto-gestionado, control de qué cuentas puede ver cada usuario cliente y administración de usuarios del propio tenant.
+Login propio del portal (separado del sistema interno), registro auto-gestionado, control de qué cuentas puede ver cada usuario cliente y administración de usuarios del propio tenant.
 
 <AccordionGroup>
   <Accordion title="HU-39 · Iniciar sesión en el portal cliente" icon="log-in">
@@ -815,11 +728,9 @@ Login propio del portal (separado del hub interno), registro auto-gestionado, co
     > Como cliente del servicio GPS, quiero iniciar sesión en el portal con mi correo y contraseña, para acceder a la información de mi flota.
 
     **Criterios de aceptación:**
-    - Dado que estoy en la página de login del portal, cuando ingreso credenciales válidas, entonces accedo al dashboard de mi tenant.
+    - Dado que estoy en la página de login del portal, cuando ingreso credenciales válidas, entonces accedo al dashboard de mi empresa.
     - Dado que ingreso credenciales inválidas, cuando envío el formulario, entonces veo un mensaje de error claro.
     - Dado que mi usuario fue desactivado, cuando intento entrar, entonces el portal me lo informa.
-
-    <Tip>**Notas técnicas:** Backend `soportecliente` · `POST /api/v1/auth/login` · tabla `portal_users` (separada de `usuarios` del ERP). El `tenant_id` queda en el JWT y filtra todas las queries posteriores.</Tip>
   </Accordion>
 
   <Accordion title="HU-40 · Registrarme como usuario del portal" icon="user-plus">
@@ -831,8 +742,6 @@ Login propio del portal (separado del hub interno), registro auto-gestionado, co
     **Criterios de aceptación:**
     - Dado que tengo el código de invitación de mi cuenta, cuando me registro con correo, contraseña y datos básicos, entonces mi usuario queda creado pendiente de aprobación o activo según política.
     - Dado que mi correo ya está registrado, cuando intento crear otra cuenta, entonces veo un error claro.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/auth/register` → crea fila en `portal_users` con `status=pending` o `active`. Hash de contraseña con bcrypt.</Tip>
   </Accordion>
 
   <Accordion title="HU-41 · Cambiar entre cuentas a las que tengo acceso" icon="repeat">
@@ -844,26 +753,22 @@ Login propio del portal (separado del hub interno), registro auto-gestionado, co
     **Criterios de aceptación:**
     - Dado que mi usuario tiene varias cuentas asignadas, cuando abro el selector, entonces veo todas (propias y compartidas) con su nombre.
     - Dado que selecciono otra cuenta, cuando cambio, entonces todo el portal (dashboard, vehículos, solicitudes) se filtra a esa cuenta.
-
-    <Tip>**Notas técnicas:** Tablas `portal_user_account_access` (acceso del usuario) y `account_share` (cuentas compartidas entre tenants). El listado de cuentas accesibles se obtiene desde `GET /api/v1/auth/me` (no hay endpoint dedicado de switch); el `account_id` activo se persiste en localStorage/sesión del frontend y se envía como filtro en los requests subsecuentes.</Tip>
   </Accordion>
 
-  <Accordion title="HU-42 · Administrar usuarios de mi tenant" icon="users-cog">
+  <Accordion title="HU-42 · Administrar usuarios de mi empresa" icon="users-cog">
     **Rol:** CLT (administrador del cliente) &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como administrador de mi empresa, quiero dar de alta, editar y desactivar usuarios del portal de mi propio tenant, para controlar quién de mi equipo accede sin depender del proveedor.
+    > Como administrador de mi empresa, quiero dar de alta, editar y desactivar usuarios del portal de mi propia empresa, para controlar quién de mi equipo accede sin depender del proveedor.
 
     **Criterios de aceptación:**
-    - Dado que tengo rol de administrador del cliente, cuando abro la pantalla de usuarios, entonces solo veo a los usuarios de mi tenant.
+    - Dado que tengo rol de administrador del cliente, cuando abro la pantalla de usuarios, entonces solo veo a los usuarios de mi empresa (nunca de otras).
     - Dado que doy de alta un usuario, cuando guardo, entonces recibe correo con instrucciones para activar su cuenta.
     - Dado que desactivo a un usuario, cuando guardo, entonces ese usuario ya no puede iniciar sesión.
 
     <Warning>
-      **Pendiente backend:** los endpoints CRUD multi-tenant sobre `portal_users` **aún no existen** en el spec OpenAPI del portal (`soportecliente`). Sin ellos, la pantalla `AdminUsersPage` no puede operar. Crear endpoints `GET/POST/PATCH/DELETE /api/v1/admin/users` (o similar) filtrados por `tenant_id` derivado del JWT.
+      **Pendiente de implementación:** esta historia está diseñada pero la funcionalidad del backend aún no existe. El equipo de desarrollo debe construir los servicios para administrar usuarios filtrados por empresa.
     </Warning>
-
-    <Tip>**Notas técnicas:** Pantalla `AdminUsersPage`. CRUD sobre `portal_users` filtrado por `tenant_id`. Es **estrictamente multi-tenant**: nunca expone usuarios de otros tenants. **Estado: HDU diseñada, backend pendiente.**</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -879,10 +784,8 @@ Visualización del parque vehicular del cliente: lista, detalle de cada unidad (
     > Como cliente, quiero ver un panel con el estado general de mi flota (unidades totales, en línea, sin reporte, etc.), para saber rápido cómo está mi operación.
 
     **Criterios de aceptación:**
-    - Dado que entro al portal, cuando carga el dashboard, entonces veo los KPIs principales (total, en línea, offline, alertas, solicitudes abiertas).
-    - Dado que cambio de cuenta, cuando se actualiza, entonces los KPIs reflejan solo la cuenta seleccionada.
-
-    <Tip>**Notas técnicas:** Pantalla `DashboardPage`. Combina datos de `cms_unidades` + `service_requests` + estados de Wialon/Navixy.</Tip>
+    - Dado que entro al portal, cuando carga el dashboard, entonces veo los indicadores principales (total, en línea, fuera de línea, alertas, solicitudes abiertas).
+    - Dado que cambio de cuenta, cuando se actualiza, entonces los indicadores reflejan solo la cuenta seleccionada.
   </Accordion>
 
   <Accordion title="HU-44 · Consultar el detalle y mapa de un vehículo" icon="map-pin">
@@ -892,11 +795,9 @@ Visualización del parque vehicular del cliente: lista, detalle de cada unidad (
     > Como cliente, quiero abrir el detalle de una unidad para ver sus datos (placa, equipo, perfil) y su posición en el mapa, para verificar dónde está y qué equipo trae instalado.
 
     **Criterios de aceptación:**
-    - Dado que selecciono una unidad de la lista, cuando carga el detalle, entonces veo placa/VIN, modelo, hardware GPS, última posición y perfil de monitoreo.
-    - Dado que la unidad reportó hace poco, cuando veo el mapa, entonces aparece su marcador con timestamp.
-    - Dado que la unidad no es de mi tenant, cuando intento abrirla directo por URL, entonces el portal me devuelve 404 / acceso denegado.
-
-    <Tip>**Notas técnicas:** Pantallas `VehiclesListPage` + `VehicleDetailPage`. `GET /api/v1/vehicles/{unit_id}`. Mapa con **Leaflet**. Posición desde `monitoring_dedicate_vehicle_profiles` + integración Wialon. Filtro de tenant **obligatorio** en backend.</Tip>
+    - Dado que selecciono una unidad de la lista, cuando carga el detalle, entonces veo placa, número de identificación vehicular (VIN), modelo, equipo GPS, última posición y perfil de monitoreo.
+    - Dado que la unidad reportó hace poco, cuando veo el mapa, entonces aparece su marcador con la fecha y hora del último reporte.
+    - Dado que la unidad no es de mi empresa, cuando intento abrirla directo por URL, entonces el portal me niega el acceso.
   </Accordion>
 
   <Accordion title="HU-45 · Ver historial de servicio de un vehículo" icon="history">
@@ -907,8 +808,6 @@ Visualización del parque vehicular del cliente: lista, detalle de cada unidad (
 
     **Criterios de aceptación:**
     - Dado que abro el detalle de la unidad, cuando reviso la pestaña de servicio, entonces veo el listado de órdenes de trabajo con fecha y estado.
-
-    <Tip>**Notas técnicas:** `GET /api/v1/vehicles/{unit_id}/work-orders`. Reusa `work_orders` (tabla compartida con el ERP).</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -924,11 +823,9 @@ Canal autoservicio del cliente para abrir tickets sobre sus unidades, darles seg
     > Como cliente, quiero abrir una solicitud de servicio sobre una de mis unidades indicando el tipo de problema, para que el equipo de soporte la atienda.
 
     **Criterios de aceptación:**
-    - Dado que estoy en mi cuenta, cuando voy a "Nueva solicitud" y selecciono unidad + tipo de problema + descripción, entonces la solicitud queda creada con estado inicial.
+    - Dado que estoy en mi cuenta, cuando voy a "Nueva solicitud" y selecciono unidad, tipo de problema y descripción, entonces la solicitud queda creada con estado inicial.
     - Dado que adjunto imágenes o documentos, cuando envío, entonces quedan ligados a la solicitud como evidencia inicial.
-    - Dado que selecciono una unidad que no es de mi tenant, cuando envío, entonces el backend rechaza la solicitud.
-
-    <Tip>**Notas técnicas:** Pantalla `RequestNewPage`. `POST /api/v1/service-requests`. Tablas `service_requests` + `support_request_types` + `support_evidence`. Integración con Odoo para creación del ticket externo.</Tip>
+    - Dado que selecciono una unidad que no es de mi empresa, cuando envío, entonces la solicitud es rechazada.
   </Accordion>
 
   <Accordion title="HU-47 · Consultar mis solicitudes de servicio" icon="ticket">
@@ -940,9 +837,7 @@ Canal autoservicio del cliente para abrir tickets sobre sus unidades, darles seg
     **Criterios de aceptación:**
     - Dado que abro la pantalla de solicitudes, cuando carga, entonces veo mis solicitudes con su estado, fecha y unidad.
     - Dado que filtro por estado o tipo, cuando aplico, entonces la lista se actualiza.
-    - Dado que abro el detalle, cuando carga, entonces veo todo el ciclo: descripción, comentarios, evidencia y cambios de etapa.
-
-    <Tip>**Notas técnicas:** `RequestsListPage` + `RequestDetailPage`. `GET /api/v1/service-requests` y `GET /api/v1/service-requests/{id}`. Estados desde `support_stages`. Bitácora en `support_audit_log`.</Tip>
+    - Dado que abro el detalle de una solicitud, cuando carga, entonces veo todo el ciclo: descripción, comentarios, evidencia y cambios de etapa.
   </Accordion>
 
   <Accordion title="HU-48 · Comentar en una solicitud" icon="message-square">
@@ -954,8 +849,6 @@ Canal autoservicio del cliente para abrir tickets sobre sus unidades, darles seg
     **Criterios de aceptación:**
     - Dado que la solicitud está abierta, cuando escribo un comentario y envío, entonces queda visible en el hilo con mi nombre y fecha.
     - Dado que el equipo de soporte responde, cuando vuelvo a abrir la solicitud, entonces veo su comentario.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/service-requests/{sr_id}/comments`. Tabla `support_comments`.</Tip>
   </Accordion>
 
   <Accordion title="HU-49 · Adjuntar evidencia a una solicitud" icon="paperclip">
@@ -967,8 +860,6 @@ Canal autoservicio del cliente para abrir tickets sobre sus unidades, darles seg
     **Criterios de aceptación:**
     - Dado que abro una solicitud activa, cuando subo un archivo válido, entonces queda asociado a la solicitud y visible para soporte.
     - Dado que el archivo excede el tamaño o formato permitido, cuando intento subirlo, entonces el portal lo rechaza con un mensaje claro.
-
-    <Tip>**Notas técnicas:** `POST /api/v1/service-requests/{sr_id}/evidence` y `DELETE /api/v1/service-requests/{sr_id}/evidence/{id}`. Tabla `support_evidence`.</Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -984,10 +875,8 @@ Vista de solo lectura para el cliente sobre las órdenes de trabajo que el prove
     > Como cliente, quiero consultar las órdenes de trabajo que el proveedor está ejecutando o ya cerró sobre mi flota, para conocer el estatus de las intervenciones.
 
     **Criterios de aceptación:**
-    - Dado que abro la pantalla de órdenes, cuando carga, entonces veo todas las que corresponden a mi tenant.
+    - Dado que abro la pantalla de órdenes, cuando carga, entonces veo todas las que corresponden a mi empresa.
     - Dado que filtro por estado o por unidad, cuando aplico, entonces la lista se actualiza.
-
-    <Tip>**Notas técnicas:** `WorkOrdersListPage`. `GET /api/v1/work-orders`. Tabla `work_orders`.</Tip>
   </Accordion>
 
   <Accordion title="HU-51 · Consultar el detalle de una orden de trabajo" icon="file-text">
@@ -998,27 +887,23 @@ Vista de solo lectura para el cliente sobre las órdenes de trabajo que el prove
 
     **Criterios de aceptación:**
     - Dado que selecciono una orden, cuando carga el detalle, entonces veo unidad, tipo de trabajo, fechas y estado actual.
-
-    <Tip>**Notas técnicas:** `GET /api/v1/work-orders/{wo_id}`. Reusa `work_orders` y datos relacionados de la unidad.</Tip>
   </Accordion>
 </AccordionGroup>
 
 ### EP-19 · Carga masiva de instalaciones
 
-Permite al cliente subir documentos (PDF/fotos) con varios trabajos a la vez y que el sistema los procese — incluye **OCR** para extraer datos automáticamente.
+Permite al cliente subir documentos (PDF o fotos) con varios trabajos a la vez y que el sistema los procese, reconociendo los datos automáticamente.
 
 <AccordionGroup>
-  <Accordion title="HU-52 · Subir un lote de instalaciones con OCR" icon="scan-text">
+  <Accordion title="HU-52 · Subir un lote de instalaciones con reconocimiento automático" icon="scan-text">
     **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como cliente con muchas instalaciones para reportar, quiero subir un documento (PDF/imagen) y que el sistema reconozca los datos automáticamente con OCR, para no capturar uno por uno.
+    > Como cliente con muchas instalaciones para reportar, quiero subir un documento (PDF o imagen) y que el sistema reconozca los datos automáticamente, para no capturar uno por uno.
 
     **Criterios de aceptación:**
     - Dado que subo un archivo válido, cuando se procesa, entonces el sistema extrae los campos (placa, equipo, fecha) y crea un lote de instalaciones a revisar.
     - Dado que un campo no se reconoce, cuando reviso el lote, entonces puedo corregirlo a mano antes de confirmar.
-
-    <Tip>**Notas técnicas:** Pantalla `InstallationUploadPage`. `POST /api/v1/installations` + `POST /api/v1/ocr/recognize` para reconocimiento. Cada lote vive en una nueva entidad (instalación batch). Soporte de imágenes y PDFs.</Tip>
   </Accordion>
 
   <Accordion title="HU-53 · Ver mis lotes de instalaciones" icon="package-2">
@@ -1030,26 +915,22 @@ Permite al cliente subir documentos (PDF/fotos) con varios trabajos a la vez y q
     **Criterios de aceptación:**
     - Dado que abro la pantalla de instalaciones, cuando carga, entonces veo mis lotes con fecha, número de ítems y estado.
     - Dado que abro las estadísticas, cuando carga, entonces veo conteos globales por estado.
-
-    <Tip>**Notas técnicas:** `InstallationsListPage`. `GET /api/v1/installations` y `GET /api/v1/installations/stats`.</Tip>
   </Accordion>
 
   <Accordion title="HU-54 · Consultar el detalle de un lote de instalaciones" icon="list-checks">
     **Rol:** CLT &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
 
     **Historia:**
-    > Como cliente, quiero abrir un lote y revisar fila por fila las instalaciones que contiene, para validar lo que el OCR detectó antes de confirmar.
+    > Como cliente, quiero abrir un lote y revisar fila por fila las instalaciones que contiene, para validar lo que el sistema detectó antes de confirmar.
 
     **Criterios de aceptación:**
-    - Dado que abro un lote, cuando carga el detalle, entonces veo cabecera + ítems con sus campos extraídos.
-
-    <Tip>**Notas técnicas:** `InstallationDetailPage`. `GET /api/v1/installations/{batch_id}` y `GET /api/v1/installations/{batch_id}/items`.</Tip>
+    - Dado que abro un lote, cuando carga el detalle, entonces veo la cabecera y los ítems con sus campos extraídos.
   </Accordion>
 </AccordionGroup>
 
 ### EP-20 · Notificaciones del portal
 
-Canal de avisos in-app para que el cliente se entere de cambios en sus solicitudes, órdenes y lotes.
+Canal de avisos dentro del portal para que el cliente se entere de cambios en sus solicitudes, órdenes y lotes.
 
 <AccordionGroup>
   <Accordion title="HU-55 · Recibir notificaciones del portal" icon="bell">
@@ -1059,11 +940,9 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
     > Como cliente, quiero recibir notificaciones cuando una solicitud cambia de estado o cuando hay novedades en mis órdenes, para enterarme sin tener que estar refrescando la pantalla.
 
     **Criterios de aceptación:**
-    - Dado que hay novedades para mí, cuando entro al portal, entonces veo un badge con el conteo de notificaciones sin leer.
+    - Dado que hay novedades para mí, cuando entro al portal, entonces veo un contador con el número de notificaciones sin leer.
     - Dado que abro la lista, cuando hago clic en una notificación, entonces queda marcada como leída y, si tiene enlace, me lleva al recurso relacionado.
-    - Dado que tengo varias sin leer, cuando uso "Marcar todas como leídas", entonces el badge desaparece.
-
-    <Tip>**Notas técnicas:** Pantalla `NotificationsPage`. Endpoints `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PUT /api/v1/notifications/{id}/read`, `PUT /api/v1/notifications/read-all`. Tabla `notifications` (dominio `notifications` del backend del portal).</Tip>
+    - Dado que tengo varias sin leer, cuando uso "Marcar todas como leídas", entonces el contador desaparece.
   </Accordion>
 </AccordionGroup>
 
@@ -1084,7 +963,7 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 |  |  | HU-09 Registrar salida | EMP | Alta |
 |  |  | HU-10 Validación facial | EMP | Media |
 |  |  | HU-11 Horas extra | EMP | Media |
-|  |  | HU-12 Instalar PWA | EMP | Baja |
+|  |  | HU-12 Instalar app móvil | EMP | Baja |
 |  | EP-04 Admin asistencia | HU-13 Dashboard | ADM | Alta |
 |  |  | HU-14 Exportar Excel | ADM | Media |
 |  |  | HU-15 Configurar horario | ADM | Media |
@@ -1101,16 +980,16 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 | **M6** Operaciones de campo | EP-10 Inventario | HU-25 Inventario de ítems | ADM | Alta |
 |  |  | HU-26 Dispositivos | ADM | Alta |
 |  |  | HU-27 Planes SIM | ADM | Media |
+|  |  | HU-58 Historial de un ítem | ADM | Media |
 |  | EP-11 Instalaciones y técnicos | HU-28 Asignar instalaciones | ADM | Alta |
 |  |  | HU-29 Catálogo de técnicos | ADM | Alta |
 |  |  | HU-30 Pagos a técnicos | ADM | Media |
 |  |  | HU-31 Calendario | ADM | Media |
 |  |  | HU-56 Refrescar costos | ADM | Media |
-|  |  | HU-57 Reconciliar costos CMS | ADM | Media |
-|  | EP-10 Inventario | HU-58 Historial de un ítem | ADM | Media |
+|  |  | HU-57 Reconciliar costos contra GPS externo | ADM | Media |
 |  | EP-12 Reportes operativos | HU-32 Actividad de vehículos | ADM | Media |
 | **M7** Recursos Humanos | EP-13 Dashboard y novedades | HU-33 Dashboard de empleados | ADM | Alta |
-|  |  | HU-34 Registrar faltas | ADM | Media |
+|  |  | HU-34 Registrar y justificar faltas | ADM | Media |
 |  | EP-14 Consola administrativa (RBAC) | HU-35 Catálogo de roles | ADM | Alta |
 |  |  | HU-36 Catálogo de permisos | ADM | Media |
 |  |  | HU-37 Asignar permisos a un rol | ADM | Alta |
@@ -1118,7 +997,7 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 | **M8** Portal Cliente (Soporte GPS) | EP-15 Acceso y administración | HU-39 Iniciar sesión en el portal | CLT | Alta |
 |  |  | HU-40 Registrarme | CLT | Media |
 |  |  | HU-41 Cambiar entre cuentas | CLT | Alta |
-|  |  | HU-42 Administrar usuarios de mi tenant | CLT | Media |
+|  |  | HU-42 Administrar usuarios de mi empresa | CLT | Media |
 |  | EP-16 Mi flota | HU-43 Dashboard de flota | CLT | Alta |
 |  |  | HU-44 Detalle y mapa de un vehículo | CLT | Alta |
 |  |  | HU-45 Historial de servicio | CLT | Media |
@@ -1128,7 +1007,7 @@ Canal de avisos in-app para que el cliente se entere de cambios en sus solicitud
 |  |  | HU-49 Adjuntar evidencia | CLT | Media |
 |  | EP-18 Órdenes de trabajo (consulta) | HU-50 Ver órdenes de trabajo | CLT | Media |
 |  |  | HU-51 Detalle de una orden | CLT | Media |
-|  | EP-19 Carga masiva de instalaciones | HU-52 Subir lote con OCR | CLT | Media |
+|  | EP-19 Carga masiva de instalaciones | HU-52 Subir lote con reconocimiento automático | CLT | Media |
 |  |  | HU-53 Ver lotes procesados | CLT | Media |
 |  |  | HU-54 Detalle de un lote | CLT | Media |
 |  | EP-20 Notificaciones del portal | HU-55 Recibir notificaciones del portal | CLT | Media |
