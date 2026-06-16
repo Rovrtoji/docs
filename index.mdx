@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 9 Milestones · 23 Epics · 62 HDU · 4 perfiles de usuario.
+  **Totales:** 9 Milestones · 23 Epics · 65 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -280,7 +280,7 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
 ## M3 · Finanzas
 
 <Info>
-  **2 epics · 3 HDU.** Gestión financiera del negocio: padrón de clientes y captura/carga de ingresos. Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
+  **2 epics · 6 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos y registro de gastos/pagos con centros de costo (incluye opción de pago alternativo). Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
 </Info>
 
 ### EP-05 · Gestión de clientes
@@ -321,9 +321,9 @@ Mantenimiento del padrón de clientes y vínculo con la facturación.
   </Accordion>
 </AccordionGroup>
 
-### EP-06 · Ingresos
+### EP-06 · Ingresos y gastos
 
-Registro de pagos recibidos: captura manual y carga masiva desde Excel del banco.
+Registro de pagos recibidos (ingresos) y pagos efectuados (gastos), incluyendo catálogos de apoyo (centros de costo) y la posibilidad de capturar pagos por canales no bancarios.
 
 <AccordionGroup>
   <Accordion title="HU-18 · Registrar un ingreso manualmente" icon="circle-dollar-sign">
@@ -346,6 +346,58 @@ Registro de pagos recibidos: captura manual y carga masiva desde Excel del banco
     **Criterios de aceptación:**
     - Dado que tengo el Excel con el formato esperado, cuando uso "Cargar Excel", entonces importa todas las filas y reporta cuántas se cargaron.
     - Dado que una fila tiene datos inválidos, cuando proceso el archivo, entonces esa fila no se carga y se reporta el error con la fila exacta.
+  </Accordion>
+
+  <Accordion title="HU-65 · Mantener catálogo de centros de costo" icon="building">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero mantener un catálogo de centros de costo que representen las áreas o departamentos de la empresa, para poder relacionar cada gasto con el área que lo consume y la compañía a la que pertenece.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando abro el catálogo de centros de costo, entonces veo el listado con sus nombres y la compañía a la que pertenece cada uno.
+    - Dado que creo un centro de costo con nombre y compañía, cuando guardo, entonces queda disponible para asignarse a gastos y pagos.
+    - Dado que un centro de costo ya tiene gastos asociados, cuando intento eliminarlo, entonces el sistema lo impide y sugiere desactivarlo.
+    - Dado que desactivo un centro de costo, cuando un usuario va a capturar un gasto, entonces ese centro ya no aparece en el selector — pero los gastos históricos lo conservan.
+
+    <Info>
+      **Ejemplos de centros de costo:** "Operaciones · Soluciones", "Sistemas · Soluciones", "Administración · Ramsa", "Comercial · Soluciones". Cada uno pertenece a una sola compañía.
+    </Info>
+  </Accordion>
+
+  <Accordion title="HU-66 · Mantener catálogos para pagos alternativos" icon="list">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de finanzas, quiero mantener tres catálogos independientes (método de pago alternativo, motivo del pago, lugar o proveedor), para que cuando capturemos un gasto que se pagó por canal no bancario podamos describir con precisión cómo, por qué y dónde se hizo.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando abro cada uno de los tres catálogos, entonces veo el listado con las opciones disponibles.
+    - Dado que creo una nueva opción en cualquiera de los catálogos, cuando guardo, entonces queda disponible al capturar un pago alternativo.
+    - Dado que una opción del catálogo ya está siendo usada en gastos históricos, cuando intento eliminarla, entonces el sistema lo impide y sugiere desactivarla.
+    - Dado que desactivo una opción, cuando voy a capturar un pago alternativo, entonces esa opción ya no aparece en el selector.
+
+    <Info>
+      **Los tres catálogos:**
+      - **Método de pago alternativo** → ejemplos: "Efectivo", "Tarjeta personal", "Vales", "Transferencia personal".
+      - **Motivo del pago** → ejemplos: "Compra de emergencia", "Viaje urgente", "Reembolso al empleado".
+      - **Lugar o proveedor** → ejemplos: "Gasolinera del centro", "Tienda XYZ", "Supermercado ABC".
+    </Info>
+  </Accordion>
+
+  <Accordion title="HU-67 · Registrar un gasto/pago aplicado a centro de costo" icon="hand-coins">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero capturar un gasto seleccionando el centro de costo, el banco y la compañía, y opcionalmente marcarlo como pago alternativo capturando método, motivo y lugar, para tener trazabilidad completa de en qué se gastó, quién pagó y desde dónde.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando creo un nuevo gasto, entonces el formulario me pide centro de costo, banco, monto y fecha.
+    - Dado que selecciono un centro de costo, cuando se carga el formulario, entonces la compañía facturadora se completa automáticamente (porque el centro de costo ya está asociado a una compañía).
+    - Dado que el pago se hizo por canal bancario normal, cuando guardo, entonces el gasto queda registrado contra ese banco y centro de costo.
+    - Dado que marco el gasto como "alternativo" (no bancario), cuando activo la opción, entonces se habilitan tres campos adicionales: método de pago alternativo, motivo y lugar/proveedor.
+    - Dado que llené los campos alternativos, cuando guardo, entonces el gasto queda registrado con la información completa de cómo, por qué y dónde se pagó.
+    - Dado que abro un gasto alternativo histórico, cuando reviso el detalle, entonces veo claramente que fue alternativo y los datos extra capturados.
   </Accordion>
 </AccordionGroup>
 
@@ -1018,8 +1070,11 @@ Comportamientos que aplican a todos los dashboards: filtros globales y opciones 
 |  |  | HU-15 Configurar horario | ADM | Media |
 | **M3** Finanzas | EP-05 Clientes | HU-17 Crear/editar cliente | ADM | Alta |
 |  |  | HU-61 Asignar productos al cliente | ADM | Alta |
-|  | EP-06 Ingresos | HU-18 Ingreso manual | ADM | Alta |
+|  | EP-06 Ingresos y gastos | HU-18 Ingreso manual | ADM | Alta |
 |  |  | HU-19 Ingresos por Excel | ADM | Media |
+|  |  | HU-65 Catálogo de centros de costo | ADM | Alta |
+|  |  | HU-66 Catálogos de pagos alternativos | ADM | Media |
+|  |  | HU-67 Registrar gasto/pago con centro de costo | ADM | Alta |
 | **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
 | **M5** Operaciones y DevOps | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
 |  |  | HU-24 Verificar migración | OPS | Alta |
