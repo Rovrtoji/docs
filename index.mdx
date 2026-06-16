@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 8 Milestones · 20 Epics · 59 HDU · 4 perfiles de usuario.
+  **Totales:** 9 Milestones · 23 Epics · 62 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -280,30 +280,14 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
 ## M3 · Finanzas
 
 <Info>
-  **3 epics · 6 HDU.** Gestión financiera del negocio: padrón de clientes con su panorama 360, captura/carga de ingresos y dashboards analíticos.
+  **2 epics · 3 HDU.** Gestión financiera del negocio: padrón de clientes y captura/carga de ingresos. Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
 </Info>
 
 ### EP-05 · Gestión de clientes
 
-Consulta consolidada del estado de un cliente y mantenimiento del padrón.
+Mantenimiento del padrón de clientes y vínculo con la facturación.
 
 <AccordionGroup>
-  <Accordion title="HU-16 · Consultar el panel 360 de un cliente" icon="user-search">
-    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
-
-    **Historia:**
-    > Como usuario de finanzas, quiero ver toda la información relevante de un cliente en una sola pantalla, para entender rápido su situación antes de tomar decisiones.
-
-    **Criterios de aceptación:**
-    - Dado que abro un cliente, cuando carga el detalle, entonces veo métricas clave (saldo, vencido, último pago, facturado).
-    - Dado que cambio a la vista de métricas, cuando selecciono, entonces veo la gráfica de facturado vs pagado de los últimos 6 meses.
-    - Dado que agrego una nota interna, cuando guardo, entonces queda visible para todo el equipo.
-
-    <Warning>
-      **Migración a app BI:** esta vista del cliente 360 se consolidará en la nueva app BI. Hasta entonces sigue disponible en su ubicación actual.
-    </Warning>
-  </Accordion>
-
   <Accordion title="HU-17 · Crear o editar un cliente" icon="user-pen">
     **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
 
@@ -362,42 +346,6 @@ Registro de pagos recibidos: captura manual y carga masiva desde Excel del banco
     **Criterios de aceptación:**
     - Dado que tengo el Excel con el formato esperado, cuando uso "Cargar Excel", entonces importa todas las filas y reporta cuántas se cargaron.
     - Dado que una fila tiene datos inválidos, cuando proceso el archivo, entonces esa fila no se carga y se reporta el error con la fila exacta.
-  </Accordion>
-</AccordionGroup>
-
-### EP-07 · Dashboards financieros
-
-Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio.
-
-<AccordionGroup>
-  <Accordion title="HU-20 · Analizar las compras de equipo" icon="chart-bar">
-    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
-
-    **Historia:**
-    > Como usuario de finanzas, quiero ver el dashboard de compras de equipo con filtros, para entender en qué se está invirtiendo y cuánto.
-
-    **Criterios de aceptación:**
-    - Dado que abro el dashboard, cuando carga, entonces veo indicadores clave (total de compras, inversión, dispositivos únicos, precio promedio).
-    - Dado que cambio el filtro de fecha, cuando aplico, entonces los indicadores y las tablas se actualizan.
-    - Dado que reviso el detalle, cuando bajo en la página, entonces veo el desglose por dispositivo y por factura.
-
-    <Warning>
-      **Migración a app BI:** este dashboard se consolidará en la nueva app BI.
-    </Warning>
-  </Accordion>
-
-  <Accordion title="HU-21 · Consultar el estado de resultado" icon="chart-line">
-    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
-
-    **Historia:**
-    > Como usuario de finanzas, quiero ver el estado de resultado por periodo, para evaluar la rentabilidad del negocio.
-
-    **Criterios de aceptación:**
-    - Dado que selecciono un periodo, cuando carga, entonces veo ingresos, costos, utilidad y márgenes.
-
-    <Warning>
-      **Migración a app BI:** los dashboards financieros se consolidarán en la nueva app BI.
-    </Warning>
   </Accordion>
 </AccordionGroup>
 
@@ -471,7 +419,7 @@ Mover el módulo de attendance entre instancias con un solo comando, idempotente
 ## M6 · Operaciones de campo
 
 <Info>
-  **3 epics · 11 HDU.** Gestión operativa de inventario (SIMs, GPS, dispositivos), instalaciones físicas y los técnicos que las ejecutan, más reportes de actividad de las unidades.
+  **2 epics · 10 HDU.** Gestión operativa de inventario (SIMs, GPS, dispositivos), instalaciones físicas y los técnicos que las ejecutan. El reporte analítico de actividad de vehículos se trasladó a [M9 · BI / Analytics](#m9--bi--analytics).
 </Info>
 
 ### EP-10 · Inventario
@@ -594,27 +542,6 @@ Gestión del ciclo de instalación: catálogo de técnicos (locales y foráneos)
 
     **Criterios de aceptación:**
     - Dado que tengo permiso de pagos, cuando ejecuto "Reconciliar", entonces el sistema cruza los costos locales con los del sistema externo y reporta diferencias.
-  </Accordion>
-</AccordionGroup>
-
-### EP-12 · Reportes operativos
-
-Tableros operativos para entender el comportamiento de las unidades instaladas.
-
-<AccordionGroup>
-  <Accordion title="HU-32 · Consultar la actividad de vehículos" icon="car">
-    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
-
-    **Historia:**
-    > Como supervisor de operaciones, quiero ver el dashboard de actividad de vehículos, para identificar unidades activas o inactivas y detectar anomalías a tiempo.
-
-    **Criterios de aceptación:**
-    - Dado que tengo permiso de reportes, cuando abro el dashboard de actividad de vehículos, entonces veo las métricas y gráficos.
-    - Dado que aplico filtros de fecha o cliente, cuando ejecuto, entonces el dashboard se actualiza.
-
-    <Warning>
-      **Migración a app BI:** este reporte operativo se consolidará en la nueva app BI junto con los demás dashboards.
-    </Warning>
   </Accordion>
 </AccordionGroup>
 
@@ -948,6 +875,128 @@ Canal de avisos dentro del portal para que el cliente se entere de cambios en su
 
 ---
 
+## M9 · BI / Analytics
+
+<Info>
+  **5 epics · 7 HDU.** Aplicación dedicada de inteligencia de negocio que consolida todos los dashboards analíticos del sistema en una sola vista, con navegación lateral entre tableros, filtros transversales por compañía/producto y opciones de exportación. Centraliza vistas que antes vivían dispersas en finanzas y operaciones.
+</Info>
+
+### EP-21 · Navegación de la app BI
+
+Estructura de navegación entre los distintos dashboards disponibles dentro de la app BI.
+
+<AccordionGroup>
+  <Accordion title="HU-62 · Navegar entre dashboards de la app BI" icon="layout-grid">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de la app BI, quiero un menú lateral que liste los dashboards disponibles agrupados por dominio (clientes, finanzas, operaciones), para cambiar de uno a otro sin perder los filtros que ya seleccioné.
+
+    **Criterios de aceptación:**
+    - Dado que entro a la app BI, cuando carga, entonces veo el menú lateral con los dashboards agrupados por dominio.
+    - Dado que selecciono un dashboard del menú, cuando carga, entonces el dashboard ocupa el área principal y el menú se mantiene visible.
+    - Dado que cambio entre dashboards, cuando aplico, entonces los filtros transversales (fecha, compañía, producto) se conservan.
+    - Dado que mi rol no tiene permiso sobre un dashboard, cuando reviso el menú, entonces ese dashboard no aparece.
+  </Accordion>
+</AccordionGroup>
+
+### EP-22 · Dashboard de clientes
+
+Vistas consolidadas del estado de uno o varios clientes.
+
+<AccordionGroup>
+  <Accordion title="HU-16 · Consultar el panel 360 de un cliente" icon="user-search">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero ver toda la información relevante de un cliente en una sola pantalla, para entender rápido su situación antes de tomar decisiones.
+
+    **Criterios de aceptación:**
+    - Dado que abro un cliente, cuando carga el detalle, entonces veo métricas clave (saldo, vencido, último pago, facturado).
+    - Dado que cambio a la vista de métricas, cuando selecciono, entonces veo la gráfica de facturado vs pagado de los últimos 6 meses.
+    - Dado que agrego una nota interna, cuando guardo, entonces queda visible para todo el equipo.
+  </Accordion>
+</AccordionGroup>
+
+### EP-23 · Dashboards financieros
+
+Vistas analíticas para evaluar inversión en equipos y rentabilidad del negocio.
+
+<AccordionGroup>
+  <Accordion title="HU-20 · Analizar las compras de equipo" icon="chart-bar">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de finanzas, quiero ver el dashboard de compras de equipo con filtros, para entender en qué se está invirtiendo y cuánto.
+
+    **Criterios de aceptación:**
+    - Dado que abro el dashboard, cuando carga, entonces veo indicadores clave (total de compras, inversión, dispositivos únicos, precio promedio).
+    - Dado que cambio el filtro de fecha, cuando aplico, entonces los indicadores y las tablas se actualizan.
+    - Dado que reviso el detalle, cuando bajo en la página, entonces veo el desglose por dispositivo y por factura.
+  </Accordion>
+
+  <Accordion title="HU-21 · Consultar el estado de resultado" icon="chart-line">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de finanzas, quiero ver el estado de resultado por periodo, para evaluar la rentabilidad del negocio.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono un periodo, cuando carga, entonces veo ingresos, costos, utilidad y márgenes.
+  </Accordion>
+</AccordionGroup>
+
+### EP-24 · Dashboards operativos
+
+Tableros sobre el comportamiento de las unidades instaladas y la operación de campo.
+
+<AccordionGroup>
+  <Accordion title="HU-32 · Consultar la actividad de vehículos" icon="car">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como supervisor de operaciones, quiero ver el dashboard de actividad de vehículos, para identificar unidades activas o inactivas y detectar anomalías a tiempo.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso de reportes, cuando abro el dashboard, entonces veo las métricas y gráficos de actividad.
+    - Dado que aplico filtros de fecha o cliente, cuando ejecuto, entonces el dashboard se actualiza.
+  </Accordion>
+</AccordionGroup>
+
+### EP-25 · Funcionalidades transversales de la app BI
+
+Comportamientos que aplican a todos los dashboards: filtros globales y opciones de exportación/compartir.
+
+<AccordionGroup>
+  <Accordion title="HU-63 · Filtrar dashboards por compañía y producto" icon="filter">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de la app BI con acceso a varias compañías o productos, quiero un filtro global en la parte superior que aplique a todos los dashboards al mismo tiempo, para enfocar el análisis en una compañía/producto sin tener que cambiarlo en cada dashboard.
+
+    **Criterios de aceptación:**
+    - Dado que entro a la app BI, cuando reviso la barra superior, entonces veo selectores de compañía y de producto con las opciones a las que tengo acceso.
+    - Dado que selecciono una compañía o producto, cuando aplico, entonces todos los dashboards se actualizan para reflejar solo esos datos.
+    - Dado que mi usuario tiene un solo producto asignado, cuando entro, entonces el filtro queda preseleccionado y no puedo verlo de otros.
+    - Dado que soy super administrador, cuando entro, entonces puedo elegir "Todas las compañías" o "Todos los productos" para una vista consolidada.
+  </Accordion>
+
+  <Accordion title="HU-64 · Exportar y compartir un dashboard" icon="share">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Media
+
+    **Historia:**
+    > Como usuario de la app BI, quiero exportar un dashboard a Excel o PDF y poder compartir su enlace con un compañero, para llevar la información a reuniones o reportes externos.
+
+    **Criterios de aceptación:**
+    - Dado que estoy viendo un dashboard, cuando uso "Exportar a Excel", entonces se descarga un archivo con los datos visibles y los filtros aplicados.
+    - Dado que uso "Exportar a PDF", cuando termina, entonces obtengo un PDF que conserva la presentación visual del dashboard.
+    - Dado que uso "Compartir enlace", cuando lo copio y lo envío, entonces el destinatario abre exactamente la misma vista (mismo dashboard, mismos filtros) si tiene permiso.
+    - Dado que el destinatario no tiene permiso, cuando abre el enlace, entonces ve un mensaje de acceso denegado.
+  </Accordion>
+</AccordionGroup>
+
+---
+
 ## Apéndice · Matriz general
 
 | Milestone | Epic | HDU | Rol | Prioridad |
@@ -967,13 +1016,10 @@ Canal de avisos dentro del portal para que el cliente se entere de cambios en su
 |  | EP-04 Admin asistencia | HU-13 Dashboard | ADM | Alta |
 |  |  | HU-14 Exportar Excel | ADM | Media |
 |  |  | HU-15 Configurar horario | ADM | Media |
-| **M3** Finanzas | EP-05 Clientes | HU-16 Cliente 360 | ADM | Alta |
-|  |  | HU-17 Crear/editar cliente | ADM | Alta |
+| **M3** Finanzas | EP-05 Clientes | HU-17 Crear/editar cliente | ADM | Alta |
 |  |  | HU-61 Asignar productos al cliente | ADM | Alta |
 |  | EP-06 Ingresos | HU-18 Ingreso manual | ADM | Alta |
 |  |  | HU-19 Ingresos por Excel | ADM | Media |
-|  | EP-07 Dashboards | HU-20 Compras de equipo | ADM | Media |
-|  |  | HU-21 Estado de resultado | ADM | Media |
 | **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
 | **M5** Operaciones y DevOps | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
 |  |  | HU-24 Verificar migración | OPS | Alta |
@@ -987,7 +1033,6 @@ Canal de avisos dentro del portal para que el cliente se entere de cambios en su
 |  |  | HU-31 Calendario | ADM | Media |
 |  |  | HU-56 Refrescar costos | ADM | Media |
 |  |  | HU-57 Reconciliar costos contra GPS externo | ADM | Media |
-|  | EP-12 Reportes operativos | HU-32 Actividad de vehículos | ADM | Media |
 | **M7** Recursos Humanos | EP-13 Dashboard y novedades | HU-33 Dashboard de empleados | ADM | Alta |
 |  |  | HU-34 Registrar y justificar faltas | ADM | Media |
 |  | EP-14 Consola administrativa (RBAC) | HU-35 Catálogo de roles | ADM | Alta |
@@ -1011,3 +1056,10 @@ Canal de avisos dentro del portal para que el cliente se entere de cambios en su
 |  |  | HU-53 Ver lotes procesados | CLT | Media |
 |  |  | HU-54 Detalle de un lote | CLT | Media |
 |  | EP-20 Notificaciones del portal | HU-55 Recibir notificaciones del portal | CLT | Media |
+| **M9** BI / Analytics | EP-21 Navegación | HU-62 Navegar entre dashboards | ADM | Alta |
+|  | EP-22 Dashboard de clientes | HU-16 Cliente 360 | ADM | Alta |
+|  | EP-23 Dashboards financieros | HU-20 Compras de equipo | ADM | Media |
+|  |  | HU-21 Estado de resultado | ADM | Media |
+|  | EP-24 Dashboards operativos | HU-32 Actividad de vehículos | ADM | Media |
+|  | EP-25 Funcionalidades transversales | HU-63 Filtrar por compañía y producto | ADM | Alta |
+|  |  | HU-64 Exportar y compartir dashboards | ADM | Media |
