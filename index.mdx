@@ -9,7 +9,7 @@ keywords: ["roadmap", "historias de usuario", "epics", "milestones", "ERP", "CRM
 <Note>
   Catálogo jerárquico de lo que el sistema permite hacer. Tres niveles: **Milestone** (gran bloque de dominio funcional), **Epic** (capacidad coherente dentro del bloque) y **HDU** (historia de usuario verificable).
 
-  **Totales:** 9 Milestones · 23 Epics · 65 HDU · 4 perfiles de usuario.
+  **Totales:** 9 Milestones · 24 Epics · 68 HDU · 4 perfiles de usuario.
 </Note>
 
 ## Perfiles de usuario
@@ -280,7 +280,7 @@ RRHH supervisa la operación: ve el dashboard, exporta a Excel y configura el ho
 ## M3 · Finanzas
 
 <Info>
-  **2 epics · 6 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos y registro de gastos/pagos con centros de costo (incluye opción de pago alternativo). Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
+  **3 epics · 9 HDU.** Gestión financiera del negocio: padrón de clientes, captura de ingresos, registro de gastos/pagos con centros de costo (incluye opción de pago alternativo) y módulo de transacciones bancarias para dar trazabilidad a transferencias y movimientos entre cuentas. Los dashboards analíticos se trasladaron a [M9 · BI / Analytics](#m9--bi--analytics).
 </Info>
 
 ### EP-05 · Gestión de clientes
@@ -398,6 +398,52 @@ Registro de pagos recibidos (ingresos) y pagos efectuados (gastos), incluyendo c
     - Dado que marco el gasto como "alternativo" (no bancario), cuando activo la opción, entonces se habilitan tres campos adicionales: método de pago alternativo, motivo y lugar/proveedor.
     - Dado que llené los campos alternativos, cuando guardo, entonces el gasto queda registrado con la información completa de cómo, por qué y dónde se pagó.
     - Dado que abro un gasto alternativo histórico, cuando reviso el detalle, entonces veo claramente que fue alternativo y los datos extra capturados.
+  </Accordion>
+</AccordionGroup>
+
+### EP-07 · Transacciones bancarias
+
+Registro y consulta de movimientos entre cuentas bancarias: transferencias entre cuentas propias o hacia/desde terceros, con una vista tipo estado de cuenta para auditar lo que entra y sale por cada cuenta.
+
+<AccordionGroup>
+  <Accordion title="HU-68 · Mantener catálogo de cuentas bancarias propias" icon="landmark">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero mantener un catálogo de las cuentas bancarias propias del negocio (banco, número de cuenta, compañía dueña, divisa), para que al registrar ingresos, gastos o transferencias pueda seleccionar la cuenta exacta y separar los movimientos por compañía.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando abro el catálogo de cuentas bancarias, entonces veo el listado con banco, alias, número de cuenta, compañía y divisa.
+    - Dado que registro una cuenta nueva, cuando guardo, entonces queda disponible para seleccionarse al capturar ingresos, gastos y transacciones.
+    - Dado que una cuenta tiene movimientos registrados, cuando intento eliminarla, entonces el sistema lo impide y sugiere desactivarla.
+    - Dado que desactivo una cuenta, cuando un usuario va a registrar un nuevo movimiento, entonces esa cuenta ya no aparece en el selector — pero los movimientos históricos la conservan.
+  </Accordion>
+
+  <Accordion title="HU-69 · Registrar una transacción bancaria" icon="arrow-right-left">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero registrar una transacción bancaria indicando si es una transferencia entre cuentas propias o una transferencia hacia/desde un tercero, para tener trazabilidad de todos los movimientos del dinero entre cuentas.
+
+    **Criterios de aceptación:**
+    - Dado que tengo permiso para gestionar finanzas, cuando creo una nueva transacción, entonces el formulario me pide tipo de transacción, fecha, monto, descripción y referencia bancaria.
+    - Dado que selecciono "Transferencia entre cuentas propias", cuando capturo, entonces el formulario me pide cuenta origen y cuenta destino (ambas del catálogo de cuentas propias) y la operación queda registrada como dos movimientos espejo (salida en la origen, entrada en la destino) con la misma referencia.
+    - Dado que selecciono "Transferencia desde/hacia un tercero", cuando capturo, entonces el formulario me pide cuenta propia, dirección del movimiento (entrada o salida), nombre del tercero y referencia/concepto.
+    - Dado que la transacción tiene los campos completos, cuando guardo, entonces queda registrada y se refleja en el estado de cuenta de las cuentas involucradas.
+    - Dado que abro una transacción histórica, cuando reviso el detalle, entonces veo claramente su tipo, cuentas involucradas, monto, fecha y referencia.
+  </Accordion>
+
+  <Accordion title="HU-70 · Consultar el estado de cuenta de una cuenta bancaria" icon="book-open">
+    **Rol:** ADM &nbsp;&nbsp;·&nbsp;&nbsp; **Prioridad:** Alta
+
+    **Historia:**
+    > Como usuario de finanzas, quiero abrir una cuenta bancaria propia y ver todos sus movimientos (entradas y salidas) en un mismo listado tipo estado de cuenta, para auditar de forma clara qué entró, qué salió y cuál es el saldo, igual que en un estado de cuenta del banco.
+
+    **Criterios de aceptación:**
+    - Dado que selecciono una cuenta bancaria, cuando abro su estado de cuenta, entonces veo todos los movimientos (ingresos, gastos y transacciones) ordenados por fecha de más reciente a más antiguo.
+    - Dado que estoy viendo el estado de cuenta, cuando reviso cada movimiento, entonces veo fecha, descripción, tipo (ingreso, gasto, transferencia), monto y si es cargo o abono.
+    - Dado que aplico un filtro de rango de fechas, cuando ejecuto, entonces el listado se acota a ese periodo y muestra el saldo inicial y final del rango.
+    - Dado que quiero compartir o respaldar la vista, cuando uso "Exportar", entonces se descarga un archivo Excel con los mismos movimientos visibles.
   </Accordion>
 </AccordionGroup>
 
@@ -1075,6 +1121,9 @@ Comportamientos que aplican a todos los dashboards: filtros globales y opciones 
 |  |  | HU-65 Catálogo de centros de costo | ADM | Alta |
 |  |  | HU-66 Catálogos de pagos alternativos | ADM | Media |
 |  |  | HU-67 Registrar gasto/pago con centro de costo | ADM | Alta |
+|  | EP-07 Transacciones bancarias | HU-68 Catálogo de cuentas bancarias propias | ADM | Alta |
+|  |  | HU-69 Registrar transacción bancaria | ADM | Alta |
+|  |  | HU-70 Estado de cuenta bancario | ADM | Alta |
 | **M4** Experiencia transversal | EP-08 Notificaciones | HU-22 Recibir notificaciones | EMP · ADM | Media |
 | **M5** Operaciones y DevOps | EP-09 Migración | HU-23 Migrar attendance | OPS | Alta |
 |  |  | HU-24 Verificar migración | OPS | Alta |
